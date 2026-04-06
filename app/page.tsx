@@ -17,6 +17,9 @@ type ServiceDashboardEntry = {
   cliente:
     | {
         nome: string | null;
+      }
+    | {
+        nome: string | null;
       }[]
     | null;
 };
@@ -66,7 +69,11 @@ function getNumericValue(value: number | string | null) {
 }
 
 function getClientName(entry: ServiceDashboardEntry) {
-  return entry.cliente?.[0]?.nome ?? "Cliente não encontrado";
+  if (Array.isArray(entry.cliente)) {
+    return entry.cliente[0]?.nome ?? "Cliente não encontrado";
+  }
+
+  return entry.cliente?.nome ?? "Cliente não encontrado";
 }
 
 function isClosedServiceStatus(status: string | null) {
