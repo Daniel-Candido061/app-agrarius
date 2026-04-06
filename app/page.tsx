@@ -150,6 +150,31 @@ function isPastDueTask(entry: TaskDashboardEntry) {
   return deadline < today;
 }
 
+function isUpcomingTask(entry: TaskDashboardEntry) {
+  if (!entry.data_limite) {
+    return false;
+  }
+
+  if (normalizeText(entry.status) === "concluida") {
+    return false;
+  }
+
+  const deadline = new Date(entry.data_limite);
+
+  if (Number.isNaN(deadline.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  const nextSevenDays = new Date();
+  today.setHours(0, 0, 0, 0);
+  nextSevenDays.setHours(0, 0, 0, 0);
+  nextSevenDays.setDate(nextSevenDays.getDate() + 7);
+  deadline.setHours(0, 0, 0, 0);
+
+  return deadline >= today && deadline <= nextSevenDays;
+}
+
 function getDaysUntilDeadline(value: string | null) {
   if (!value) {
     return null;
@@ -186,6 +211,26 @@ function getDeadlineLabel(value: string | null) {
   }
 
   return `Faltam ${daysUntilDeadline} dias`;
+}
+
+function getOverdueLabel(value: string | null) {
+  const daysUntilDeadline = getDaysUntilDeadline(value);
+
+  if (daysUntilDeadline === null) {
+    return "Prazo vencido";
+  }
+
+  const overdueDays = Math.abs(daysUntilDeadline);
+
+  if (overdueDays === 0) {
+    return "Vencido hoje";
+  }
+
+  if (overdueDays === 1) {
+    return "1 dia de atraso";
+  }
+
+  return `${overdueDays} dias de atraso`;
 }
 
 async function getDashboardData() {
@@ -234,6 +279,7 @@ async function getDashboardData() {
 
   const servicosAtrasados = services.filter(isPastDueService).length;
   const tarefasAtrasadas = tasks.filter(isPastDueTask).length;
+  const tarefasProximas = tasks.filter(isUpcomingTask).length;
 
   const receitasPendentes = financialEntries
     .filter(
@@ -257,13 +303,25 @@ async function getDashboardData() {
     })
     .slice(0, 5);
 
+  const servicosUrgentes = services
+    .filter(isPastDueService)
+    .sort((firstService, secondService) => {
+      const firstDate = new Date(firstService.prazo_final ?? "").getTime();
+      const secondDate = new Date(secondService.prazo_final ?? "").getTime();
+
+      return firstDate - secondDate;
+    })
+    .slice(0, 4);
+
   return {
     totalClientes: clientesResult.count ?? 0,
     totalServicos: servicosResult.count ?? 0,
     servicosAtrasados,
     tarefasAtrasadas,
+    tarefasProximas,
     receitasPendentes,
     contasVencidas,
+    servicosUrgentes,
     proximosPrazos,
   };
 }
@@ -294,6 +352,11 @@ export default async function Home() {
       detail: 'Tarefas com prazo vencido e status diferente de "Concluída"',
     },
     {
+      title: "Tarefas próximas",
+      value: String(dashboardData.tarefasProximas),
+      detail: "Tarefas que vencem entre hoje e os próximos 7 dias",
+    },
+    {
       title: "Receitas pendentes",
       value: formatCurrency(dashboardData.receitasPendentes),
       detail: 'Receitas com status "Pendente"',
@@ -312,7 +375,7 @@ export default async function Home() {
       currentPath="/"
     >
       <div className="space-y-6">
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-6">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-7">
           {summaryCards.map((card) => (
             <article
               key={card.title}
@@ -326,6 +389,71 @@ export default async function Home() {
             </article>
           ))}
         </div>
+
+        <section className="overflow-hidden rounded-2xl border border-rose-200 bg-[linear-gradient(135deg,rgba(255,241,242,0.95),rgba(255,255,255,1))] shadow-[0_18px_40px_-24px_rgba(190,24,93,0.35)]">
+          <div className="border-b border-rose-100 px-6 py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-rose-900">
+                  Serviços urgentes
+                </h2>
+                <p className="text-sm text-rose-700/80">
+                  Serviços com prazo vencido que precisam de atenção imediata.
+                </p>
+              </div>
+
+              <span className="inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">
+                {dashboardData.servicosAtrasados} em atraso
+              </span>
+            </div>
+          </div>
+
+          {dashboardData.servicosUrgentes.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <p className="text-sm font-medium text-emerald-700">
+                Nenhum serviço vencido no momento
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Quando houver serviços com prazo vencido, eles aparecerão aqui.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-4">
+              {dashboardData.servicosUrgentes.map((service) => (
+                <article
+                  key={service.id}
+                  className="rounded-2xl border border-rose-200 bg-white/90 p-5 shadow-[0_14px_28px_-18px_rgba(190,24,93,0.45)]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="inline-flex rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">
+                      Urgente
+                    </span>
+                    <span className="text-xs font-medium text-rose-700">
+                      {getOverdueLabel(service.prazo_final)}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-4 text-base font-semibold text-slate-800">
+                    {service.nome_servico ?? "-"}
+                  </h3>
+
+                  <p className="mt-2 text-sm text-slate-500">
+                    Cliente: {getClientName(service)}
+                  </p>
+
+                  <div className="mt-4 rounded-xl bg-rose-50 px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-rose-500">
+                      Prazo final
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-rose-700">
+                      {formatDate(service.prazo_final)}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
