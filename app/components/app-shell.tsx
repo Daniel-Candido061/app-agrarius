@@ -5,6 +5,7 @@ const navigationItems = [
   { label: "Painel", href: "/" },
   { label: "Clientes", href: "/clientes" },
   { label: "Serviços", href: "/servicos" },
+  { label: "Tarefas", href: "/tarefas" },
   { label: "Financeiro", href: "/financeiro" },
 ];
 
