@@ -90,6 +90,28 @@ function getTaskPriorityClassName(priority: string | null) {
   return "bg-slate-100 text-slate-700";
 }
 
+function isOverdueTask(task: Tarefa) {
+  if (!task.data_limite) {
+    return false;
+  }
+
+  if (normalizeText(task.status) === "concluida") {
+    return false;
+  }
+
+  const deadline = new Date(task.data_limite);
+
+  if (Number.isNaN(deadline.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  deadline.setHours(0, 0, 0, 0);
+
+  return deadline < today;
+}
+
 export function ServiceTasksSection({
   serviceId,
   tasks,
@@ -225,9 +247,21 @@ export function ServiceTasksSection({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {tasks.map((task) => (
-                  <tr key={task.id} className="hover:bg-slate-50/80">
+                  <tr
+                    key={task.id}
+                    className={`hover:bg-slate-50/80 ${
+                      isOverdueTask(task) ? "bg-rose-50/40" : ""
+                    }`}
+                  >
                     <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                      {task.titulo ?? "-"}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>{task.titulo ?? "-"}</span>
+                        {isOverdueTask(task) ? (
+                          <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700">
+                            Atrasada
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-500">
                       {task.responsavel ?? "-"}
@@ -250,7 +284,13 @@ export function ServiceTasksSection({
                         {task.status ?? "Sem status"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-500">
+                    <td
+                      className={`px-6 py-4 text-sm ${
+                        isOverdueTask(task)
+                          ? "font-medium text-rose-700"
+                          : "text-slate-500"
+                      }`}
+                    >
                       {formatDate(task.data_limite)}
                     </td>
                   </tr>
