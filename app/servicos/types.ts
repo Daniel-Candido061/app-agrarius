@@ -8,10 +8,12 @@ export type Servico = {
   prazo_final: string | null;
   observacoes: string | null;
   status: string | null;
-  cliente: {
-    id: number;
-    nome: string | null;
-  } | null;
+  cliente:
+    | {
+        id: number;
+        nome: string | null;
+      }[]
+    | null;
 };
 
 export type ClienteOption = {

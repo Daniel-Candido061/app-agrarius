@@ -14,9 +14,11 @@ type ServiceDashboardEntry = {
   nome_servico: string | null;
   prazo_final: string | null;
   status: string | null;
-  cliente: {
-    nome: string | null;
-  } | null;
+  cliente:
+    | {
+        nome: string | null;
+      }[]
+    | null;
 };
 
 function formatCurrency(value: number) {
@@ -61,6 +63,10 @@ function getNumericValue(value: number | string | null) {
       : Number(String(value).replace(",", "."));
 
   return Number.isNaN(numericValue) ? 0 : numericValue;
+}
+
+function getClientName(entry: ServiceDashboardEntry) {
+  return entry.cliente?.[0]?.nome ?? "Cliente não encontrado";
 }
 
 function isClosedServiceStatus(status: string | null) {
@@ -316,7 +322,7 @@ export default async function Home() {
                   {dashboardData.proximosPrazos.map((service) => (
                     <tr key={service.id} className="hover:bg-slate-50/80">
                       <td className="px-4 py-4 text-sm font-medium text-slate-700">
-                        {service.cliente?.nome ?? "Cliente não encontrado"}
+                        {getClientName(service)}
                       </td>
                       <td className="px-4 py-4 text-sm text-slate-500">
                         {service.nome_servico ?? "-"}

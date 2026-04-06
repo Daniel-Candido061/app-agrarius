@@ -153,6 +153,10 @@ function getFinancialStatusClassName(status: string | null) {
   return "bg-slate-100 text-slate-700";
 }
 
+function getClientName(service: Servico) {
+  return service.cliente?.[0]?.nome ?? "Cliente não encontrado";
+}
+
 export function ServicosView({
   services,
   clients,
@@ -185,7 +189,7 @@ export function ServicosView({
     }
 
     const searchableFields = [
-      service.cliente?.nome,
+      getClientName(service),
       service.nome_servico,
       service.cidade,
       service.status,
@@ -508,7 +512,7 @@ export function ServicosView({
                       }`}
                     >
                       <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                        {service.cliente?.nome ?? "Cliente não encontrado"}
+                        {getClientName(service)}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
                         <Link

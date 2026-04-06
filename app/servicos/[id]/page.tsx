@@ -122,6 +122,10 @@ function getEntryTypeClassName(type: string | null) {
   return "bg-slate-100 text-slate-700";
 }
 
+function getClientName(service: Servico) {
+  return service.cliente?.[0]?.nome ?? "Cliente não encontrado";
+}
+
 async function getServico(id: number) {
   const { data, error } = await supabase
     .from("servicos")
@@ -229,7 +233,7 @@ export default async function ServicoDetalhesPage({
                   Cliente
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  {service.cliente?.nome ?? "Cliente não encontrado"}
+                  {getClientName(service)}
                 </p>
               </div>
 
