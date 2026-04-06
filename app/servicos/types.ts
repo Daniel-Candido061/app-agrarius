@@ -12,6 +12,10 @@ export type Servico = {
     | {
         id: number;
         nome: string | null;
+      }
+    | {
+        id: number;
+        nome: string | null;
       }[]
     | null;
 };

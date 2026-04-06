@@ -154,7 +154,11 @@ function getFinancialStatusClassName(status: string | null) {
 }
 
 function getClientName(service: Servico) {
-  return service.cliente?.[0]?.nome ?? "Cliente não encontrado";
+  if (Array.isArray(service.cliente)) {
+    return service.cliente[0]?.nome ?? "Cliente não encontrado";
+  }
+
+  return service.cliente?.nome ?? "Cliente não encontrado";
 }
 
 export function ServicosView({
