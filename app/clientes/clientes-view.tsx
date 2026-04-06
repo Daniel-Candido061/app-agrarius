@@ -1,0 +1,498 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { AppShell } from "../components/app-shell";
+import { supabase } from "../../lib/supabase";
+import { CLIENT_STATUS_OPTIONS } from "./status-options";
+import type { Cliente } from "./types";
+
+type ClientesViewProps = {
+  clients: Cliente[];
+};
+
+type ModalMode = "create" | "edit";
+
+type FormData = {
+  nome: string;
+  telefone: string;
+  email: string;
+  cidade: string;
+  status: string;
+};
+
+const initialFormData: FormData = {
+  nome: "",
+  telefone: "",
+  email: "",
+  cidade: "",
+  status: CLIENT_STATUS_OPTIONS[0],
+};
+
+function normalizeText(value: string | null) {
+  return (
+    value
+      ?.normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase() ?? ""
+  );
+}
+
+function getStatusClassName(status: string | null) {
+  const normalizedStatus = normalizeText(status);
+
+  if (normalizedStatus === "ativo") {
+    return "bg-emerald-50 text-emerald-700";
+  }
+
+  if (normalizedStatus === "em analise") {
+    return "bg-amber-50 text-amber-700";
+  }
+
+  if (normalizedStatus === "inativo") {
+    return "bg-slate-100 text-slate-700";
+  }
+
+  return "bg-sky-50 text-sky-700";
+}
+
+export function ClientesView({ clients }: ClientesViewProps) {
+  const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<ModalMode>("create");
+  const [editingClientId, setEditingClientId] = useState<number | null>(null);
+  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingClientId, setDeletingClientId] = useState<number | null>(null);
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredClients = clients.filter((client) => {
+    if (!normalizedSearchTerm) {
+      return true;
+    }
+
+    const searchableFields = [
+      client.nome,
+      client.email,
+      client.telefone,
+      client.cidade,
+    ];
+
+    return searchableFields.some((field) =>
+      field?.toLowerCase().includes(normalizedSearchTerm)
+    );
+  });
+
+  function openModal() {
+    setModalMode("create");
+    setEditingClientId(null);
+    setFormData(initialFormData);
+    setErrorMessage("");
+    setSuccessMessage("");
+    setIsModalOpen(true);
+  }
+
+  function openEditModal(client: Cliente) {
+    setModalMode("edit");
+    setEditingClientId(client.id);
+    setFormData({
+      nome: client.nome,
+      telefone: client.telefone ?? "",
+      email: client.email ?? "",
+      cidade: client.cidade ?? "",
+      status: client.status ?? CLIENT_STATUS_OPTIONS[0],
+    });
+    setErrorMessage("");
+    setSuccessMessage("");
+    setIsModalOpen(true);
+  }
+
+  function closeModal() {
+    setIsModalOpen(false);
+    setModalMode("create");
+    setEditingClientId(null);
+    setErrorMessage("");
+    setFormData(initialFormData);
+  }
+
+  function updateField(field: keyof FormData, value: string) {
+    setFormData((currentData) => ({
+      ...currentData,
+      [field]: value,
+    }));
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const nome = formData.nome.trim();
+    const telefone = formData.telefone.trim();
+    const email = formData.email.trim();
+    const cidade = formData.cidade.trim();
+    const status = formData.status.trim();
+
+    if (!nome) {
+      setErrorMessage("Informe o nome do cliente.");
+      return;
+    }
+
+    if (!status) {
+      setErrorMessage("Selecione o status do cliente.");
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    const isEditing = modalMode === "edit";
+    const clientId = editingClientId;
+
+    const clientPayload = {
+      nome,
+      telefone: telefone || null,
+      email: email || null,
+      cidade: cidade || null,
+      status,
+      ...(isEditing ? { updated_at: new Date().toISOString() } : {}),
+    };
+
+    const response =
+      isEditing && clientId !== null
+        ? await supabase
+            .from("clientes")
+            .update(clientPayload)
+            .eq("id", clientId)
+            .select("id")
+            .single()
+        : await supabase
+            .from("clientes")
+            .insert(clientPayload)
+            .select("id")
+            .single();
+
+    setIsSaving(false);
+
+    if (response.error) {
+      setErrorMessage(
+        isEditing
+          ? "Nao foi possivel atualizar o cliente agora. Tente novamente."
+          : "Nao foi possivel salvar o cliente agora. Tente novamente."
+      );
+      return;
+    }
+
+    if (isEditing && !response.data?.id) {
+      setErrorMessage("Nao foi possivel identificar o cliente atualizado.");
+      return;
+    }
+
+    closeModal();
+    setSuccessMessage(
+      isEditing
+        ? "Cliente atualizado com sucesso."
+        : "Cliente salvo com sucesso."
+    );
+    router.refresh();
+  }
+
+  async function handleDelete(client: Cliente) {
+    const shouldDelete = window.confirm("Tem certeza que deseja excluir?");
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setDeletingClientId(client.id);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    const { count: linkedServicesCount, error: linkedServicesError } = await supabase
+      .from("servicos")
+      .select("id", { count: "exact", head: true })
+      .eq("cliente_id", client.id);
+
+    if (linkedServicesError) {
+      setDeletingClientId(null);
+      setErrorMessage(
+        "Nao foi possivel verificar os servicos vinculados a este cliente."
+      );
+      return;
+    }
+
+    if ((linkedServicesCount ?? 0) > 0) {
+      setDeletingClientId(null);
+      setErrorMessage(
+        "Nao e possivel excluir este cliente porque ele possui servicos vinculados."
+      );
+      return;
+    }
+
+    const { error } = await supabase.from("clientes").delete().eq("id", client.id);
+
+    setDeletingClientId(null);
+
+    if (error) {
+      setErrorMessage("Nao foi possivel excluir o cliente agora. Tente novamente.");
+      return;
+    }
+
+    setSuccessMessage("Cliente excluido com sucesso.");
+    router.refresh();
+  }
+
+  return (
+    <>
+      <AppShell
+        title="Clientes"
+        description="Lista de clientes sincronizada com os dados reais do Supabase."
+        currentPath="/clientes"
+        action={
+          <button
+            type="button"
+            onClick={openModal}
+            className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+          >
+            Novo cliente
+          </button>
+        }
+      >
+        {successMessage ? (
+          <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {successMessage}
+          </div>
+        ) : null}
+
+        <div className="mb-5">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Buscar por nome, email, telefone ou cidade"
+            className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+          />
+        </div>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+          {clients.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <h2 className="text-lg font-semibold text-[#17352b]">
+                Nenhum cliente cadastrado
+              </h2>
+              <p className="mt-2 text-sm text-slate-500">
+                Quando houver registros na tabela clientes, eles aparecerao aqui.
+              </p>
+            </div>
+          ) : filteredClients.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <h2 className="text-lg font-semibold text-[#17352b]">
+                Nenhum cliente encontrado
+              </h2>
+              <p className="mt-2 text-sm text-slate-500">
+                Tente buscar por outro nome, email, telefone ou cidade.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Nome
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Telefone
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Email
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Cidade
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Acoes
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredClients.map((client) => (
+                    <tr key={client.id} className="hover:bg-slate-50/80">
+                      <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                        {client.nome}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {client.telefone ?? "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {client.email ?? "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {client.cidade ?? "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
+                            client.status
+                          )}`}
+                        >
+                          {client.status ?? "Sem status"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right text-sm">
+                        <div className="flex justify-end gap-2">
+                          <Link
+                            href={`/clientes/${client.id}`}
+                            className="inline-flex items-center justify-center rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                          >
+                            Ver detalhes
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(client)}
+                            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(client)}
+                            disabled={deletingClientId === client.id}
+                            className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {deletingClientId === client.id ? "Excluindo..." : "Excluir"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </AppShell>
+
+      {isModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-8">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="shrink-0 border-b border-slate-200 px-6 py-5">
+              <h2 className="text-xl font-semibold text-[#17352b]">
+                {modalMode === "edit" ? "Editar cliente" : "Novo cliente"}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {modalMode === "edit"
+                  ? "Atualize os dados do cliente selecionado."
+                  : "Preencha os campos abaixo para cadastrar um novo cliente."}
+              </p>
+            </div>
+
+            <form
+              className="flex min-h-0 flex-1 flex-col"
+              onSubmit={handleSubmit}
+            >
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+                <div className="grid gap-5 sm:grid-cols-2">
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                  Nome
+                  <input
+                    type="text"
+                    value={formData.nome}
+                    onChange={(event) => updateField("nome", event.target.value)}
+                    placeholder="Digite o nome do cliente"
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Telefone
+                  <input
+                    type="text"
+                    value={formData.telefone}
+                    onChange={(event) =>
+                      updateField("telefone", event.target.value)
+                    }
+                    placeholder="(00) 00000-0000"
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Email
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(event) =>
+                      updateField("email", event.target.value)
+                    }
+                    placeholder="cliente@empresa.com"
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Cidade
+                  <input
+                    type="text"
+                    value={formData.cidade}
+                    onChange={(event) => updateField("cidade", event.target.value)}
+                    placeholder="Cidade - UF"
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  />
+                </label>
+
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    Status
+                    <select
+                      value={formData.status}
+                      onChange={(event) => updateField("status", event.target.value)}
+                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    >
+                      {CLIENT_STATUS_OPTIONS.map((statusOption) => (
+                        <option key={statusOption} value={statusOption}>
+                          {statusOption}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                {errorMessage ? (
+                  <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {errorMessage}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="shrink-0 border-t border-slate-200 bg-white px-6 py-5">
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={isSaving}
+                  className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+                >
+                  {isSaving ? "Salvando..." : "Salvar"}
+                </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}

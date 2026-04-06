@@ -1,0 +1,840 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { AppShell } from "../components/app-shell";
+import { supabase } from "../../lib/supabase";
+import { SERVICE_STATUS_OPTIONS } from "./status-options";
+import type { ClienteOption, Servico, ServicoFinanceiro } from "./types";
+
+type ServicosViewProps = {
+  services: Servico[];
+  clients: ClienteOption[];
+  financialEntries: ServicoFinanceiro[];
+};
+
+type ModalMode = "create" | "edit";
+
+type FormData = {
+  cliente_id: string;
+  nome_servico: string;
+  cidade: string;
+  valor: string;
+  prazo_final: string;
+  observacoes: string;
+  status: string;
+};
+
+const initialFormData: FormData = {
+  cliente_id: "",
+  nome_servico: "",
+  cidade: "",
+  valor: "",
+  prazo_final: "",
+  observacoes: "",
+  status: SERVICE_STATUS_OPTIONS[0],
+};
+
+function getStatusClassName(status: string | null) {
+  const normalizedStatus = status?.toLowerCase();
+
+  if (normalizedStatus === "concluído" || normalizedStatus === "concluido") {
+    return "bg-emerald-50 text-emerald-700";
+  }
+
+  if (normalizedStatus === "proposta") {
+    return "bg-amber-50 text-amber-700";
+  }
+
+  if (normalizedStatus === "protocolado") {
+    return "bg-violet-50 text-violet-700";
+  }
+
+  if (normalizedStatus === "entregue") {
+    return "bg-teal-50 text-teal-700";
+  }
+
+  if (normalizedStatus === "cancelado") {
+    return "bg-rose-50 text-rose-700";
+  }
+
+  return "bg-sky-50 text-sky-700";
+}
+
+function formatCurrency(value: number | string | null) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  const numericValue =
+    typeof value === "number"
+      ? value
+      : Number(String(value).replace(",", "."));
+
+  if (Number.isNaN(numericValue)) {
+    return String(value);
+  }
+
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(numericValue);
+}
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("pt-BR").format(date);
+}
+
+function normalizeText(value: string | null) {
+  return (
+    value
+      ?.normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase() ?? ""
+  );
+}
+
+function isPastDue(service: Servico) {
+  if (!service.prazo_final) {
+    return false;
+  }
+
+  const normalizedStatus = normalizeText(service.status);
+  const isClosedStatus =
+    normalizedStatus === "entregue" ||
+    normalizedStatus === "concluído" ||
+    normalizedStatus === "concluido" ||
+    normalizedStatus === "cancelado";
+
+  if (isClosedStatus) {
+    return false;
+  }
+
+  const deadline = new Date(service.prazo_final);
+
+  if (Number.isNaN(deadline.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  deadline.setHours(0, 0, 0, 0);
+
+  return deadline < today;
+}
+
+function getFinancialStatusClassName(status: string | null) {
+  const normalizedStatus = normalizeText(status);
+
+  if (normalizedStatus === "recebido" || normalizedStatus === "pago") {
+    return "bg-emerald-50 text-emerald-700";
+  }
+
+  if (normalizedStatus === "pendente") {
+    return "bg-amber-50 text-amber-700";
+  }
+
+  if (normalizedStatus === "vencido") {
+    return "bg-rose-50 text-rose-700";
+  }
+
+  return "bg-slate-100 text-slate-700";
+}
+
+export function ServicosView({
+  services,
+  clients,
+  financialEntries,
+}: ServicosViewProps) {
+  const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedFinanceService, setSelectedFinanceService] =
+    useState<Servico | null>(null);
+  const [modalMode, setModalMode] = useState<ModalMode>("create");
+  const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
+  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingServiceId, setDeletingServiceId] = useState<number | null>(
+    null
+  );
+  const normalizedSearchTerm = normalizeText(searchTerm);
+  const filteredServices = services.filter((service) => {
+    const matchesStatus = !statusFilter || service.status === statusFilter;
+
+    if (!matchesStatus) {
+      return false;
+    }
+
+    if (!normalizedSearchTerm) {
+      return true;
+    }
+
+    const searchableFields = [
+      service.cliente?.nome,
+      service.nome_servico,
+      service.cidade,
+      service.status,
+    ];
+
+    return searchableFields.some((field) =>
+      normalizeText(field).includes(normalizedSearchTerm)
+    );
+  });
+  const selectedServiceEntries = selectedFinanceService
+    ? financialEntries.filter(
+        (entry) => String(entry.servico_id) === String(selectedFinanceService.id)
+      )
+    : [];
+  const receitaTotal = selectedServiceEntries
+    .filter((entry) => entry.tipo?.toLowerCase() === "receita")
+    .reduce((total, entry) => total + Number(formatCurrencyValue(entry.valor)), 0);
+  const despesaTotal = selectedServiceEntries
+    .filter((entry) => entry.tipo?.toLowerCase() === "despesa")
+    .reduce((total, entry) => total + Number(formatCurrencyValue(entry.valor)), 0);
+
+  function openModal() {
+    setModalMode("create");
+    setEditingServiceId(null);
+    setFormData(initialFormData);
+    setErrorMessage("");
+    setIsModalOpen(true);
+  }
+
+  function openFinancialModal(service: Servico) {
+    setSelectedFinanceService(service);
+  }
+
+  function openEditModal(service: Servico) {
+    setModalMode("edit");
+    setEditingServiceId(service.id);
+    setFormData({
+      cliente_id: service.cliente_id ? String(service.cliente_id) : "",
+      nome_servico: service.nome_servico ?? "",
+      cidade: service.cidade ?? "",
+      valor:
+        service.valor === null || service.valor === undefined
+          ? ""
+          : String(service.valor),
+      prazo_final: service.prazo_final ? service.prazo_final.slice(0, 10) : "",
+      observacoes: service.observacoes ?? "",
+      status: service.status ?? SERVICE_STATUS_OPTIONS[0],
+    });
+    setErrorMessage("");
+    setIsModalOpen(true);
+  }
+
+  function closeModal() {
+    setIsModalOpen(false);
+    setModalMode("create");
+    setEditingServiceId(null);
+    setErrorMessage("");
+    setFormData(initialFormData);
+  }
+
+  function closeFinancialModal() {
+    setSelectedFinanceService(null);
+  }
+
+  function updateField(field: keyof FormData, value: string) {
+    setFormData((currentData) => ({
+      ...currentData,
+      [field]: value,
+    }));
+  }
+
+  function formatCurrencyValue(value: number | string | null) {
+    if (value === null || value === undefined || value === "") {
+      return 0;
+    }
+
+    const numericValue =
+      typeof value === "number"
+        ? value
+        : Number(String(value).replace(",", "."));
+
+    return Number.isNaN(numericValue) ? 0 : numericValue;
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const clienteId = formData.cliente_id.trim();
+    const nomeServico = formData.nome_servico.trim();
+    const cidade = formData.cidade.trim();
+    const valor = formData.valor.trim();
+    const prazoFinal = formData.prazo_final.trim();
+    const observacoes = formData.observacoes.trim();
+    const status = formData.status.trim();
+
+    if (!clienteId) {
+      setErrorMessage("Selecione um cliente.");
+      return;
+    }
+
+    if (!nomeServico) {
+      setErrorMessage("Informe o nome do servico.");
+      return;
+    }
+
+    if (!status) {
+      setErrorMessage("Selecione o status do servico.");
+      return;
+    }
+
+    const parsedClienteId = Number(clienteId);
+
+    if (Number.isNaN(parsedClienteId)) {
+      setErrorMessage("Cliente invalido.");
+      return;
+    }
+
+    let parsedValor: number | null = null;
+
+    if (valor) {
+      parsedValor = Number(valor.replace(",", "."));
+
+      if (Number.isNaN(parsedValor)) {
+        setErrorMessage("Informe um valor numerico valido.");
+        return;
+      }
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+    
+    const isEditing = modalMode === "edit";
+    const serviceId = editingServiceId;
+
+    const servicePayload = {
+      cliente_id: parsedClienteId,
+      nome_servico: nomeServico,
+      cidade: cidade || null,
+      valor: parsedValor,
+      prazo_final: prazoFinal || null,
+      observacoes: observacoes || null,
+      status,
+      ...(isEditing ? { updated_at: new Date().toISOString() } : {}),
+    };
+
+    const response =
+      isEditing && serviceId !== null
+        ? await supabase
+            .from("servicos")
+            .update(servicePayload)
+            .eq("id", serviceId)
+            .select("id")
+            .single()
+        : await supabase
+            .from("servicos")
+            .insert(servicePayload)
+            .select("id")
+            .single();
+
+    setIsSaving(false);
+
+    if (response.error) {
+      setErrorMessage(
+        isEditing
+          ? "Nao foi possivel atualizar o servico agora. Tente novamente."
+          : "Nao foi possivel salvar o servico agora. Tente novamente."
+      );
+      return;
+    }
+
+    if (isEditing && !response.data?.id) {
+      setErrorMessage("Nao foi possivel identificar o servico atualizado.");
+      return;
+    }
+
+    closeModal();
+    router.refresh();
+  }
+
+  async function handleDelete(service: Servico) {
+    const shouldDelete = window.confirm("Tem certeza que deseja excluir?");
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setDeletingServiceId(service.id);
+    setErrorMessage("");
+
+    const { count: linkedFinancialEntriesCount, error: linkedFinancialEntriesError } =
+      await supabase
+        .from("financeiro")
+        .select("id", { count: "exact", head: true })
+        .eq("servico_id", service.id);
+
+    if (linkedFinancialEntriesError) {
+      setDeletingServiceId(null);
+      setErrorMessage(
+        "Nao foi possivel verificar os lancamentos financeiros vinculados a este servico."
+      );
+      return;
+    }
+
+    if ((linkedFinancialEntriesCount ?? 0) > 0) {
+      setDeletingServiceId(null);
+      setErrorMessage(
+        "Nao e possivel excluir este servico porque ele possui lancamentos financeiros vinculados."
+      );
+      return;
+    }
+
+    const { error } = await supabase.from("servicos").delete().eq("id", service.id);
+
+    setDeletingServiceId(null);
+
+    if (error) {
+      setErrorMessage("Nao foi possivel excluir o servico agora. Tente novamente.");
+      return;
+    }
+
+    router.refresh();
+  }
+
+  return (
+    <>
+      <AppShell
+        title="Servicos"
+        description="Lista de servicos sincronizada com os dados reais do Supabase."
+        currentPath="/servicos"
+        action={
+          <button
+            type="button"
+            onClick={openModal}
+            className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+          >
+            Novo serviço
+          </button>
+        }
+      >
+        <div className="mb-5">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Buscar por cliente, serviço, cidade ou status"
+            className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+          />
+        </div>
+
+        <div className="mb-5">
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+          >
+            <option value="">Todos os status</option>
+            {SERVICE_STATUS_OPTIONS.filter(
+              (statusOption) => statusOption !== "Entregue"
+            ).map((statusOption) => (
+              <option key={statusOption} value={statusOption}>
+                {statusOption}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+          {services.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <h2 className="text-lg font-semibold text-[#17352b]">
+                Nenhum serviço cadastrado
+              </h2>
+              <p className="mt-2 text-sm text-slate-500">
+                Quando houver registros na tabela serviços, eles aparecerão aqui.
+              </p>
+            </div>
+          ) : filteredServices.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <h2 className="text-lg font-semibold text-[#17352b]">
+                Nenhum serviço encontrado
+              </h2>
+              <p className="mt-2 text-sm text-slate-500">
+                Tente selecionar outro status para filtrar a lista.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Nome do serviço
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Cidade
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Valor
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Prazo
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Acoes
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredServices.map((service) => (
+                    <tr
+                      key={service.id}
+                      className={`hover:bg-slate-50/80 ${
+                        isPastDue(service) ? "bg-rose-50/70" : ""
+                      }`}
+                    >
+                      <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                        {service.cliente?.nome ?? "Cliente não encontrado"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        <Link
+                          href={`/servicos/${service.id}`}
+                          className="font-medium text-[#17352b] transition hover:text-[#204638]"
+                        >
+                          {service.nome_servico ?? "-"}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {service.cidade ?? "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {formatCurrency(service.valor)}
+                      </td>
+                      <td
+                        className={`px-6 py-4 text-sm ${
+                          isPastDue(service)
+                            ? "font-medium text-rose-700"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        {formatDate(service.prazo_final)}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
+                            service.status
+                          )}`}
+                        >
+                          {service.status ?? "Sem status"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right text-sm">
+                        <div className="flex justify-end gap-2">
+                          <Link
+                            href={`/servicos/${service.id}`}
+                            className="inline-flex items-center justify-center rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                          >
+                            Ver detalhes
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => openFinancialModal(service)}
+                            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                          >
+                            Financeiro
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(service)}
+                            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(service)}
+                            disabled={deletingServiceId === service.id}
+                            className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {deletingServiceId === service.id ? "Excluindo..." : "Excluir"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </AppShell>
+
+      {isModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-8">
+          <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="shrink-0 border-b border-slate-200 px-6 py-5">
+              <h2 className="text-xl font-semibold text-[#17352b]">
+                {modalMode === "edit" ? "Editar serviço" : "Novo serviço"}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {modalMode === "edit"
+                  ? "Atualize os dados do serviço selecionado."
+                  : "Preencha os campos abaixo para cadastrar um novo serviço."}
+              </p>
+            </div>
+
+            <form
+              className="flex min-h-0 flex-1 flex-col"
+              onSubmit={handleSubmit}
+            >
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+                <div className="grid gap-5 sm:grid-cols-2">
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                  Cliente
+                  <select
+                    value={formData.cliente_id}
+                    onChange={(event) =>
+                      updateField("cliente_id", event.target.value)
+                    }
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  >
+                    <option value="">Selecione um cliente</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.nome}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                  Nome do serviço
+                  <input
+                    type="text"
+                    value={formData.nome_servico}
+                    onChange={(event) =>
+                      updateField("nome_servico", event.target.value)
+                    }
+                    placeholder="Digite o nome do serviço"
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Cidade
+                  <input
+                    type="text"
+                    value={formData.cidade}
+                    onChange={(event) => updateField("cidade", event.target.value)}
+                    placeholder="Cidade - UF"
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Valor
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.valor}
+                    onChange={(event) => updateField("valor", event.target.value)}
+                    placeholder="0,00"
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Prazo
+                  <input
+                    type="date"
+                    value={formData.prazo_final}
+                    onChange={(event) =>
+                      updateField("prazo_final", event.target.value)
+                    }
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                  Observações
+                  <textarea
+                    value={formData.observacoes}
+                    onChange={(event) =>
+                      updateField("observacoes", event.target.value)
+                    }
+                    rows={4}
+                    placeholder="Digite observacoes tecnicas e operacionais"
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  />
+                </label>
+
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    Status
+                    <select
+                      value={formData.status}
+                      onChange={(event) => updateField("status", event.target.value)}
+                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    >
+                      {SERVICE_STATUS_OPTIONS.map((statusOption) => (
+                        <option key={statusOption} value={statusOption}>
+                          {statusOption}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                {errorMessage ? (
+                  <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {errorMessage}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="shrink-0 border-t border-slate-200 bg-white px-6 py-5">
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={isSaving}
+                  className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+                >
+                  {isSaving ? "Salvando..." : "Salvar"}
+                </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {selectedFinanceService ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-8">
+          <div className="w-full max-w-4xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+              <div>
+                <h2 className="text-xl font-semibold text-[#17352b]">
+                  Financeiro do serviço
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {selectedFinanceService.nome_servico ?? `Servico ${selectedFinanceService.id}`}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeFinancialModal}
+                className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="space-y-6 px-6 py-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <article className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+                  <p className="text-sm font-medium text-slate-500">Receitas</p>
+                  <strong className="mt-3 block text-2xl font-semibold text-[#17352b]">
+                    {formatCurrency(receitaTotal)}
+                  </strong>
+                </article>
+
+                <article className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+                  <p className="text-sm font-medium text-slate-500">Despesas</p>
+                  <strong className="mt-3 block text-2xl font-semibold text-[#17352b]">
+                    {formatCurrency(despesaTotal)}
+                  </strong>
+                </article>
+              </div>
+
+              <section className="overflow-hidden rounded-2xl border border-slate-200">
+                {selectedServiceEntries.length === 0 ? (
+                  <div className="px-6 py-12 text-center">
+                    <h3 className="text-lg font-semibold text-[#17352b]">
+                      Nenhum lançamento vinculado
+                    </h3>
+                    <p className="mt-2 text-sm text-slate-500">
+                      Este serviço ainda não possui receitas ou despesas cadastradas.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-slate-200">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            Tipo
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            Descrição
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            Valor
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            Data
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {selectedServiceEntries.map((entry) => (
+                          <tr key={entry.id} className="hover:bg-slate-50/80">
+                            <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                              {entry.tipo ?? "-"}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-500">
+                              {entry.descricao ?? "-"}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-500">
+                              {formatCurrency(entry.valor)}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-500">
+                              {formatDate(entry.data)}
+                            </td>
+                            <td className="px-6 py-4 text-sm">
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getFinancialStatusClassName(
+                                  entry.status
+                                )}`}
+                              >
+                                {entry.status ?? "-"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
