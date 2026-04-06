@@ -9,6 +9,12 @@ type FinancialEntry = {
   data: string | null;
 };
 
+type TaskDashboardEntry = {
+  id: number;
+  data_limite: string | null;
+  status: string | null;
+};
+
 type ServiceDashboardEntry = {
   id: number;
   nome_servico: string | null;
@@ -122,6 +128,28 @@ function isUpcomingService(entry: ServiceDashboardEntry) {
   return deadline >= today;
 }
 
+function isPastDueTask(entry: TaskDashboardEntry) {
+  if (!entry.data_limite) {
+    return false;
+  }
+
+  if (normalizeText(entry.status) === "concluida") {
+    return false;
+  }
+
+  const deadline = new Date(entry.data_limite);
+
+  if (Number.isNaN(deadline.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  deadline.setHours(0, 0, 0, 0);
+
+  return deadline < today;
+}
+
 function getDaysUntilDeadline(value: string | null) {
   if (!value) {
     return null;
@@ -166,6 +194,7 @@ async function getDashboardData() {
     servicosResult,
     servicesResult,
     financeiroResult,
+    tasksResult,
   ] = await Promise.all([
     supabase.from("clientes").select("*", { count: "exact", head: true }),
     supabase.from("servicos").select("*", { count: "exact", head: true }),
@@ -173,6 +202,7 @@ async function getDashboardData() {
       .from("servicos")
       .select("id, nome_servico, prazo_final, status, cliente:clientes(nome)"),
     supabase.from("financeiro").select("tipo, valor, status, data"),
+    supabase.from("tarefas").select("id, data_limite, status"),
   ]);
 
   if (clientesResult.error) {
@@ -194,10 +224,16 @@ async function getDashboardData() {
     );
   }
 
+  if (tasksResult.error) {
+    console.error("Erro ao buscar tarefas do painel:", tasksResult.error.message);
+  }
+
   const services = (servicesResult.data ?? []) as ServiceDashboardEntry[];
   const financialEntries = (financeiroResult.data ?? []) as FinancialEntry[];
+  const tasks = (tasksResult.data ?? []) as TaskDashboardEntry[];
 
   const servicosAtrasados = services.filter(isPastDueService).length;
+  const tarefasAtrasadas = tasks.filter(isPastDueTask).length;
 
   const receitasPendentes = financialEntries
     .filter(
@@ -225,6 +261,7 @@ async function getDashboardData() {
     totalClientes: clientesResult.count ?? 0,
     totalServicos: servicosResult.count ?? 0,
     servicosAtrasados,
+    tarefasAtrasadas,
     receitasPendentes,
     contasVencidas,
     proximosPrazos,
@@ -252,6 +289,11 @@ export default async function Home() {
       detail: "Serviços com prazo final vencido e ainda abertos",
     },
     {
+      title: "Tarefas atrasadas",
+      value: String(dashboardData.tarefasAtrasadas),
+      detail: 'Tarefas com prazo vencido e status diferente de "Concluída"',
+    },
+    {
       title: "Receitas pendentes",
       value: formatCurrency(dashboardData.receitasPendentes),
       detail: 'Receitas com status "Pendente"',
@@ -270,7 +312,7 @@ export default async function Home() {
       currentPath="/"
     >
       <div className="space-y-6">
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-6">
           {summaryCards.map((card) => (
             <article
               key={card.title}
