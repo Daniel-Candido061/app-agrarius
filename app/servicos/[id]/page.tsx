@@ -5,6 +5,7 @@ import { AppShell } from "../../components/app-shell";
 import { supabase } from "../../../lib/supabase";
 import type { Servico, ServicoFinanceiro } from "../types";
 import type { Tarefa } from "../../tarefas/types";
+import { ServiceTasksSection } from "./service-tasks-section";
 
 function formatCurrency(value: number | string | null) {
   if (value === null || value === undefined || value === "") {
@@ -118,52 +119,6 @@ function getEntryTypeClassName(type: string | null) {
 
   if (normalizedType === "despesa") {
     return "bg-rose-50 text-rose-700";
-  }
-
-  return "bg-slate-100 text-slate-700";
-}
-
-function normalizeText(value: string | null) {
-  return (
-    value
-      ?.normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim()
-      .toLowerCase() ?? ""
-  );
-}
-
-function getTaskStatusClassName(status: string | null) {
-  const normalizedStatus = normalizeText(status);
-
-  if (normalizedStatus === "pendente") {
-    return "bg-amber-50 text-amber-700";
-  }
-
-  if (normalizedStatus === "em andamento") {
-    return "bg-sky-50 text-sky-700";
-  }
-
-  if (normalizedStatus === "concluida") {
-    return "bg-emerald-50 text-emerald-700";
-  }
-
-  return "bg-slate-100 text-slate-700";
-}
-
-function getTaskPriorityClassName(priority: string | null) {
-  const normalizedPriority = normalizeText(priority);
-
-  if (normalizedPriority === "alta") {
-    return "bg-rose-50 text-rose-700";
-  }
-
-  if (normalizedPriority === "media") {
-    return "bg-amber-50 text-amber-700";
-  }
-
-  if (normalizedPriority === "baixa") {
-    return "bg-emerald-50 text-emerald-700";
   }
 
   return "bg-slate-100 text-slate-700";
@@ -389,84 +344,7 @@ export default async function ServicoDetalhesPage({
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-          <div className="border-b border-slate-200 px-6 py-5">
-            <div>
-              <h3 className="text-lg font-semibold text-[#17352b]">Tarefas do serviço</h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Atividades vinculadas a este serviço, ordenadas por data limite.
-              </p>
-            </div>
-          </div>
-
-          {tasks.length === 0 ? (
-            <div className="px-6 py-16 text-center">
-              <h2 className="text-lg font-semibold text-[#17352b]">
-                Nenhuma tarefa cadastrada para este serviço
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                Quando houver tarefas vinculadas, elas aparecerão aqui.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Título
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Responsável
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Prioridade
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Status
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Data limite
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {tasks.map((task) => (
-                    <tr key={task.id} className="hover:bg-slate-50/80">
-                      <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                        {task.titulo ?? "-"}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        {task.responsavel ?? "-"}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getTaskPriorityClassName(
-                            task.prioridade
-                          )}`}
-                        >
-                          {task.prioridade ?? "Sem prioridade"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getTaskStatusClassName(
-                            task.status
-                          )}`}
-                        >
-                          {task.status ?? "Sem status"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        {formatDate(task.data_limite)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+        <ServiceTasksSection serviceId={serviceId} tasks={tasks} />
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
           <div className="border-b border-slate-200 px-6 py-5">
