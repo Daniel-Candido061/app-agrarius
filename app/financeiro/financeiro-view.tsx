@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
+import { formatDateOnly, getDateInputValue } from "../../lib/date-utils";
 import { supabase } from "../../lib/supabase";
 import { getCategoryOptionsByType } from "./category-options";
 import { FINANCIAL_STATUS_OPTIONS } from "./status-options";
@@ -53,20 +54,6 @@ function formatCurrency(value: number | string | null) {
     style: "currency",
     currency: "BRL",
   }).format(numericValue);
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("pt-BR").format(date);
 }
 
 function getNumericValue(value: number | string | null) {
@@ -200,7 +187,7 @@ export function FinanceiroView({
         entry.valor === null || entry.valor === undefined
           ? ""
           : String(entry.valor),
-      data: entry.data ? entry.data.slice(0, 10) : "",
+      data: getDateInputValue(entry.data),
       servico_id:
         entry.servico_id === null || entry.servico_id === undefined
           ? ""
@@ -483,7 +470,7 @@ export function FinanceiroView({
                           {formatCurrency(entry.valor)}
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-500">
-                          {formatDate(entry.data)}
+                          {formatDateOnly(entry.data)}
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-500">
                           {serviceNameById.get(String(entry.servico_id)) ??

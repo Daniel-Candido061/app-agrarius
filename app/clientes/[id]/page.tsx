@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { AppShell } from "../../components/app-shell";
+import { formatDateOnly } from "../../../lib/date-utils";
 import { supabase } from "../../../lib/supabase";
 import type { Cliente, ClienteServico } from "../types";
 
@@ -23,20 +24,6 @@ function formatCurrency(value: number | string | null) {
     style: "currency",
     currency: "BRL",
   }).format(numericValue);
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("pt-BR").format(date);
 }
 
 function getStatusClassName(status: string | null) {
@@ -276,7 +263,7 @@ export default async function ClienteDetalhesPage({
                         {formatCurrency(service.valor)}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {formatDate(service.prazo_final)}
+                        {formatDateOnly(service.prazo_final)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatDateOnly, isBeforeTodayDateOnly } from "../../../lib/date-utils";
 import { supabase } from "../../../lib/supabase";
-import { formatDateOnly, isBeforeTodayDateOnly } from "../../tarefas/date-utils";
 import { TASK_PRIORITY_OPTIONS } from "../../tarefas/priority-options";
 import { TASK_STATUS_OPTIONS } from "../../tarefas/status-options";
 import type { Tarefa } from "../../tarefas/types";

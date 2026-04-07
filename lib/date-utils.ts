@@ -63,6 +63,10 @@ export function getDateInputValue(value: string | null) {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
+export function getDateOnlyTime(value: string | null) {
+  return getLocalDateOnly(value)?.getTime() ?? Number.POSITIVE_INFINITY;
+}
+
 export function getDaysUntilDateOnly(value: string | null) {
   const date = getLocalDateOnly(value);
 
@@ -80,6 +84,12 @@ export function isBeforeTodayDateOnly(value: string | null) {
   const daysUntilDate = getDaysUntilDateOnly(value);
 
   return daysUntilDate !== null && daysUntilDate < 0;
+}
+
+export function isTodayOrFutureDateOnly(value: string | null) {
+  const daysUntilDate = getDaysUntilDateOnly(value);
+
+  return daysUntilDate !== null && daysUntilDate >= 0;
 }
 
 export function isBetweenTodayAndFutureDays(value: string | null, days: number) {

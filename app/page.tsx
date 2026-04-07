@@ -1,9 +1,13 @@
 import { connection } from "next/server";
 import { AppShell } from "./components/app-shell";
 import {
+  formatDateOnly,
+  getDateOnlyTime,
+  getDaysUntilDateOnly,
   isBeforeTodayDateOnly,
   isBetweenTodayAndFutureDays,
-} from "./tarefas/date-utils";
+  isTodayOrFutureDateOnly,
+} from "../lib/date-utils";
 import { supabase } from "../lib/supabase";
 
 type FinancialEntry = {
@@ -39,20 +43,6 @@ function formatCurrency(value: number) {
     style: "currency",
     currency: "BRL",
   }).format(value);
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("pt-BR").format(date);
 }
 
 function normalizeText(value: string | null) {
@@ -101,17 +91,7 @@ function isPastDueService(entry: ServiceDashboardEntry) {
     return false;
   }
 
-  const deadline = new Date(entry.prazo_final);
-
-  if (Number.isNaN(deadline.getTime())) {
-    return false;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  deadline.setHours(0, 0, 0, 0);
-
-  return deadline < today;
+  return isBeforeTodayDateOnly(entry.prazo_final);
 }
 
 function isUpcomingService(entry: ServiceDashboardEntry) {
@@ -119,17 +99,7 @@ function isUpcomingService(entry: ServiceDashboardEntry) {
     return false;
   }
 
-  const deadline = new Date(entry.prazo_final);
-
-  if (Number.isNaN(deadline.getTime())) {
-    return false;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  deadline.setHours(0, 0, 0, 0);
-
-  return deadline >= today;
+  return isTodayOrFutureDateOnly(entry.prazo_final);
 }
 
 function isPastDueTask(entry: TaskDashboardEntry) {
@@ -161,19 +131,7 @@ function getDaysUntilDeadline(value: string | null) {
     return null;
   }
 
-  const deadline = new Date(value);
-
-  if (Number.isNaN(deadline.getTime())) {
-    return null;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  deadline.setHours(0, 0, 0, 0);
-
-  const millisecondsPerDay = 1000 * 60 * 60 * 24;
-
-  return Math.round((deadline.getTime() - today.getTime()) / millisecondsPerDay);
+  return getDaysUntilDateOnly(value);
 }
 
 function getDeadlineLabel(value: string | null) {
@@ -277,20 +235,20 @@ async function getDashboardData() {
   const proximosPrazos = services
     .filter(isUpcomingService)
     .sort((firstService, secondService) => {
-      const firstDate = new Date(firstService.prazo_final ?? "").getTime();
-      const secondDate = new Date(secondService.prazo_final ?? "").getTime();
-
-      return firstDate - secondDate;
+      return (
+        getDateOnlyTime(firstService.prazo_final) -
+        getDateOnlyTime(secondService.prazo_final)
+      );
     })
     .slice(0, 5);
 
   const servicosUrgentes = services
     .filter(isPastDueService)
     .sort((firstService, secondService) => {
-      const firstDate = new Date(firstService.prazo_final ?? "").getTime();
-      const secondDate = new Date(secondService.prazo_final ?? "").getTime();
-
-      return firstDate - secondDate;
+      return (
+        getDateOnlyTime(firstService.prazo_final) -
+        getDateOnlyTime(secondService.prazo_final)
+      );
     })
     .slice(0, 4);
 
@@ -427,7 +385,7 @@ export default async function Home() {
                       Prazo final
                     </p>
                     <p className="mt-2 text-sm font-medium text-rose-700">
-                      {formatDate(service.prazo_final)}
+                      {formatDateOnly(service.prazo_final)}
                     </p>
                   </div>
                 </article>
@@ -486,7 +444,7 @@ export default async function Home() {
                         {service.nome_servico ?? "-"}
                       </td>
                       <td className="px-4 py-4 text-sm text-slate-500">
-                        {formatDate(service.prazo_final)}
+                        {formatDateOnly(service.prazo_final)}
                       </td>
                       <td className="px-4 py-4 text-sm">
                         <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">

@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
-import { supabase } from "../../lib/supabase";
 import {
   formatDateOnly,
   getDateInputValue,
   isBeforeTodayDateOnly,
-} from "./date-utils";
+} from "../../lib/date-utils";
+import { supabase } from "../../lib/supabase";
 import { TASK_PRIORITY_OPTIONS } from "./priority-options";
 import { TASK_STATUS_OPTIONS } from "./status-options";
 import type { ServicoOption, Tarefa } from "./types";

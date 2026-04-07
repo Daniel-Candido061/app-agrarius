@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
+import {
+  formatDateOnly,
+  getDateInputValue,
+  isBeforeTodayDateOnly,
+} from "../../lib/date-utils";
 import { supabase } from "../../lib/supabase";
 import { SERVICE_STATUS_OPTIONS } from "./status-options";
 import type { ClienteOption, Servico, ServicoFinanceiro } from "./types";
@@ -82,20 +87,6 @@ function formatCurrency(value: number | string | null) {
   }).format(numericValue);
 }
 
-function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("pt-BR").format(date);
-}
-
 function normalizeText(value: string | null) {
   return (
     value
@@ -122,17 +113,7 @@ function isPastDue(service: Servico) {
     return false;
   }
 
-  const deadline = new Date(service.prazo_final);
-
-  if (Number.isNaN(deadline.getTime())) {
-    return false;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  deadline.setHours(0, 0, 0, 0);
-
-  return deadline < today;
+  return isBeforeTodayDateOnly(service.prazo_final);
 }
 
 function getFinancialStatusClassName(status: string | null) {
@@ -238,7 +219,7 @@ export function ServicosView({
         service.valor === null || service.valor === undefined
           ? ""
           : String(service.valor),
-      prazo_final: service.prazo_final ? service.prazo_final.slice(0, 10) : "",
+      prazo_final: getDateInputValue(service.prazo_final),
       observacoes: service.observacoes ?? "",
       status: service.status ?? SERVICE_STATUS_OPTIONS[0],
     });
@@ -539,7 +520,7 @@ export function ServicosView({
                             : "text-slate-500"
                         }`}
                       >
-                        {formatDate(service.prazo_final)}
+                        {formatDateOnly(service.prazo_final)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span
@@ -821,7 +802,7 @@ export function ServicosView({
                               {formatCurrency(entry.valor)}
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-500">
-                              {formatDate(entry.data)}
+                              {formatDateOnly(entry.data)}
                             </td>
                             <td className="px-6 py-4 text-sm">
                               <span
