@@ -228,36 +228,37 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       return;
     }
 
+    const isEditing = modalMode === "edit";
+    const taskId = editingTaskId;
+    const parsedServicoId = Number(servicoId);
+
+    if (isEditing && taskId === null) {
+      setErrorMessage("Nao foi possivel identificar a tarefa para edicao.");
+      return;
+    }
+
+    if (Number.isNaN(parsedServicoId)) {
+      setErrorMessage("Servico invalido.");
+      return;
+    }
+
     setIsSaving(true);
     setErrorMessage("");
     setSuccessMessage("");
 
-    const isEditing = modalMode === "edit";
-    const taskId = editingTaskId;
     const taskPayload = {
       titulo,
-      servico_id: Number(servicoId),
+      servico_id: parsedServicoId,
       responsavel: responsavel || null,
       data_limite: dataLimite || null,
       prioridade,
       status,
       observacao: observacao || null,
-      ...(isEditing ? { updated_at: new Date().toISOString() } : {}),
     };
 
-    const response =
-      isEditing && taskId !== null
-        ? await supabase
-            .from("tarefas")
-            .update(taskPayload)
-            .eq("id", taskId)
-            .select("id")
-            .single()
-        : await supabase
-            .from("tarefas")
-            .insert(taskPayload)
-            .select("id")
-            .single();
+    const response = isEditing
+      ? await supabase.from("tarefas").update(taskPayload).eq("id", taskId)
+      : await supabase.from("tarefas").insert(taskPayload);
 
     setIsSaving(false);
 
