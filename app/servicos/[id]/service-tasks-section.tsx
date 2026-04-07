@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { formatDateOnly, isBeforeTodayDateOnly } from "../../tarefas/date-utils";
 import { TASK_PRIORITY_OPTIONS } from "../../tarefas/priority-options";
 import { TASK_STATUS_OPTIONS } from "../../tarefas/status-options";
 import type { Tarefa } from "../../tarefas/types";
@@ -38,20 +39,6 @@ function normalizeText(value: string | null) {
       .trim()
       .toLowerCase() ?? ""
   );
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("pt-BR").format(date);
 }
 
 function getTaskStatusClassName(status: string | null) {
@@ -99,17 +86,7 @@ function isOverdueTask(task: Tarefa) {
     return false;
   }
 
-  const deadline = new Date(task.data_limite);
-
-  if (Number.isNaN(deadline.getTime())) {
-    return false;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  deadline.setHours(0, 0, 0, 0);
-
-  return deadline < today;
+  return isBeforeTodayDateOnly(task.data_limite);
 }
 
 export function ServiceTasksSection({
@@ -291,7 +268,7 @@ export function ServiceTasksSection({
                           : "text-slate-500"
                       }`}
                     >
-                      {formatDate(task.data_limite)}
+                      {formatDateOnly(task.data_limite)}
                     </td>
                   </tr>
                 ))}

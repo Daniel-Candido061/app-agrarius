@@ -1,5 +1,9 @@
 import { connection } from "next/server";
 import { AppShell } from "./components/app-shell";
+import {
+  isBeforeTodayDateOnly,
+  isBetweenTodayAndFutureDays,
+} from "./tarefas/date-utils";
 import { supabase } from "../lib/supabase";
 
 type FinancialEntry = {
@@ -137,17 +141,7 @@ function isPastDueTask(entry: TaskDashboardEntry) {
     return false;
   }
 
-  const deadline = new Date(entry.data_limite);
-
-  if (Number.isNaN(deadline.getTime())) {
-    return false;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  deadline.setHours(0, 0, 0, 0);
-
-  return deadline < today;
+  return isBeforeTodayDateOnly(entry.data_limite);
 }
 
 function isUpcomingTask(entry: TaskDashboardEntry) {
@@ -159,20 +153,7 @@ function isUpcomingTask(entry: TaskDashboardEntry) {
     return false;
   }
 
-  const deadline = new Date(entry.data_limite);
-
-  if (Number.isNaN(deadline.getTime())) {
-    return false;
-  }
-
-  const today = new Date();
-  const nextSevenDays = new Date();
-  today.setHours(0, 0, 0, 0);
-  nextSevenDays.setHours(0, 0, 0, 0);
-  nextSevenDays.setDate(nextSevenDays.getDate() + 7);
-  deadline.setHours(0, 0, 0, 0);
-
-  return deadline >= today && deadline <= nextSevenDays;
+  return isBetweenTodayAndFutureDays(entry.data_limite, 7);
 }
 
 function getDaysUntilDeadline(value: string | null) {

@@ -4,6 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import { supabase } from "../../lib/supabase";
+import {
+  formatDateOnly,
+  getDateInputValue,
+  isBeforeTodayDateOnly,
+} from "./date-utils";
 import { TASK_PRIORITY_OPTIONS } from "./priority-options";
 import { TASK_STATUS_OPTIONS } from "./status-options";
 import type { ServicoOption, Tarefa } from "./types";
@@ -43,20 +48,6 @@ function normalizeText(value: string | null) {
       .trim()
       .toLowerCase() ?? ""
   );
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("pt-BR").format(date);
 }
 
 function getStatusClassName(status: string | null) {
@@ -104,17 +95,7 @@ function isOverdueTask(task: Tarefa) {
     return false;
   }
 
-  const deadline = new Date(task.data_limite);
-
-  if (Number.isNaN(deadline.getTime())) {
-    return false;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  deadline.setHours(0, 0, 0, 0);
-
-  return deadline < today;
+  return isBeforeTodayDateOnly(task.data_limite);
 }
 
 export function TarefasView({ tasks, services }: TarefasViewProps) {
@@ -172,7 +153,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
           ? ""
           : String(task.servico_id),
       responsavel: task.responsavel ?? "",
-      data_limite: task.data_limite ? task.data_limite.slice(0, 10) : "",
+      data_limite: getDateInputValue(task.data_limite),
       prioridade: task.prioridade ?? TASK_PRIORITY_OPTIONS[0],
       status: task.status ?? TASK_STATUS_OPTIONS[0],
       observacao: task.observacao ?? "",
@@ -415,7 +396,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                             : "text-slate-500"
                         }`}
                       >
-                        {formatDate(task.data_limite)}
+                        {formatDateOnly(task.data_limite)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span
