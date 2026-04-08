@@ -12,11 +12,11 @@ import {
   getPeriodLabel,
   getQuickPeriodValue,
   isDateInPeriod,
-  quickPeriodOptions,
   type QuickPeriodValue,
   type PeriodValue,
 } from "../../lib/period-utils";
 import { supabase } from "../../lib/supabase";
+import { DashboardTimeFilter } from "./dashboard-time-filter";
 
 type FinancialEntry = {
   tipo: string | null;
@@ -323,7 +323,16 @@ async function getDashboardData(
         getSimpleDateTime(secondService.prazo_final)
       );
     })
-    .slice(0, 5);
+    .slice(0, 5)
+    .map((service) => {
+      const valorContratado = getNumericValue(service.valor);
+      const recebido = receivedByServiceId.get(String(service.id)) ?? 0;
+
+      return {
+        ...service,
+        valorEmAberto: valorContratado - recebido,
+      };
+    });
 
   const servicosUrgentes = services
     .filter(isPastDueService)
@@ -452,11 +461,6 @@ export default async function Home({ searchParams }: DashboardPageProps) {
       detail: "Situação atual, sem filtro de período",
     },
     {
-      title: "Serviços não quitados",
-      value: String(dashboardData.servicosNaoQuitados),
-      detail: "Serviços com recebido menor que o contratado",
-    },
-    {
       title: "Serviços atrasados",
       value: String(dashboardData.servicosAtrasados),
       detail: "Serviços com prazo final vencido e ainda abertos",
@@ -476,7 +480,7 @@ export default async function Home({ searchParams }: DashboardPageProps) {
     >
       <div className="space-y-6">
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div>
               <p className="text-sm font-medium text-slate-500">
                 Recorte de tempo
@@ -489,73 +493,12 @@ export default async function Home({ searchParams }: DashboardPageProps) {
               </p>
             </div>
 
-            <form className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-4 lg:max-w-xl">
-              <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  Modo do filtro
-                  <select
-                    name="modoTempo"
-                    defaultValue={timeFilterMode}
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                  >
-                    <option value="rapido">Período rápido</option>
-                    <option value="personalizado">Intervalo personalizado</option>
-                  </select>
-                </label>
-
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
-                >
-                  Aplicar
-                </button>
-              </div>
-
-              <div className="mt-3">
-                {timeFilterMode === "rapido" ? (
-                  <label
-                    htmlFor="dashboard-period"
-                    className="flex flex-col gap-2 text-sm font-medium text-slate-700"
-                  >
-                    Período rápido
-                    <select
-                      id="dashboard-period"
-                      name="periodo"
-                      defaultValue={selectedQuickPeriod}
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                    >
-                      {quickPeriodOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                      Data inicial
-                      <input
-                        type="date"
-                        name="dataInicial"
-                        defaultValue={customStartDate}
-                        className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                      />
-                    </label>
-
-                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                      Data final
-                      <input
-                        type="date"
-                        name="dataFinal"
-                        defaultValue={customEndDate}
-                        className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                      />
-                    </label>
-                  </div>
-                )}
-              </div>
-            </form>
+            <DashboardTimeFilter
+              initialMode={timeFilterMode}
+              initialPeriod={selectedQuickPeriod}
+              initialStartDate={customStartDate}
+              initialEndDate={customEndDate}
+            />
           </div>
 
           <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
@@ -574,7 +517,7 @@ export default async function Home({ searchParams }: DashboardPageProps) {
           </div>
         </section>
 
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {summaryCards.map((card) => (
             <article
               key={card.title}
@@ -771,6 +714,9 @@ export default async function Home({ searchParams }: DashboardPageProps) {
                       Prazo final
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Em aberto
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Situação
                     </th>
                   </tr>
@@ -786,6 +732,9 @@ export default async function Home({ searchParams }: DashboardPageProps) {
                       </td>
                       <td className="px-4 py-4 text-sm text-slate-500">
                         {formatSimpleDate(service.prazo_final)}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium text-[#17352b]">
+                        {formatCurrency(service.valorEmAberto)}
                       </td>
                       <td className="px-4 py-4 text-sm">
                         <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
