@@ -110,6 +110,28 @@ function getServiceClientName(service: ServicoOption) {
   return service.cliente?.nome ?? "Cliente não encontrado";
 }
 
+function serviceMatchesSearch(
+  service: ServicoOption,
+  normalizedSearchTerm: string
+) {
+  if (!normalizedSearchTerm) {
+    return true;
+  }
+
+  const searchableFields = [
+    service.nome_servico,
+    getServiceClientName(service),
+    service.status,
+    service.valor === null || service.valor === undefined
+      ? null
+      : String(service.valor),
+  ];
+
+  return searchableFields.some((field) =>
+    normalizeText(field).includes(normalizedSearchTerm)
+  );
+}
+
 function entryMatchesSearch(
   entry: LancamentoFinanceiro,
   serviceDetails: ServiceDetails | undefined,
@@ -154,7 +176,10 @@ function getCustomPeriodLabel(startDate: string, endDate: string) {
   return "Intervalo personalizado";
 }
 
-function buildSummaryCards(entries: LancamentoFinanceiro[]) {
+function buildSummaryCards(
+  entries: LancamentoFinanceiro[],
+  totalAReceber: number
+) {
   const receitasRecebidasEntries = entries.filter(
     (entry) =>
       normalizeText(entry.tipo) === "receita" &&
@@ -165,9 +190,6 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
       normalizeText(entry.tipo) === "despesa" &&
       normalizeText(entry.status) === "pago"
   );
-  const pendentesEntries = entries.filter(
-    (entry) => normalizeText(entry.status) === "pendente"
-  );
   const contasVencidasEntries = entries.filter(
     (entry) => normalizeText(entry.status) === "vencido"
   );
@@ -176,10 +198,6 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
     0
   );
   const despesasPagas = despesasPagasEntries.reduce(
-    (total, entry) => total + getNumericValue(entry.valor),
-    0
-  );
-  const valorPendente = pendentesEntries.reduce(
     (total, entry) => total + getNumericValue(entry.valor),
     0
   );
@@ -203,8 +221,8 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
     },
     {
       title: "Pendente",
-      value: formatCurrency(valorPendente),
-      detail: `${pendentesEntries.length} lançamentos pendentes`,
+      value: formatCurrency(totalAReceber),
+      detail: "Valor contratado menos receitas recebidas",
     },
     {
       title: "Vencidos",
@@ -317,7 +335,83 @@ export function FinanceiroView({
       normalizedSearchTerm
     );
   });
-  const summaryCards = buildSummaryCards(filteredEntries);
+  const serviceIdsMatchingSearch = new Set(
+    periodEntries
+      .filter((entry) =>
+        entryMatchesSearch(
+          entry,
+          serviceDetailsById.get(String(entry.servico_id)),
+          serviceFallbackLabel,
+          normalizedSearchTerm
+        )
+      )
+      .map((entry) =>
+        entry.servico_id === null || entry.servico_id === undefined
+          ? ""
+          : String(entry.servico_id)
+      )
+      .filter(Boolean)
+  );
+  const shouldCalculateOpenReceivables =
+    (!typeFilter || normalizeText(typeFilter) === "receita") &&
+    (!statusFilter || normalizeText(statusFilter) === "pendente") &&
+    serviceFilter !== "general";
+  const servicesForOpenReceivables = shouldCalculateOpenReceivables
+    ? services.filter((service) => {
+        if (
+          !isDateInPeriod(
+            service.created_at,
+            activePeriod,
+            customStartDate,
+            customEndDate
+          )
+        ) {
+          return false;
+        }
+
+        if (serviceFilter && String(service.id) !== serviceFilter) {
+          return false;
+        }
+
+        return (
+          serviceMatchesSearch(service, normalizedSearchTerm) ||
+          serviceIdsMatchingSearch.has(String(service.id))
+        );
+      })
+    : [];
+  const receivedByServiceId = new Map<string, number>();
+
+  periodEntries
+    .filter(
+      (entry) =>
+        normalizeText(entry.tipo) === "receita" &&
+        normalizeText(entry.status) === "recebido"
+    )
+    .forEach((entry) => {
+      if (entry.servico_id === null || entry.servico_id === undefined) {
+        return;
+      }
+
+      const serviceId = String(entry.servico_id);
+      const currentTotal = receivedByServiceId.get(serviceId) ?? 0;
+
+      receivedByServiceId.set(
+        serviceId,
+        currentTotal + getNumericValue(entry.valor)
+      );
+    });
+  const totalAReceber = servicesForOpenReceivables.reduce((total, service) => {
+    const valorContratado = getNumericValue(service.valor);
+    const totalRecebido = receivedByServiceId.get(String(service.id)) ?? 0;
+    const valorEmAberto = valorContratado - totalRecebido;
+
+    if (valorEmAberto <= 0) {
+      return total;
+    }
+
+    return total + valorEmAberto;
+  }, 0);
+  const summaryCards = buildSummaryCards(filteredEntries, totalAReceber);
   const selectedTimeLabel =
     timeFilterMode === "rapido"
       ? `Período: ${getAppliedQuickPeriodLabel(periodFilter)}`
