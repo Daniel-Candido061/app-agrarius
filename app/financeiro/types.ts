@@ -17,5 +17,6 @@ export type ClienteDoServico = {
 export type ServicoOption = {
   id: number;
   nome_servico: string | null;
+  valor: number | string | null;
   cliente: ClienteDoServico | ClienteDoServico[] | null;
 };

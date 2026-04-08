@@ -285,7 +285,7 @@ async function getDashboardData() {
     const recebido = receivedByServiceId.get(String(service.id)) ?? 0;
 
     return recebido < valorContratado;
-  }).length;
+  });
 
   const lucroLiquidoRealizadoGeral = totalRecebido - despesasPagas;
   const lucroPrevistoGeral = valorContratadoTotal - despesasVinculadas;
@@ -321,7 +321,18 @@ async function getDashboardData() {
     tarefasAtrasadas,
     tarefasProximas,
     totalAReceber,
-    servicosNaoQuitados,
+    servicosNaoQuitados: servicosNaoQuitados.length,
+    servicosNaoQuitadosLista: servicosNaoQuitados.map((service) => {
+      const valorContratado = getNumericValue(service.valor);
+      const recebido = receivedByServiceId.get(String(service.id)) ?? 0;
+
+      return {
+        ...service,
+        valorContratado,
+        totalRecebido: recebido,
+        valorEmAberto: valorContratado - recebido,
+      };
+    }),
     totalRecebido,
     lucroLiquidoRealizadoGeral,
     lucroPrevistoGeral,
@@ -414,6 +425,87 @@ export default async function Home() {
             </article>
           ))}
         </div>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+          <div className="border-b border-slate-200 px-6 py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-[#17352b]">
+                  Serviços não quitados
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Serviços com total recebido menor que o valor contratado.
+                </p>
+              </div>
+
+              <span className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                {dashboardData.servicosNaoQuitados} em aberto
+              </span>
+            </div>
+          </div>
+
+          {dashboardData.servicosNaoQuitadosLista.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <p className="text-sm font-medium text-emerald-700">
+                Nenhum serviço em aberto no momento
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Todos os serviços cadastrados estão quitados.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Serviço
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Valor contratado
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Total recebido
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Valor em aberto
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {dashboardData.servicosNaoQuitadosLista.map((service) => (
+                    <tr key={service.id} className="hover:bg-slate-50/80">
+                      <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                        {service.nome_servico ?? "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {getClientName(service)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {formatCurrency(service.valorContratado)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-emerald-700">
+                        {formatCurrency(service.totalRecebido)}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-amber-700">
+                        {formatCurrency(service.valorEmAberto)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {service.status ?? "Sem status"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         <section className="overflow-hidden rounded-2xl border border-rose-200 bg-[linear-gradient(135deg,rgba(255,241,242,0.95),rgba(255,255,255,1))] shadow-[0_18px_40px_-24px_rgba(190,24,93,0.35)]">
           <div className="border-b border-rose-100 px-6 py-5">

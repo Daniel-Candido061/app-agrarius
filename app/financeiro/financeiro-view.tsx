@@ -87,12 +87,6 @@ function getStatusOptionsByType(type: string) {
     : ["Pendente", "Recebido", "Vencido"];
 }
 
-function isEntrySettled(status: string | null) {
-  const normalizedStatus = normalizeText(status);
-
-  return normalizedStatus === "recebido" || normalizedStatus === "pago";
-}
-
 function getServiceClientName(service: ServicoOption) {
   if (Array.isArray(service.cliente)) {
     return service.cliente[0]?.nome ?? "Cliente nao encontrado";
@@ -101,20 +95,24 @@ function getServiceClientName(service: ServicoOption) {
   return service.cliente?.nome ?? "Cliente nao encontrado";
 }
 
-function buildSummaryCards(entries: LancamentoFinanceiro[]) {
-  const receitasPendentes = entries
-    .filter(
-      (entry) =>
-        normalizeText(entry.tipo) === "receita" && !isEntrySettled(entry.status)
-    )
-    .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+function buildSummaryCards(
+  entries: LancamentoFinanceiro[],
+  services: ServicoOption[]
+) {
+  const totalContratado = services.reduce(
+    (total, service) => total + getNumericValue(service.valor),
+    0
+  );
 
   const receitasRecebidas = entries
     .filter(
       (entry) =>
-        normalizeText(entry.tipo) === "receita" && isEntrySettled(entry.status)
+        normalizeText(entry.tipo) === "receita" &&
+        normalizeText(entry.status) === "recebido"
     )
     .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+
+  const totalAReceber = totalContratado - receitasRecebidas;
 
   const despesaTotal = entries
     .filter((entry) => normalizeText(entry.tipo) === "despesa")
@@ -122,14 +120,14 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
 
   return [
     {
-      title: "Receitas pendentes",
-      value: formatCurrency(receitasPendentes),
-      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "receita" && !isEntrySettled(entry.status)).length} lancamentos em aberto`,
+      title: "Total a receber",
+      value: formatCurrency(totalAReceber),
+      detail: "Valor contratado menos receitas recebidas",
     },
     {
       title: "Receitas recebidas",
       value: formatCurrency(receitasRecebidas),
-      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "receita" && isEntrySettled(entry.status)).length} lancamentos quitados`,
+      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "receita" && normalizeText(entry.status) === "recebido").length} lancamentos recebidos`,
     },
     {
       title: "Despesas cadastradas",
@@ -183,7 +181,7 @@ export function FinanceiroView({
     ])
   );
 
-  const summaryCards = buildSummaryCards(entries);
+  const summaryCards = buildSummaryCards(entries, services);
   const categoryOptions = getCategoryOptionsByType(formData.tipo);
   const statusOptions = getStatusOptionsByType(formData.tipo);
   const serviceFallbackLabel = "Despesa geral da empresa";
