@@ -43,6 +43,8 @@ const initialFormData: FormData = {
   observacao: "",
 };
 
+const noLinkedServiceLabel = "Sem serviço vinculado";
+
 function normalizeText(value: string | null) {
   return (
     value
@@ -134,6 +136,14 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       service.nome_servico ?? `Serviço ${service.id}`,
     ])
   );
+  function getTaskServiceName(task: Tarefa) {
+    if (task.servico_id === null || task.servico_id === undefined) {
+      return noLinkedServiceLabel;
+    }
+
+    return serviceNameById.get(String(task.servico_id)) ?? "Serviço não encontrado";
+  }
+
   const normalizedSearchTerm = normalizeText(searchTerm);
   const filteredTasks = tasks.filter((task) => {
     if (!normalizedSearchTerm) {
@@ -145,7 +155,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       task.responsavel,
       task.status,
       task.prioridade,
-      serviceNameById.get(String(task.servico_id)) ?? "Serviço não encontrado",
+      getTaskServiceName(task),
     ];
 
     return searchableFields.some((field) =>
@@ -232,11 +242,6 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       return;
     }
 
-    if (!servicoId) {
-      setErrorMessage("Selecione o serviço vinculado.");
-      return;
-    }
-
     if (!prioridade) {
       setErrorMessage("Selecione a prioridade da tarefa.");
       return;
@@ -249,14 +254,14 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
 
     const isEditing = modalMode === "edit";
     const taskId = editingTaskId;
-    const parsedServicoId = Number(servicoId);
+    const parsedServicoId = servicoId ? Number(servicoId) : null;
 
     if (isEditing && taskId === null) {
       setErrorMessage("Não foi possível identificar a tarefa para edição.");
       return;
     }
 
-    if (Number.isNaN(parsedServicoId)) {
+    if (servicoId && Number.isNaN(parsedServicoId)) {
       setErrorMessage("Serviço inválido.");
       return;
     }
@@ -327,7 +332,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     <>
       <AppShell
         title="Tarefas"
-        description="Atividades vinculadas aos serviços, sincronizadas com o Supabase."
+        description="Atividades da empresa, com ou sem serviço vinculado, sincronizadas com o Supabase."
         currentPath="/tarefas"
         action={
           <button
@@ -403,8 +408,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       {task.titulo ?? "-"}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                      {serviceNameById.get(String(task.servico_id)) ??
-                        "Serviço não encontrado"}
+                      {getTaskServiceName(task)}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
                       <span className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-rose-700">
@@ -451,8 +455,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       {task.titulo ?? "-"}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                      {serviceNameById.get(String(task.servico_id)) ??
-                        "Serviço não encontrado"}
+                      {getTaskServiceName(task)}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
                       <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-amber-700">
@@ -539,8 +542,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {serviceNameById.get(String(task.servico_id)) ??
-                          "Serviço não encontrado"}
+                        {getTaskServiceName(task)}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
                         {task.responsavel ?? "-"}
@@ -639,8 +641,9 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       value: String(service.id),
                       label: service.nome_servico ?? `Serviço ${service.id}`,
                     }))}
-                    emptyOptionLabel="Selecione um serviço"
+                    emptyOptionLabel={noLinkedServiceLabel}
                     searchPlaceholder="Digite para buscar um serviço"
+                    helperText="Opcional. Use apenas quando a tarefa fizer parte de um serviço."
                   />
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
