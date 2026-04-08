@@ -178,7 +178,7 @@ function getCustomPeriodLabel(startDate: string, endDate: string) {
 
 function buildSummaryCards(
   entries: LancamentoFinanceiro[],
-  totalAReceber: number
+  totalEmAberto: number
 ) {
   const receitasRecebidasEntries = entries.filter(
     (entry) =>
@@ -220,8 +220,8 @@ function buildSummaryCards(
       detail: "Receitas recebidas menos despesas pagas",
     },
     {
-      title: "Pendente",
-      value: formatCurrency(totalAReceber),
+      title: "A receber",
+      value: formatCurrency(totalEmAberto),
       detail: "Valor contratado menos receitas recebidas",
     },
     {
@@ -352,11 +352,7 @@ export function FinanceiroView({
       )
       .filter(Boolean)
   );
-  const shouldCalculateOpenReceivables =
-    (!typeFilter || normalizeText(typeFilter) === "receita") &&
-    (!statusFilter || normalizeText(statusFilter) === "pendente") &&
-    serviceFilter !== "general";
-  const servicesForOpenReceivables = shouldCalculateOpenReceivables
+  const servicesForOpenReceivables = serviceFilter !== "general"
     ? services.filter((service) => {
         if (
           !isDateInPeriod(
@@ -400,7 +396,7 @@ export function FinanceiroView({
         currentTotal + getNumericValue(entry.valor)
       );
     });
-  const totalAReceber = servicesForOpenReceivables.reduce((total, service) => {
+  const totalEmAberto = servicesForOpenReceivables.reduce((total, service) => {
     const valorContratado = getNumericValue(service.valor);
     const totalRecebido = receivedByServiceId.get(String(service.id)) ?? 0;
     const valorEmAberto = valorContratado - totalRecebido;
@@ -411,7 +407,7 @@ export function FinanceiroView({
 
     return total + valorEmAberto;
   }, 0);
-  const summaryCards = buildSummaryCards(filteredEntries, totalAReceber);
+  const summaryCards = buildSummaryCards(filteredEntries, totalEmAberto);
   const selectedTimeLabel =
     timeFilterMode === "rapido"
       ? `Período: ${getAppliedQuickPeriodLabel(periodFilter)}`
