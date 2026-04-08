@@ -154,7 +154,57 @@ function getCustomPeriodLabel(startDate: string, endDate: string) {
   return "Intervalo personalizado";
 }
 
-function buildSummaryCards(entries: LancamentoFinanceiro[]) {
+function calculateOpenReceivables(
+  servicesInPeriod: ServicoOption[],
+  entriesInPeriod: LancamentoFinanceiro[]
+) {
+  const serviceIdsInPeriod = new Set(
+    servicesInPeriod.map((service) => String(service.id))
+  );
+  const receivedByServiceId = new Map<string, number>();
+
+  entriesInPeriod
+    .filter(
+      (entry) =>
+        normalizeText(entry.tipo) === "receita" &&
+        normalizeText(entry.status) === "recebido"
+    )
+    .forEach((entry) => {
+      if (entry.servico_id === null || entry.servico_id === undefined) {
+        return;
+      }
+
+      const serviceId = String(entry.servico_id);
+
+      if (!serviceIdsInPeriod.has(serviceId)) {
+        return;
+      }
+
+      const currentTotal = receivedByServiceId.get(serviceId) ?? 0;
+
+      receivedByServiceId.set(
+        serviceId,
+        currentTotal + getNumericValue(entry.valor)
+      );
+    });
+
+  return servicesInPeriod.reduce((total, service) => {
+    const valorContratado = getNumericValue(service.valor);
+    const totalRecebido = receivedByServiceId.get(String(service.id)) ?? 0;
+    const valorEmAberto = valorContratado - totalRecebido;
+
+    if (valorEmAberto <= 0) {
+      return total;
+    }
+
+    return total + valorEmAberto;
+  }, 0);
+}
+
+function buildSummaryCards(
+  entries: LancamentoFinanceiro[],
+  totalAReceber: number
+) {
   const receitasRecebidasEntries = entries.filter(
     (entry) =>
       normalizeText(entry.tipo) === "receita" &&
@@ -168,20 +218,11 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
   const contasVencidasEntries = entries.filter(
     (entry) => normalizeText(entry.status) === "vencido"
   );
-  const receitasEmAbertoEntries = entries.filter(
-    (entry) =>
-      normalizeText(entry.tipo) === "receita" &&
-      normalizeText(entry.status) !== "recebido"
-  );
   const receitasRecebidas = receitasRecebidasEntries.reduce(
     (total, entry) => total + getNumericValue(entry.valor),
     0
   );
   const despesasPagas = despesasPagasEntries.reduce(
-    (total, entry) => total + getNumericValue(entry.valor),
-    0
-  );
-  const totalEmAberto = receitasEmAbertoEntries.reduce(
     (total, entry) => total + getNumericValue(entry.valor),
     0
   );
@@ -205,8 +246,8 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
     },
     {
       title: "A receber",
-      value: formatCurrency(totalEmAberto),
-      detail: `${receitasEmAbertoEntries.length} receitas em aberto`,
+      value: formatCurrency(totalAReceber),
+      detail: "Valor contratado menos receitas recebidas",
     },
     {
       title: "Vencidos",
@@ -279,6 +320,23 @@ export function FinanceiroView({
   const periodEntries = entries.filter((entry) =>
     isDateInPeriod(entry.data, activePeriod, customStartDate, customEndDate)
   );
+  const periodServices =
+    serviceFilter === "general"
+      ? []
+      : services.filter((service) => {
+          if (
+            !isDateInPeriod(
+              service.created_at,
+              activePeriod,
+              customStartDate,
+              customEndDate
+            )
+          ) {
+            return false;
+          }
+
+          return !serviceFilter || String(service.id) === serviceFilter;
+        });
   const categoryOptions = getCategoryOptionsByType(formData.tipo);
   const statusOptions = getStatusOptionsByType(formData.tipo);
   const serviceFallbackLabel = "Despesa geral da empresa";
@@ -320,7 +378,8 @@ export function FinanceiroView({
     );
   });
   const tableEntries = filteredEntries;
-  const summaryCards = buildSummaryCards(tableEntries);
+  const totalAReceber = calculateOpenReceivables(periodServices, periodEntries);
+  const summaryCards = buildSummaryCards(tableEntries, totalAReceber);
   const selectedTimeLabel =
     timeFilterMode === "rapido"
       ? `Período: ${getAppliedQuickPeriodLabel(periodFilter)}`
