@@ -345,6 +345,19 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
           </div>
         ) : null}
 
+        <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.35)]">
+          <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+            Busca
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Buscar por título, serviço, responsável, prioridade ou status"
+              className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+            />
+          </label>
+        </section>
+
         <section className="mb-5 grid gap-5 md:grid-cols-3">
           {summaryCards.map((card) => (
             <article
@@ -459,16 +472,6 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
             )}
           </article>
         </section>
-
-        <div className="mb-5">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Buscar por título, serviço, responsável, prioridade ou status"
-            className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-          />
-        </div>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
           {tasks.length === 0 ? (

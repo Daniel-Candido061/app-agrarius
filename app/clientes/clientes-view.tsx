@@ -436,41 +436,48 @@ export function ClientesView({
           </div>
         ) : null}
 
-        <section className="mb-5 grid gap-4 md:grid-cols-3">
-          {portfolioCards.map((card) => (
-            <button
-              key={card.title}
-              type="button"
-              onClick={() => applyPortfolioFilter(card.filter)}
-              aria-pressed={portfolioFilter === card.filter}
-              className={`rounded-2xl border p-5 text-left shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:border-[#17352b]/40 hover:shadow-[0_18px_36px_-24px_rgba(15,23,42,0.5)] ${
-                portfolioFilter === card.filter
-                  ? "border-[#17352b] bg-emerald-50/70"
-                  : "border-slate-200 bg-white"
-              }`}
-            >
-              <p className="text-sm font-medium text-slate-500">
-                {card.title}
-              </p>
-              <p className="mt-3 text-2xl font-semibold text-[#17352b]">
-                {card.value}
-              </p>
-              <p className="mt-2 text-xs leading-5 text-slate-400">
-                {card.detail}
-              </p>
-            </button>
-          ))}
-        </section>
+        <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.35)]">
+          <div className="grid gap-4 xl:grid-cols-[minmax(260px,1.1fr)_minmax(0,2fr)] xl:items-end">
+            <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+              Busca
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Buscar por nome, email, telefone ou cidade"
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+              />
+            </label>
 
-        <div className="mb-5">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Buscar por nome, email, telefone ou cidade"
-            className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-          />
-        </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {portfolioCards.map((card) => (
+                <button
+                  key={card.title}
+                  type="button"
+                  onClick={() => applyPortfolioFilter(card.filter)}
+                  aria-pressed={portfolioFilter === card.filter}
+                  className={`min-h-11 rounded-xl border px-4 py-3 text-left transition hover:border-[#17352b]/40 ${
+                    portfolioFilter === card.filter
+                      ? "border-[#17352b] bg-emerald-50/70"
+                      : "border-slate-200 bg-slate-50/70"
+                  }`}
+                >
+                  <span className="block truncate text-xs font-medium text-slate-500">
+                    {card.title}
+                  </span>
+                  <span className="mt-1 flex items-end justify-between gap-3">
+                    <strong className="text-xl font-semibold text-[#17352b]">
+                      {card.value}
+                    </strong>
+                    <span className="hidden truncate text-xs text-slate-400 sm:block">
+                      {card.detail}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
           {clients.length === 0 ? (
