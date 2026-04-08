@@ -184,11 +184,6 @@ export function ClientesView({
     });
   });
 
-  const totalValorAReceber = Array.from(clientMetrics.values()).reduce(
-    (total, metrics) =>
-      metrics.valorEmAberto > 0 ? total + metrics.valorEmAberto : total,
-    0
-  );
   const portfolioCards = [
     {
       title: "Total de clientes",
@@ -212,11 +207,6 @@ export function ClientesView({
         ).length
       ),
       detail: "Clientes com saldo a receber.",
-    },
-    {
-      title: "Valor total a receber",
-      value: formatCurrency(totalValorAReceber),
-      detail: "Soma dos saldos em aberto dos clientes.",
     },
   ];
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
@@ -417,7 +407,7 @@ export function ClientesView({
           </div>
         ) : null}
 
-        <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="mb-5 grid gap-4 md:grid-cols-3">
           {portfolioCards.map((card) => (
             <article
               key={card.title}
