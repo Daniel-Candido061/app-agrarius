@@ -262,6 +262,9 @@ export function FinanceiroView({
       financialDateLabel,
       serviceDetails?.serviceName ?? serviceFallbackLabel,
       serviceDetails?.clientName,
+      entry.valor === null || entry.valor === undefined
+        ? null
+        : String(entry.valor),
     ];
 
     return searchableFields.some((field) =>
@@ -571,64 +574,66 @@ export function FinanceiroView({
                   Filtros da listagem
                 </p>
 
-                <div className="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-[1.4fr_0.8fr_0.8fr_1.2fr]">
+                <div className="mt-3 space-y-3">
                   <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-                    Busca
+                    Busca textual
                     <input
                       type="text"
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder="Descrição, cliente, serviço ou categoria"
+                      placeholder="Digite cliente, serviço, descrição, categoria ou valor"
                       className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                     />
                   </label>
 
-                  <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-                    Tipo
-                    <select
-                      value={typeFilter}
-                      onChange={(event) => setTypeFilter(event.target.value)}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                    >
-                      <option value="">Todos os tipos</option>
-                      <option value="Receita">Receita</option>
-                      <option value="Despesa">Despesa</option>
-                    </select>
-                  </label>
+                  <div className="grid gap-3 lg:grid-cols-3">
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                      Tipo
+                      <select
+                        value={typeFilter}
+                        onChange={(event) => setTypeFilter(event.target.value)}
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      >
+                        <option value="">Todos os tipos</option>
+                        <option value="Receita">Receita</option>
+                        <option value="Despesa">Despesa</option>
+                      </select>
+                    </label>
 
-                  <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-                    Status
-                    <select
-                      value={statusFilter}
-                      onChange={(event) => setStatusFilter(event.target.value)}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                    >
-                      <option value="">Todos os status</option>
-                      {allStatusOptions.map((statusOption) => (
-                        <option key={statusOption} value={statusOption}>
-                          {statusOption}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                      Status
+                      <select
+                        value={statusFilter}
+                        onChange={(event) => setStatusFilter(event.target.value)}
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      >
+                        <option value="">Todos os status</option>
+                        {allStatusOptions.map((statusOption) => (
+                          <option key={statusOption} value={statusOption}>
+                            {statusOption}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
-                  <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-                    Serviço
-                    <select
-                      value={serviceFilter}
-                      onChange={(event) => setServiceFilter(event.target.value)}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                    >
-                      <option value="">Todos os serviços</option>
-                      <option value="general">{serviceFallbackLabel}</option>
-                      {services.map((service) => (
-                        <option key={service.id} value={String(service.id)}>
-                          {service.nome_servico ?? `Serviço ${service.id}`} -{" "}
-                          {getServiceClientName(service)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                      Serviço
+                      <select
+                        value={serviceFilter}
+                        onChange={(event) => setServiceFilter(event.target.value)}
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      >
+                        <option value="">Todos os serviços</option>
+                        <option value="general">{serviceFallbackLabel}</option>
+                        {services.map((service) => (
+                          <option key={service.id} value={String(service.id)}>
+                            {service.nome_servico ?? `Serviço ${service.id}`} -{" "}
+                            {getServiceClientName(service)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
