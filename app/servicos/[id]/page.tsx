@@ -41,12 +41,34 @@ function getNumericValue(value: number | string | null) {
   return Number.isNaN(numericValue) ? 0 : numericValue;
 }
 
-function getServiceStatusClassName(status: string | null) {
-  const normalizedStatus =
-    status
+function normalizeText(value: string | null | undefined) {
+  return (
+    value
       ?.normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase() ?? "";
+      .trim()
+      .toLowerCase() ?? ""
+  );
+}
+
+function isRevenue(entry: ServicoFinanceiro) {
+  return normalizeText(entry.tipo) === "receita";
+}
+
+function isExpense(entry: ServicoFinanceiro) {
+  return normalizeText(entry.tipo) === "despesa";
+}
+
+function isReceived(entry: ServicoFinanceiro) {
+  return normalizeText(entry.status) === "recebido";
+}
+
+function isPaid(entry: ServicoFinanceiro) {
+  return normalizeText(entry.status) === "pago";
+}
+
+function getServiceStatusClassName(status: string | null) {
+  const normalizedStatus = normalizeText(status);
 
   if (normalizedStatus === "proposta") {
     return "bg-amber-50 text-amber-700";
@@ -76,11 +98,7 @@ function getServiceStatusClassName(status: string | null) {
 }
 
 function getFinancialStatusClassName(status: string | null) {
-  const normalizedStatus =
-    status
-      ?.normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase() ?? "";
+  const normalizedStatus = normalizeText(status);
 
   if (normalizedStatus === "recebido" || normalizedStatus === "pago") {
     return "bg-emerald-50 text-emerald-700";
@@ -98,7 +116,7 @@ function getFinancialStatusClassName(status: string | null) {
 }
 
 function getEntryTypeClassName(type: string | null) {
-  const normalizedType = type?.toLowerCase();
+  const normalizedType = normalizeText(type);
 
   if (normalizedType === "receita") {
     return "bg-emerald-50 text-emerald-700";
@@ -192,15 +210,24 @@ export default async function ServicoDetalhesPage({
     notFound();
   }
 
-  const totalReceitas = financialEntries
-    .filter((entry) => entry.tipo?.toLowerCase() === "receita")
+  const valorContratado = getNumericValue(service.valor);
+
+  const totalRecebido = financialEntries
+    .filter((entry) => isRevenue(entry) && isReceived(entry))
     .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
 
-  const totalDespesas = financialEntries
-    .filter((entry) => entry.tipo?.toLowerCase() === "despesa")
+  const valorAReceber = valorContratado - totalRecebido;
+
+  const totalDespesasPagas = financialEntries
+    .filter((entry) => isExpense(entry) && isPaid(entry))
     .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
 
-  const saldoServico = totalReceitas - totalDespesas;
+  const totalDespesasVinculadas = financialEntries
+    .filter(isExpense)
+    .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+
+  const lucroLiquidoRealizado = totalRecebido - totalDespesasPagas;
+  const lucroLiquidoPrevisto = valorContratado - totalDespesasVinculadas;
   const totalLancamentos = financialEntries.length;
 
   return (
@@ -258,7 +285,7 @@ export default async function ServicoDetalhesPage({
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Valor
+                  Valor contratado
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
                   {formatCurrency(service.valor)}
@@ -296,36 +323,84 @@ export default async function ServicoDetalhesPage({
 
           <div className="grid gap-5">
             <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-              <p className="text-sm font-medium text-slate-500">Total de receitas</p>
+              <p className="text-sm font-medium text-slate-500">Valor contratado</p>
               <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
-                {formatCurrency(totalReceitas)}
+                {formatCurrency(valorContratado)}
               </strong>
               <p className="mt-3 text-sm text-slate-500">
-                Soma de todos os lançamentos de receita.
+                Valor definido no cadastro do serviço.
               </p>
             </article>
 
             <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-              <p className="text-sm font-medium text-slate-500">Total de despesas</p>
+              <p className="text-sm font-medium text-slate-500">Total recebido</p>
               <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
-                {formatCurrency(totalDespesas)}
+                {formatCurrency(totalRecebido)}
               </strong>
               <p className="mt-3 text-sm text-slate-500">
-                Soma de todos os lançamentos de despesa.
+                Receitas recebidas vinculadas ao serviço.
               </p>
             </article>
 
             <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-              <p className="text-sm font-medium text-slate-500">Saldo final</p>
+              <p className="text-sm font-medium text-slate-500">Valor a receber</p>
               <strong
                 className={`mt-4 block text-3xl font-semibold ${
-                  saldoServico >= 0 ? "text-[#17352b]" : "text-rose-700"
+                  valorAReceber >= 0 ? "text-[#17352b]" : "text-rose-700"
                 }`}
               >
-                {formatCurrency(saldoServico)}
+                {formatCurrency(valorAReceber)}
               </strong>
               <p className="mt-3 text-sm text-slate-500">
-                Resultado entre receitas e despesas.
+                Valor contratado menos o total recebido.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+              <p className="text-sm font-medium text-slate-500">Despesas pagas</p>
+              <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
+                {formatCurrency(totalDespesasPagas)}
+              </strong>
+              <p className="mt-3 text-sm text-slate-500">
+                Despesas pagas vinculadas ao serviço.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+              <p className="text-sm font-medium text-slate-500">Despesas vinculadas</p>
+              <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
+                {formatCurrency(totalDespesasVinculadas)}
+              </strong>
+              <p className="mt-3 text-sm text-slate-500">
+                Todas as despesas vinculadas ao serviço.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+              <p className="text-sm font-medium text-slate-500">Lucro líquido realizado</p>
+              <strong
+                className={`mt-4 block text-3xl font-semibold ${
+                  lucroLiquidoRealizado >= 0 ? "text-[#17352b]" : "text-rose-700"
+                }`}
+              >
+                {formatCurrency(lucroLiquidoRealizado)}
+              </strong>
+              <p className="mt-3 text-sm text-slate-500">
+                Total recebido menos despesas pagas.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+              <p className="text-sm font-medium text-slate-500">Lucro líquido previsto</p>
+              <strong
+                className={`mt-4 block text-3xl font-semibold ${
+                  lucroLiquidoPrevisto >= 0 ? "text-[#17352b]" : "text-rose-700"
+                }`}
+              >
+                {formatCurrency(lucroLiquidoPrevisto)}
+              </strong>
+              <p className="mt-3 text-sm text-slate-500">
+                Valor contratado menos despesas vinculadas.
               </p>
             </article>
           </div>
