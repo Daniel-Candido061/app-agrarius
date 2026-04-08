@@ -155,40 +155,34 @@ function getCustomPeriodLabel(startDate: string, endDate: string) {
 }
 
 function calculateOpenReceivables(
-  servicesInPeriod: ServicoOption[],
-  entriesInPeriod: LancamentoFinanceiro[]
+  filteredServicesForPeriod: ServicoOption[],
+  filteredReceivedEntriesForPeriod: LancamentoFinanceiro[]
 ) {
   const serviceIdsInPeriod = new Set(
-    servicesInPeriod.map((service) => String(service.id))
+    filteredServicesForPeriod.map((service) => String(service.id))
   );
   const receivedByServiceId = new Map<string, number>();
 
-  entriesInPeriod
-    .filter(
-      (entry) =>
-        normalizeText(entry.tipo) === "receita" &&
-        normalizeText(entry.status) === "recebido"
-    )
-    .forEach((entry) => {
-      if (entry.servico_id === null || entry.servico_id === undefined) {
-        return;
-      }
+  filteredReceivedEntriesForPeriod.forEach((entry) => {
+    if (entry.servico_id === null || entry.servico_id === undefined) {
+      return;
+    }
 
-      const serviceId = String(entry.servico_id);
+    const serviceId = String(entry.servico_id);
 
-      if (!serviceIdsInPeriod.has(serviceId)) {
-        return;
-      }
+    if (!serviceIdsInPeriod.has(serviceId)) {
+      return;
+    }
 
-      const currentTotal = receivedByServiceId.get(serviceId) ?? 0;
+    const currentTotal = receivedByServiceId.get(serviceId) ?? 0;
 
-      receivedByServiceId.set(
-        serviceId,
-        currentTotal + getNumericValue(entry.valor)
-      );
-    });
+    receivedByServiceId.set(
+      serviceId,
+      currentTotal + getNumericValue(entry.valor)
+    );
+  });
 
-  return servicesInPeriod.reduce((total, service) => {
+  return filteredServicesForPeriod.reduce((total, service) => {
     const valorContratado = getNumericValue(service.valor);
     const totalRecebido = receivedByServiceId.get(String(service.id)) ?? 0;
     const valorEmAberto = valorContratado - totalRecebido;
@@ -320,23 +314,19 @@ export function FinanceiroView({
   const periodEntries = entries.filter((entry) =>
     isDateInPeriod(entry.data, activePeriod, customStartDate, customEndDate)
   );
-  const periodServices =
-    serviceFilter === "general"
-      ? []
-      : services.filter((service) => {
-          if (
-            !isDateInPeriod(
-              service.created_at,
-              activePeriod,
-              customStartDate,
-              customEndDate
-            )
-          ) {
-            return false;
-          }
-
-          return !serviceFilter || String(service.id) === serviceFilter;
-        });
+  const filteredServicesForPeriod = services.filter((service) =>
+    isDateInPeriod(
+      service.created_at,
+      activePeriod,
+      customStartDate,
+      customEndDate
+    )
+  );
+  const filteredReceivedEntriesForPeriod = periodEntries.filter(
+    (entry) =>
+      normalizeText(entry.tipo) === "receita" &&
+      normalizeText(entry.status) === "recebido"
+  );
   const categoryOptions = getCategoryOptionsByType(formData.tipo);
   const statusOptions = getStatusOptionsByType(formData.tipo);
   const serviceFallbackLabel = "Despesa geral da empresa";
@@ -378,7 +368,10 @@ export function FinanceiroView({
     );
   });
   const tableEntries = filteredEntries;
-  const totalAReceber = calculateOpenReceivables(periodServices, periodEntries);
+  const totalAReceber = calculateOpenReceivables(
+    filteredServicesForPeriod,
+    filteredReceivedEntriesForPeriod
+  );
   const summaryCards = buildSummaryCards(tableEntries, totalAReceber);
   const selectedTimeLabel =
     timeFilterMode === "rapido"
