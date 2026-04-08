@@ -36,7 +36,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <section className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md items-center">
         <div className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)]">
           <div className="text-center">
-            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#17352b] shadow-sm">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
               <AgrariusLogo className="h-14 w-14" />
             </span>
             <h1 className="mt-5 text-2xl font-semibold text-[#17352b]">

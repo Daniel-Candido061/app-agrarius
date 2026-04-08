@@ -9,7 +9,7 @@ export default function PublicHomePage() {
           <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
             <div className="max-w-2xl">
               <div className="flex items-center gap-4">
-                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#17352b] shadow-sm">
+                <span className="flex h-16 w-16 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
                   <AgrariusLogo className="h-14 w-14" />
                 </span>
                 <div>

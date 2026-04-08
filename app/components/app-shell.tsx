@@ -105,48 +105,52 @@ export function AgrariusLogo({
       className={className}
       fill="none"
     >
-      <circle cx="32" cy="32" r="30" fill="#f8faf9" />
-      <circle cx="32" cy="32" r="27" fill="#17352b" />
-      <path
-        d="M17 35c7.5-11.5 22.5-15 34-8"
-        stroke="#8fcf8f"
-        strokeWidth="3"
-        strokeLinecap="round"
+      <rect x="4" y="4" width="56" height="56" rx="12" fill="#17352b" />
+      <rect
+        x="12"
+        y="12"
+        width="40"
+        height="40"
+        rx="8"
+        fill="#204638"
       />
       <path
-        d="M14 42c11-4 24-3 36 3"
-        stroke="#f8faf9"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        opacity="0.9"
+        d="M18 19h13v13H18V19Z"
+        fill="#f8faf9"
       />
       <path
-        d="M32 48V27"
-        stroke="#f8faf9"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M32 29c-8-1-13 3.5-15 10 7.5 1 13-2.5 15-10Z"
+        d="M36 19h10v10H36V19Z"
         fill="#8fcf8f"
       />
       <path
-        d="M32 29c7.5-1 13 3.5 15 10-7.5 1-13-2.5-15-10Z"
+        d="M36 36h10v10H36V36Z"
         fill="#d8f3d2"
       />
       <path
-        d="M32 12c-5 6-7.5 13-7.5 20S27 46 32 52"
-        stroke="#8fcf8f"
-        strokeWidth="1.8"
+        d="M31 25h5"
+        stroke="#f8faf9"
+        strokeWidth="2.4"
         strokeLinecap="round"
-        opacity="0.85"
       />
       <path
-        d="M32 12c5 6 7.5 13 7.5 20S37 46 32 52"
+        d="M31 42h5"
         stroke="#8fcf8f"
-        strokeWidth="1.8"
+        strokeWidth="2.4"
         strokeLinecap="round"
-        opacity="0.85"
+      />
+      <path
+        d="M24.5 32v10H31"
+        stroke="#f8faf9"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m22 26 4 4 7-8"
+        stroke="#8fcf8f"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -174,7 +178,7 @@ export function AppShell({
           <div className="flex h-full flex-col px-6 py-8">
             <div className="border-b border-white/10 pb-6">
               <div className="flex items-center gap-4">
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 shadow-sm ring-1 ring-white/40">
+                <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/95 shadow-sm ring-1 ring-white/40">
                   <AgrariusLogo className="h-12 w-12" />
                 </span>
                 <div>
