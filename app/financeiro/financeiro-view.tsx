@@ -105,6 +105,22 @@ function getServiceClientName(service: ServicoOption) {
   return service.cliente?.nome ?? "Cliente não encontrado";
 }
 
+function getCustomPeriodLabel(startDate: string, endDate: string) {
+  if (startDate && endDate) {
+    return `${formatSimpleDate(startDate)} até ${formatSimpleDate(endDate)}`;
+  }
+
+  if (startDate) {
+    return `a partir de ${formatSimpleDate(startDate)}`;
+  }
+
+  if (endDate) {
+    return `até ${formatSimpleDate(endDate)}`;
+  }
+
+  return "Intervalo personalizado";
+}
+
 function buildSummaryCards(entries: LancamentoFinanceiro[]) {
   const receitasRecebidas = entries
     .filter(
@@ -276,9 +292,11 @@ export function FinanceiroView({
   const selectedTimeLabel =
     timeFilterMode === "rapido"
       ? `Período: ${getPeriodLabel(periodFilter)}`
-      : customStartDate || customEndDate
-        ? `${customStartDate || "Início"} até ${customEndDate || "Fim"}`
-        : "Intervalo personalizado";
+      : getCustomPeriodLabel(customStartDate, customEndDate);
+  const appliedPeriodLabel =
+    timeFilterMode === "rapido"
+      ? getPeriodLabel(periodFilter)
+      : getCustomPeriodLabel(customStartDate, customEndDate);
 
   function openModal() {
     setModalMode("create");
@@ -506,6 +524,13 @@ export function FinanceiroView({
         }
       >
         <div className="space-y-6">
+          <p className="text-sm text-slate-500">
+            Período aplicado:{" "}
+            <span className="font-medium text-slate-700">
+              {appliedPeriodLabel}
+            </span>
+          </p>
+
           <details className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50">
               <span className="min-w-0">
