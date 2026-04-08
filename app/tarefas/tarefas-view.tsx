@@ -495,16 +495,16 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Titulo
+                      Título
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Servico
+                      Serviço
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Responsavel
+                      Responsável
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Data limite
+                      Data
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Prioridade
@@ -618,7 +618,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
                 <div className="grid gap-5 sm:grid-cols-2">
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                    Titulo
+                    Título
                     <input
                       type="text"
                       value={formData.titulo}
@@ -629,7 +629,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                   </label>
 
                   <SearchableSelect
-                    label="Servico"
+                    label="Serviço"
                     value={formData.servico_id}
                     onChange={(value) => updateField("servico_id", value)}
                     options={services.map((service) => ({
@@ -641,20 +641,20 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                   />
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    Responsavel
+                    Responsável
                     <input
                       type="text"
                       value={formData.responsavel}
                       onChange={(event) =>
                         updateField("responsavel", event.target.value)
                       }
-                      placeholder="Nome do responsavel"
+                      placeholder="Nome do responsável"
                       className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                     />
                   </label>
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    Data limite
+                    Data
                     <input
                       type="date"
                       value={formData.data_limite}
@@ -698,7 +698,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                   </label>
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                    Observacao
+                    Observação
                     <textarea
                       rows={4}
                       value={formData.observacao}

@@ -800,14 +800,14 @@ export function ServicosView({
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                  Observações
+                  Observação
                   <textarea
                     value={formData.observacoes}
                     onChange={(event) =>
                       updateField("observacoes", event.target.value)
                     }
                     rows={4}
-                    placeholder="Digite observacoes tecnicas e operacionais"
+                    placeholder="Digite observações técnicas e operacionais"
                     className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                   />
                 </label>

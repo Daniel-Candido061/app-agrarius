@@ -314,7 +314,7 @@ export default async function ServicoDetalhesPage({
 
               <div className="sm:col-span-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Observações
+                  Observação
                 </p>
                 <p className="mt-2 whitespace-pre-line rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   {service.observacoes?.trim() || "Sem observações"}

@@ -37,7 +37,7 @@ const initialFormData: FormData = {
   status: "Pendente",
 };
 
-const financialDateLabel = "Data financeira";
+const financialDateLabel = "Data";
 
 function formatCurrency(value: number | string | null) {
   if (value === null || value === undefined || value === "") {
@@ -528,8 +528,8 @@ export function FinanceiroView({
                 className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
               >
                 <option value="">Todos os tipos</option>
-                <option value="Receita">Receitas</option>
-                <option value="Despesa">Despesas</option>
+                <option value="Receita">Receita</option>
+                <option value="Despesa">Despesa</option>
               </select>
 
               <select
@@ -591,13 +591,13 @@ export function FinanceiroView({
                         Tipo
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Descricao
+                        Descrição
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Cliente
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Servico
+                        Serviço
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Categoria
@@ -717,7 +717,7 @@ export function FinanceiroView({
                 </label>
 
                 <SearchableSelect
-                  label="Servico vinculado opcional"
+                  label="Serviço"
                   value={formData.servico_id}
                   onChange={(value) => updateField("servico_id", value)}
                   options={services.map((service) => {
@@ -760,7 +760,7 @@ export function FinanceiroView({
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                  Descricao
+                  Descrição
                   <input
                     type="text"
                     value={formData.descricao}
