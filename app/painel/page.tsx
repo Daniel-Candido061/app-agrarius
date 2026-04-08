@@ -479,43 +479,27 @@ export default async function Home({ searchParams }: DashboardPageProps) {
       currentPath="/painel"
     >
       <div className="space-y-6">
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Recorte de tempo
-              </p>
-              <h2 className="mt-1 text-xl font-semibold text-[#17352b]">
-                Resumo do período
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Indicadores calculados para o período selecionado.
-              </p>
-            </div>
-
-            <DashboardTimeFilter
-              initialMode={timeFilterMode}
-              initialPeriod={selectedQuickPeriod}
-              initialStartDate={customStartDate}
-              initialEndDate={customEndDate}
-            />
-          </div>
-
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+        <DashboardTimeFilter
+          initialMode={timeFilterMode}
+          initialPeriod={selectedQuickPeriod}
+          initialStartDate={customStartDate}
+          initialEndDate={customEndDate}
+        >
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             {periodCards.map((card) => (
               <article
                 key={card.title}
-                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5"
+                className="rounded-xl border border-slate-200 bg-slate-50/70 p-4"
               >
                 <p className="text-sm font-medium text-slate-500">{card.title}</p>
-                <strong className="mt-4 block text-2xl font-semibold text-[#17352b]">
+                <strong className="mt-3 block text-2xl font-semibold text-[#17352b]">
                   {card.value}
                 </strong>
-                <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
+                <p className="mt-2 text-sm text-slate-500">{card.detail}</p>
               </article>
             ))}
           </div>
-        </section>
+        </DashboardTimeFilter>
 
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {summaryCards.map((card) => (
