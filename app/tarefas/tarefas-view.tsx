@@ -119,6 +119,21 @@ function isUpcomingTask(task: Tarefa) {
   return isBetweenTodayAndFutureDays(task.data_limite, 7);
 }
 
+function getServiceClientName(service: ServicoOption) {
+  if (Array.isArray(service.cliente)) {
+    return service.cliente[0]?.nome ?? "Cliente não encontrado";
+  }
+
+  return service.cliente?.nome ?? "Cliente não encontrado";
+}
+
+function getServiceOptionLabel(service: ServicoOption) {
+  const serviceName = service.nome_servico ?? `Serviço ${service.id}`;
+  const clientName = getServiceClientName(service);
+
+  return `${serviceName} — ${clientName}`;
+}
+
 export function TarefasView({ tasks, services }: TarefasViewProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -133,7 +148,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
   const serviceNameById = new Map(
     services.map((service) => [
       String(service.id),
-      service.nome_servico ?? `Serviço ${service.id}`,
+      getServiceOptionLabel(service),
     ])
   );
   function getTaskServiceName(task: Tarefa) {
@@ -639,7 +654,8 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                     onChange={(value) => updateField("servico_id", value)}
                     options={services.map((service) => ({
                       value: String(service.id),
-                      label: service.nome_servico ?? `Serviço ${service.id}`,
+                      label: getServiceOptionLabel(service),
+                      searchText: `${service.nome_servico ?? ""} ${getServiceClientName(service)}`,
                     }))}
                     emptyOptionLabel={noLinkedServiceLabel}
                     searchPlaceholder="Digite para buscar um serviço"

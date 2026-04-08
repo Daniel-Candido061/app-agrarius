@@ -12,4 +12,11 @@ export type Tarefa = {
 export type ServicoOption = {
   id: number;
   nome_servico: string | null;
+  cliente: {
+    id: number;
+    nome: string | null;
+  } | {
+    id: number;
+    nome: string | null;
+  }[] | null;
 };

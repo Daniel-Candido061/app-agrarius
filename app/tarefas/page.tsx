@@ -24,7 +24,7 @@ async function getTarefas() {
 async function getServicos() {
   const { data, error } = await supabase
     .from("servicos")
-    .select("id, nome_servico")
+    .select("id, nome_servico, cliente:clientes(id, nome)")
     .order("nome_servico", { ascending: true });
 
   if (error) {
