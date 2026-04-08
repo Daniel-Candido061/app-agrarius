@@ -121,7 +121,10 @@ function getCustomPeriodLabel(startDate: string, endDate: string) {
   return "Intervalo personalizado";
 }
 
-function buildSummaryCards(entries: LancamentoFinanceiro[]) {
+function buildSummaryCards(
+  entries: LancamentoFinanceiro[],
+  totalAReceber: number
+) {
   const receitasRecebidas = entries
     .filter(
       (entry) =>
@@ -138,9 +141,6 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
     )
     .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
 
-  const lancamentosPendentes = entries.filter(
-    (entry) => normalizeText(entry.status) === "pendente"
-  ).length;
   const contasVencidas = entries.filter(
     (entry) => normalizeText(entry.status) === "vencido"
   ).length;
@@ -163,9 +163,9 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
       detail: "Receitas recebidas menos despesas pagas",
     },
     {
-      title: "Pendentes",
-      value: String(lancamentosPendentes),
-      detail: 'Lançamentos com status "Pendente"',
+      title: "Pendente",
+      value: formatCurrency(totalAReceber),
+      detail: "Valor contratado menos total recebido",
     },
     {
       title: "Vencidos",
@@ -288,7 +288,65 @@ export function FinanceiroView({
       normalizeText(field).includes(normalizedSearchTerm)
     );
   });
-  const summaryCards = buildSummaryCards(filteredEntries);
+  const periodServices = services
+    .filter((service) =>
+      isDateInPeriod(
+        service.created_at,
+        activePeriod,
+        customStartDate,
+        customEndDate
+      )
+    )
+    .filter((service) => {
+      if (serviceFilter === "general") {
+        return false;
+      }
+
+      return !serviceFilter || String(service.id) === serviceFilter;
+    });
+  const receivedByServiceId = new Map<string, number>();
+
+  periodEntries
+    .filter(
+      (entry) =>
+        normalizeText(entry.tipo) === "receita" &&
+        normalizeText(entry.status) === "recebido"
+    )
+    .forEach((entry) => {
+      if (entry.servico_id === null || entry.servico_id === undefined) {
+        return;
+      }
+
+      const serviceId = String(entry.servico_id);
+      const currentTotal = receivedByServiceId.get(serviceId) ?? 0;
+
+      receivedByServiceId.set(
+        serviceId,
+        currentTotal + getNumericValue(entry.valor)
+      );
+    });
+  const unPaidServiceBalances = periodServices
+    .map((service) => {
+      const valorContratado = getNumericValue(service.valor);
+      const totalRecebido = receivedByServiceId.get(String(service.id)) ?? 0;
+
+      return {
+        service,
+        valorContratado,
+        totalRecebido,
+        valorEmAberto: valorContratado - totalRecebido,
+      };
+    })
+    .filter((summary) => summary.valorEmAberto > 0)
+    .sort(
+      (firstService, secondService) =>
+        secondService.valorEmAberto - firstService.valorEmAberto
+    );
+  const totalAReceber = unPaidServiceBalances.reduce(
+    (total, summary) => total + summary.valorEmAberto,
+    0
+  );
+  const summaryCards = buildSummaryCards(filteredEntries, totalAReceber);
   const selectedTimeLabel =
     timeFilterMode === "rapido"
       ? `Período: ${getPeriodLabel(periodFilter)}`
@@ -686,19 +744,6 @@ export function FinanceiroView({
             </div>
           </details>
 
-          <div>
-            <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-              Busca
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Digite cliente, serviço, descrição, categoria ou valor"
-                className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
-              />
-            </label>
-          </div>
-
           <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {summaryCards.map((card) => (
               <article
@@ -715,6 +760,103 @@ export function FinanceiroView({
               </article>
             ))}
           </section>
+
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+            <div className="border-b border-slate-200 px-6 py-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-[#17352b]">
+                    Serviços não quitados
+                  </h2>
+                  <p className="text-sm text-slate-500">
+                    Saldos calculados pelo valor contratado menos receitas recebidas.
+                  </p>
+                </div>
+
+                <span className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                  {unPaidServiceBalances.length} em aberto
+                </span>
+              </div>
+            </div>
+
+            {unPaidServiceBalances.length === 0 ? (
+              <div className="px-6 py-12 text-center">
+                <p className="text-sm font-medium text-emerald-700">
+                  Nenhum serviço em aberto no período
+                </p>
+                <p className="mt-2 text-sm text-slate-500">
+                  Não há serviços com saldo a receber para o filtro aplicado.
+                </p>
+              </div>
+            ) : (
+              <div className="w-full overflow-x-auto">
+                <table className="min-w-[860px] divide-y divide-slate-200">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Serviço
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Cliente
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Valor contratado
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Total recebido
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Valor em aberto
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {unPaidServiceBalances.map((summary) => (
+                      <tr
+                        key={summary.service.id}
+                        className="hover:bg-slate-50/80"
+                      >
+                        <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                          {summary.service.nome_servico ?? "-"}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {getServiceClientName(summary.service)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {formatCurrency(summary.valorContratado)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-emerald-700">
+                          {formatCurrency(summary.totalRecebido)}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-amber-700">
+                          {formatCurrency(summary.valorEmAberto)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {summary.service.status ?? "Sem status"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          <div>
+            <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+              Busca
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Digite cliente, serviço, descrição, categoria ou valor"
+                className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+              />
+            </label>
+          </div>
 
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
             {entries.length === 0 ? (
