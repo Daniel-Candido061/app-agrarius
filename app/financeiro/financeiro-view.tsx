@@ -506,14 +506,44 @@ export function FinanceiroView({
         }
       >
         <div className="space-y-6">
+          <div>
+            <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+              Busca
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Digite cliente, serviço, descrição, categoria ou valor"
+                className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+              />
+            </label>
+          </div>
+
+          <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {summaryCards.map((card) => (
+              <article
+                key={card.title}
+                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
+              >
+                <p className="text-sm font-medium text-slate-500">
+                  {card.title}
+                </p>
+                <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
+                  {card.value}
+                </strong>
+                <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
+              </article>
+            ))}
+          </section>
+
           <details className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50">
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-[#17352b]">
-                  Buscar e filtrar
+                  Filtros
                 </span>
                 <span className="block truncate text-xs text-slate-500">
-                  {selectedTimeLabel}
+                  Tipo, status, serviço e {selectedTimeLabel.toLowerCase()}
                 </span>
               </span>
               <svg
@@ -608,17 +638,6 @@ export function FinanceiroView({
                 </p>
 
                 <div className="mt-3 space-y-3">
-                  <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                    Busca textual
-                    <input
-                      type="text"
-                      value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder="Digite cliente, serviço, descrição, categoria ou valor"
-                      className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
-                    />
-                  </label>
-
                   <div className="grid min-w-0 gap-3 lg:grid-cols-3">
                     <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
                       Tipo
@@ -672,23 +691,6 @@ export function FinanceiroView({
             </div>
           </details>
 
-          <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {summaryCards.map((card) => (
-              <article
-                key={card.title}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
-              >
-                <p className="text-sm font-medium text-slate-500">
-                  {card.title}
-                </p>
-                <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
-                  {card.value}
-                </strong>
-                <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
-              </article>
-            ))}
-          </section>
-
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
             {entries.length === 0 ? (
               <div className="px-6 py-16 text-center">
@@ -710,8 +712,8 @@ export function FinanceiroView({
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200">
+              <div className="w-full overflow-x-auto">
+                <table className="min-w-[980px] divide-y divide-slate-200">
                   <thead className="bg-slate-50">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">

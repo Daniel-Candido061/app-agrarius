@@ -345,7 +345,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
           </div>
         ) : null}
 
-        <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.35)]">
+        <div className="mb-5">
           <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
             Busca
             <input
@@ -353,10 +353,10 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Buscar por título, serviço, responsável, prioridade ou status"
-              className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+              className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
             />
           </label>
-        </section>
+        </div>
 
         <section className="mb-5 grid gap-5 md:grid-cols-3">
           {summaryCards.map((card) => (
@@ -493,8 +493,8 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
+            <div className="w-full overflow-x-auto">
+              <table className="min-w-[860px] divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
