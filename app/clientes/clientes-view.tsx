@@ -457,34 +457,28 @@ export function ClientesView({
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
+              <table className="w-full table-fixed divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <th className="w-[22%] px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Nome
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <th className="w-[13%] px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Telefone
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Email
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <th className="w-[15%] px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Cidade
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <th className="w-[9%] px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Serviços
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Contratado
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <th className="w-[14%] px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Em aberto
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <th className="w-[10%] px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <th className="w-[17%] px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Acoes
                     </th>
                   </tr>
@@ -495,48 +489,55 @@ export function ClientesView({
 
                     return (
                       <tr key={client.id} className="hover:bg-slate-50/80">
-                        <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                          {client.nome}
+                        <td className="px-4 py-4 text-sm font-medium text-slate-700">
+                          <span className="block truncate" title={client.nome}>
+                            {client.nome}
+                          </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
-                          {client.telefone ?? "-"}
+                        <td className="px-4 py-4 text-sm text-slate-500">
+                          <span
+                            className="block truncate"
+                            title={client.telefone ?? undefined}
+                          >
+                            {client.telefone ?? "-"}
+                          </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
-                          {client.email ?? "-"}
+                        <td className="px-4 py-4 text-sm text-slate-500">
+                          <span
+                            className="block truncate"
+                            title={client.cidade ?? undefined}
+                          >
+                            {client.cidade ?? "-"}
+                          </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
-                          {client.cidade ?? "-"}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
+                        <td className="px-4 py-4 text-sm text-slate-500">
                           {metrics?.servicesCount ?? 0}
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                          {formatCurrency(metrics?.totalContratado ?? 0)}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-[#17352b]">
+                        <td className="px-4 py-4 text-sm font-medium text-[#17352b]">
                           {formatCurrency(metrics?.valorEmAberto ?? 0)}
                         </td>
-                        <td className="px-6 py-4 text-sm">
+                        <td className="px-4 py-4 text-sm">
                           <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
+                            className={`inline-flex max-w-full truncate rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
                               client.status
                             )}`}
+                            title={client.status ?? undefined}
                           >
                             {client.status ?? "Sem status"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right text-sm">
-                          <div className="flex justify-end gap-2">
+                        <td className="px-4 py-4 text-right text-sm">
+                          <div className="flex flex-wrap justify-end gap-1.5">
                             <Link
                               href={`/clientes/${client.id}`}
-                              className="inline-flex items-center justify-center rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                              className="inline-flex items-center justify-center rounded-lg border border-emerald-200 px-2.5 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50"
                             >
-                              Ver detalhes
+                              Detalhes
                             </Link>
                             <button
                               type="button"
                               onClick={() => openEditModal(client)}
-                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
                             >
                               Editar
                             </button>
@@ -544,7 +545,7 @@ export function ClientesView({
                               type="button"
                               onClick={() => handleDelete(client)}
                               disabled={deletingClientId === client.id}
-                              className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-2.5 py-2 text-xs font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {deletingClientId === client.id
                                 ? "Excluindo..."
