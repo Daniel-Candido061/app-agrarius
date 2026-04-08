@@ -38,6 +38,7 @@ type ClientDashboardEntry = {
 
 type ServiceDashboardEntry = {
   id: number;
+  cliente_id: number | string | null;
   nome_servico: string | null;
   valor: number | string | null;
   created_at: string | null;
@@ -207,7 +208,7 @@ async function getDashboardData(
     supabase.from("clientes").select("id, created_at"),
     supabase
       .from("servicos")
-      .select("id, nome_servico, valor, created_at, prazo_final, status, cliente:clientes(nome)"),
+      .select("id, cliente_id, nome_servico, valor, created_at, prazo_final, status, cliente:clientes(nome)"),
     supabase.from("financeiro").select("tipo, valor, status, data, servico_id"),
     supabase.from("tarefas").select("id, data_limite, status"),
   ]);
@@ -241,6 +242,13 @@ async function getDashboardData(
 
   const servicosAtrasados = services.filter(isPastDueService).length;
   const tarefasAtrasadas = tasks.filter(isPastDueTask).length;
+  const clientesComServicosEmAndamento = new Set(
+    services
+      .filter((service) => normalizeText(service.status) === "em andamento")
+      .map((service) => service.cliente_id)
+      .filter((clientId) => clientId !== null && clientId !== undefined)
+      .map(String)
+  ).size;
 
   const valorContratadoTotal = services.reduce(
     (total, service) => total + getNumericValue(service.valor),
@@ -332,6 +340,7 @@ async function getDashboardData(
     totalRecebidoPeriodo,
     despesasPagasPeriodo,
     lucroRealizadoPeriodo,
+    clientesComServicosEmAndamento,
     servicosAtrasados,
     tarefasAtrasadas,
     totalAReceber,
@@ -387,9 +396,9 @@ export default async function Home({ searchParams }: DashboardPageProps) {
 
   const periodCards = [
     {
-      title: "Clientes novos",
+      title: "Clientes novos no período",
       value: String(dashboardData.clientesNovos),
-      detail: `Clientes cadastrados no período: ${selectedPeriodLabel.toLowerCase()}`,
+      detail: `Clientes cadastrados dentro do período: ${selectedPeriodLabel.toLowerCase()}`,
     },
     {
       title: "Serviços criados",
@@ -418,6 +427,11 @@ export default async function Home({ searchParams }: DashboardPageProps) {
       title: "Total a receber",
       value: formatCurrency(dashboardData.totalAReceber),
       detail: "Valor contratado menos receitas recebidas",
+    },
+    {
+      title: "Clientes com serviços em andamento",
+      value: String(dashboardData.clientesComServicosEmAndamento),
+      detail: "Situação atual, sem filtro de período",
     },
     {
       title: "Serviços não quitados",
@@ -517,7 +531,7 @@ export default async function Home({ searchParams }: DashboardPageProps) {
           </div>
         </section>
 
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
           {summaryCards.map((card) => (
             <article
               key={card.title}
