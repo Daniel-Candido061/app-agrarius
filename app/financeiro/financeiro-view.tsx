@@ -506,35 +506,39 @@ export function FinanceiroView({
         }
       >
         <div className="space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-            <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(260px,0.85fr)_minmax(0,1.7fr)]">
-              <details className="group min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/60">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 transition hover:bg-slate-50">
-                  <span className="min-w-0">
-                    <span className="block text-xs font-medium text-slate-500">
-                      Filtro temporal
-                    </span>
-                    <span className="block truncate text-sm font-semibold text-[#17352b]">
-                      {selectedTimeLabel}
-                    </span>
-                  </span>
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 20 20"
-                    className="h-4 w-4 shrink-0 text-slate-500 transition group-open:rotate-180"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                  >
-                    <path
-                      d="M5 8l5 5 5-5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </summary>
+          <details className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50">
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-[#17352b]">
+                  Buscar e filtrar
+                </span>
+                <span className="block truncate text-xs text-slate-500">
+                  {selectedTimeLabel}
+                </span>
+              </span>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                className="h-4 w-4 shrink-0 text-slate-500 transition group-open:rotate-180"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path
+                  d="M5 8l5 5 5-5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </summary>
 
-                <div className="grid min-w-0 gap-3 border-t border-slate-200 px-3 py-3 sm:grid-cols-2">
+            <div className="grid min-w-0 gap-4 border-t border-slate-100 p-4 xl:grid-cols-[minmax(260px,0.85fr)_minmax(0,1.7fr)]">
+              <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                <p className="text-sm font-semibold text-[#17352b]">
+                  Filtro temporal
+                </p>
+
+                <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">
                   <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
                     Modo
                     <select
@@ -596,7 +600,7 @@ export function FinanceiroView({
                     </div>
                   )}
                 </div>
-              </details>
+              </div>
 
               <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
                 <p className="text-sm font-semibold text-[#17352b]">
@@ -666,7 +670,7 @@ export function FinanceiroView({
                 </div>
               </div>
             </div>
-          </section>
+          </details>
 
           <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {summaryCards.map((card) => (
