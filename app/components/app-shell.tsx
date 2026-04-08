@@ -93,6 +93,61 @@ function CheckIcon() {
   );
 }
 
+function AgrariusLogo({ className = "h-12 w-12" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 64 64"
+      className={className}
+      fill="none"
+    >
+      <circle cx="32" cy="32" r="30" fill="#f8faf9" />
+      <circle cx="32" cy="32" r="27" fill="#17352b" />
+      <path
+        d="M17 35c7.5-11.5 22.5-15 34-8"
+        stroke="#8fcf8f"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M14 42c11-4 24-3 36 3"
+        stroke="#f8faf9"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        opacity="0.9"
+      />
+      <path
+        d="M32 48V27"
+        stroke="#f8faf9"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M32 29c-8-1-13 3.5-15 10 7.5 1 13-2.5 15-10Z"
+        fill="#8fcf8f"
+      />
+      <path
+        d="M32 29c7.5-1 13 3.5 15 10-7.5 1-13-2.5-15-10Z"
+        fill="#d8f3d2"
+      />
+      <path
+        d="M32 12c-5 6-7.5 13-7.5 20S27 46 32 52"
+        stroke="#8fcf8f"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        opacity="0.85"
+      />
+      <path
+        d="M32 12c5 6 7.5 13 7.5 20S37 46 32 52"
+        stroke="#8fcf8f"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        opacity="0.85"
+      />
+    </svg>
+  );
+}
+
 type AppShellProps = {
   title: string;
   description: string;
@@ -114,20 +169,9 @@ export function AppShell({
         <aside className="w-full border-b border-white/10 bg-[#17352b] text-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:border-b-0 lg:border-r lg:border-r-white/10">
           <div className="flex h-full flex-col px-6 py-8">
             <div className="border-b border-white/10 pb-6">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[#17352b] shadow-sm">
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    className="h-6 w-6"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                  >
-                    <path d="M12 20V8" />
-                    <path d="M12 8c-3.5 0-6 2.3-7 6 3.5 0 6-2.3 7-6Z" />
-                    <path d="M12 8c3.5 0 6 2.3 7 6-3.5 0-6-2.3-7-6Z" />
-                  </svg>
+              <div className="flex items-center gap-4">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 shadow-sm ring-1 ring-white/40">
+                  <AgrariusLogo className="h-12 w-12" />
                 </span>
                 <div>
                   <span className="block text-xl font-semibold tracking-wide">
