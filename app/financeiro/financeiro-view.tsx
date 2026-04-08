@@ -114,9 +114,33 @@ function buildSummaryCards(
 
   const totalAReceber = totalContratado - receitasRecebidas;
 
+  const despesasPagas = entries
+    .filter(
+      (entry) =>
+        normalizeText(entry.tipo) === "despesa" &&
+        normalizeText(entry.status) === "pago"
+    )
+    .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+
   const despesaTotal = entries
     .filter((entry) => normalizeText(entry.tipo) === "despesa")
     .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+
+  const despesasVinculadas = entries
+    .filter(
+      (entry) =>
+        normalizeText(entry.tipo) === "despesa" &&
+        entry.servico_id !== null &&
+        entry.servico_id !== undefined
+    )
+    .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+
+  const contasVencidas = entries.filter(
+    (entry) => normalizeText(entry.status) === "vencido"
+  ).length;
+
+  const lucroLiquidoRealizado = receitasRecebidas - despesasPagas;
+  const lucroPrevistoGeral = totalContratado - despesasVinculadas;
 
   return [
     {
@@ -125,9 +149,24 @@ function buildSummaryCards(
       detail: "Valor contratado menos receitas recebidas",
     },
     {
-      title: "Receitas recebidas",
+      title: "Total recebido",
       value: formatCurrency(receitasRecebidas),
       detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "receita" && normalizeText(entry.status) === "recebido").length} lancamentos recebidos`,
+    },
+    {
+      title: "Lucro líquido realizado",
+      value: formatCurrency(lucroLiquidoRealizado),
+      detail: "Receitas recebidas menos despesas pagas",
+    },
+    {
+      title: "Lucro previsto geral",
+      value: formatCurrency(lucroPrevistoGeral),
+      detail: "Valor contratado menos despesas vinculadas",
+    },
+    {
+      title: "Contas vencidas",
+      value: String(contasVencidas),
+      detail: 'Lancamentos com status "Vencido"',
     },
     {
       title: "Despesas cadastradas",

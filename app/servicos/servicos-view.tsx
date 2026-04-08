@@ -185,17 +185,61 @@ export function ServicosView({
       normalizeText(field).includes(normalizedSearchTerm)
     );
   });
+  const receivedByServiceId = new Map<string, number>();
+
+  financialEntries
+    .filter(
+      (entry) =>
+        normalizeText(entry.tipo) === "receita" &&
+        normalizeText(entry.status) === "recebido"
+    )
+    .forEach((entry) => {
+      if (entry.servico_id === null || entry.servico_id === undefined) {
+        return;
+      }
+
+      const serviceId = String(entry.servico_id);
+      const currentTotal = receivedByServiceId.get(serviceId) ?? 0;
+
+      receivedByServiceId.set(
+        serviceId,
+        currentTotal + formatCurrencyValue(entry.valor)
+      );
+    });
+
+  const serviceBalances = services.map((service) => {
+    const valorContratado = formatCurrencyValue(service.valor);
+    const totalRecebido = receivedByServiceId.get(String(service.id)) ?? 0;
+
+    return {
+      service,
+      valorContratado,
+      totalRecebido,
+      valorEmAberto: valorContratado - totalRecebido,
+    };
+  });
+  const unPaidServiceBalances = serviceBalances.filter(
+    (summary) => summary.totalRecebido < summary.valorContratado
+  );
   const selectedServiceEntries = selectedFinanceService
     ? financialEntries.filter(
         (entry) => String(entry.servico_id) === String(selectedFinanceService.id)
       )
     : [];
   const receitaTotal = selectedServiceEntries
-    .filter((entry) => entry.tipo?.toLowerCase() === "receita")
+    .filter(
+      (entry) =>
+        normalizeText(entry.tipo) === "receita" &&
+        normalizeText(entry.status) === "recebido"
+    )
     .reduce((total, entry) => total + Number(formatCurrencyValue(entry.valor)), 0);
   const despesaTotal = selectedServiceEntries
-    .filter((entry) => entry.tipo?.toLowerCase() === "despesa")
+    .filter((entry) => normalizeText(entry.tipo) === "despesa")
     .reduce((total, entry) => total + Number(formatCurrencyValue(entry.valor)), 0);
+  const selectedServiceContractValue = selectedFinanceService
+    ? formatCurrencyValue(selectedFinanceService.valor)
+    : 0;
+  const selectedServiceOpenValue = selectedServiceContractValue - receitaTotal;
 
   function openModal() {
     setModalMode("create");
@@ -441,6 +485,98 @@ export function ServicosView({
             ))}
           </select>
         </div>
+
+        <section className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+          <div className="border-b border-slate-200 px-6 py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-[#17352b]">
+                  Serviços não quitados
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Saldos calculados pelo valor contratado menos receitas recebidas.
+                </p>
+              </div>
+
+              <span className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                {unPaidServiceBalances.length} em aberto
+              </span>
+            </div>
+          </div>
+
+          {unPaidServiceBalances.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <p className="text-sm font-medium text-emerald-700">
+                Nenhum serviço em aberto no momento
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Todos os serviços cadastrados estão quitados.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Serviço
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Valor contratado
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Total recebido
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Valor em aberto
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {unPaidServiceBalances.map((summary) => (
+                    <tr key={summary.service.id} className="hover:bg-slate-50/80">
+                      <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                        <Link
+                          href={`/servicos/${summary.service.id}`}
+                          className="font-medium text-[#17352b] transition hover:text-[#204638]"
+                        >
+                          {summary.service.nome_servico ?? "-"}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {getClientName(summary.service)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {formatCurrency(summary.valorContratado)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-emerald-700">
+                        {formatCurrency(summary.totalRecebido)}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-amber-700">
+                        {formatCurrency(summary.valorEmAberto)}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
+                            summary.service.status
+                          )}`}
+                        >
+                          {summary.service.status ?? "Sem status"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
           {services.length === 0 ? (
@@ -737,11 +873,22 @@ export function ServicosView({
             </div>
 
             <div className="space-y-6 px-6 py-6">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-3">
                 <article className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
-                  <p className="text-sm font-medium text-slate-500">Receitas</p>
+                  <p className="text-sm font-medium text-slate-500">
+                    Receitas recebidas
+                  </p>
                   <strong className="mt-3 block text-2xl font-semibold text-[#17352b]">
                     {formatCurrency(receitaTotal)}
+                  </strong>
+                </article>
+
+                <article className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+                  <p className="text-sm font-medium text-slate-500">
+                    Valor em aberto
+                  </p>
+                  <strong className="mt-3 block text-2xl font-semibold text-[#17352b]">
+                    {formatCurrency(selectedServiceOpenValue)}
                   </strong>
                 </article>
 

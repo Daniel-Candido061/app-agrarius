@@ -8,6 +8,7 @@ import {
   formatSimpleDate,
   getDateInputValue,
   isBeforeTodayDateOnly,
+  isBetweenTodayAndFutureDays,
 } from "../../lib/date-utils";
 import { supabase } from "../../lib/supabase";
 import { TASK_PRIORITY_OPTIONS } from "./priority-options";
@@ -99,6 +100,18 @@ function isOverdueTask(task: Tarefa) {
   return isBeforeTodayDateOnly(task.data_limite);
 }
 
+function isUpcomingTask(task: Tarefa) {
+  if (!task.data_limite) {
+    return false;
+  }
+
+  if (normalizeText(task.status) === "concluida") {
+    return false;
+  }
+
+  return isBetweenTodayAndFutureDays(task.data_limite, 7);
+}
+
 export function TarefasView({ tasks, services }: TarefasViewProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -134,6 +147,25 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       normalizeText(field).includes(normalizedSearchTerm)
     );
   });
+  const overdueTasks = tasks.filter(isOverdueTask);
+  const upcomingTasks = tasks.filter(isUpcomingTask);
+  const summaryCards = [
+    {
+      title: "Tarefas atrasadas",
+      value: String(overdueTasks.length),
+      detail: 'Prazo vencido e status diferente de "Concluída"',
+    },
+    {
+      title: "Tarefas próximas",
+      value: String(upcomingTasks.length),
+      detail: "Vencem entre hoje e os próximos 7 dias",
+    },
+    {
+      title: "Total de tarefas",
+      value: String(tasks.length),
+      detail: "Atividades cadastradas no módulo",
+    },
+  ];
 
   function openModal() {
     setModalMode("create");
@@ -307,6 +339,121 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
             {successMessage}
           </div>
         ) : null}
+
+        <section className="mb-5 grid gap-5 md:grid-cols-3">
+          {summaryCards.map((card) => (
+            <article
+              key={card.title}
+              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
+            >
+              <p className="text-sm font-medium text-slate-500">
+                {card.title}
+              </p>
+              <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
+                {card.value}
+              </strong>
+              <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
+            </article>
+          ))}
+        </section>
+
+        <section className="mb-5 grid gap-5 lg:grid-cols-2">
+          <article className="overflow-hidden rounded-2xl border border-rose-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+            <div className="border-b border-rose-100 px-6 py-5">
+              <h2 className="text-lg font-semibold text-rose-900">
+                Tarefas atrasadas
+              </h2>
+              <p className="text-sm text-rose-700/80">
+                Atividades com prazo vencido e ainda não concluídas.
+              </p>
+            </div>
+
+            {overdueTasks.length === 0 ? (
+              <div className="px-6 py-10 text-center">
+                <p className="text-sm font-medium text-emerald-700">
+                  Nenhuma tarefa atrasada
+                </p>
+                <p className="mt-2 text-sm text-slate-500">
+                  As atividades vencidas aparecerão aqui.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {overdueTasks.map((task) => (
+                  <div key={task.id} className="px-6 py-4">
+                    <p className="text-sm font-medium text-slate-700">
+                      {task.titulo ?? "-"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {serviceNameById.get(String(task.servico_id)) ??
+                        "Servico nao encontrado"}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                      <span className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-rose-700">
+                        {formatSimpleDate(task.data_limite)}
+                      </span>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 ${getPriorityClassName(
+                          task.prioridade
+                        )}`}
+                      >
+                        {task.prioridade ?? "Sem prioridade"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </article>
+
+          <article className="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+            <div className="border-b border-amber-100 px-6 py-5">
+              <h2 className="text-lg font-semibold text-amber-900">
+                Próximas tarefas
+              </h2>
+              <p className="text-sm text-amber-700/80">
+                Atividades que vencem nos próximos 7 dias.
+              </p>
+            </div>
+
+            {upcomingTasks.length === 0 ? (
+              <div className="px-6 py-10 text-center">
+                <p className="text-sm font-medium text-emerald-700">
+                  Nenhuma tarefa próxima
+                </p>
+                <p className="mt-2 text-sm text-slate-500">
+                  As atividades com prazo próximo aparecerão aqui.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {upcomingTasks.map((task) => (
+                  <div key={task.id} className="px-6 py-4">
+                    <p className="text-sm font-medium text-slate-700">
+                      {task.titulo ?? "-"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {serviceNameById.get(String(task.servico_id)) ??
+                        "Servico nao encontrado"}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                      <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-amber-700">
+                        {formatSimpleDate(task.data_limite)}
+                      </span>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 ${getStatusClassName(
+                          task.status
+                        )}`}
+                      >
+                        {task.status ?? "Sem status"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </article>
+        </section>
 
         <div className="mb-5">
           <input

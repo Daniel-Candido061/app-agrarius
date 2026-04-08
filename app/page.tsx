@@ -5,7 +5,6 @@ import {
   getDaysUntilSimpleDate,
   getSimpleDateTime,
   isBeforeTodayDateOnly,
-  isBetweenTodayAndFutureDays,
   isTodayOrFutureDateOnly,
 } from "../lib/date-utils";
 import { supabase } from "../lib/supabase";
@@ -116,32 +115,12 @@ function isPastDueTask(entry: TaskDashboardEntry) {
   return isBeforeTodayDateOnly(entry.data_limite);
 }
 
-function isUpcomingTask(entry: TaskDashboardEntry) {
-  if (!entry.data_limite) {
-    return false;
-  }
-
-  if (normalizeText(entry.status) === "concluida") {
-    return false;
-  }
-
-  return isBetweenTodayAndFutureDays(entry.data_limite, 7);
-}
-
 function isRevenue(entry: FinancialEntry) {
   return normalizeText(entry.tipo) === "receita";
 }
 
-function isExpense(entry: FinancialEntry) {
-  return normalizeText(entry.tipo) === "despesa";
-}
-
 function isReceived(entry: FinancialEntry) {
   return normalizeText(entry.status) === "recebido";
-}
-
-function isPaid(entry: FinancialEntry) {
-  return normalizeText(entry.status) === "pago";
 }
 
 function getDaysUntilDeadline(value: string | null) {
@@ -192,28 +171,16 @@ function getOverdueLabel(value: string | null) {
 
 async function getDashboardData() {
   const [
-    clientesResult,
-    servicosResult,
     servicesResult,
     financeiroResult,
     tasksResult,
   ] = await Promise.all([
-    supabase.from("clientes").select("*", { count: "exact", head: true }),
-    supabase.from("servicos").select("*", { count: "exact", head: true }),
     supabase
       .from("servicos")
       .select("id, nome_servico, valor, prazo_final, status, cliente:clientes(nome)"),
     supabase.from("financeiro").select("tipo, valor, status, data, servico_id"),
     supabase.from("tarefas").select("id, data_limite, status"),
   ]);
-
-  if (clientesResult.error) {
-    console.error("Erro ao buscar total de clientes:", clientesResult.error.message);
-  }
-
-  if (servicosResult.error) {
-    console.error("Erro ao buscar total de serviços:", servicosResult.error.message);
-  }
 
   if (servicesResult.error) {
     console.error("Erro ao buscar serviços do painel:", servicesResult.error.message);
@@ -236,7 +203,6 @@ async function getDashboardData() {
 
   const servicosAtrasados = services.filter(isPastDueService).length;
   const tarefasAtrasadas = tasks.filter(isPastDueTask).length;
-  const tarefasProximas = tasks.filter(isUpcomingTask).length;
 
   const valorContratadoTotal = services.reduce(
     (total, service) => total + getNumericValue(service.valor),
@@ -248,19 +214,6 @@ async function getDashboardData() {
     .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
 
   const totalAReceber = valorContratadoTotal - totalRecebido;
-
-  const despesasPagas = financialEntries
-    .filter((entry) => isExpense(entry) && isPaid(entry))
-    .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
-
-  const despesasVinculadas = financialEntries
-    .filter(
-      (entry) =>
-        isExpense(entry) &&
-        entry.servico_id !== null &&
-        entry.servico_id !== undefined
-    )
-    .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
 
   const receivedByServiceId = new Map<string, number>();
 
@@ -287,13 +240,6 @@ async function getDashboardData() {
     return recebido < valorContratado;
   });
 
-  const lucroLiquidoRealizadoGeral = totalRecebido - despesasPagas;
-  const lucroPrevistoGeral = valorContratadoTotal - despesasVinculadas;
-
-  const contasVencidas = financialEntries.filter(
-    (entry) => normalizeText(entry.status) === "vencido"
-  ).length;
-
   const proximosPrazos = services
     .filter(isUpcomingService)
     .sort((firstService, secondService) => {
@@ -315,28 +261,27 @@ async function getDashboardData() {
     .slice(0, 4);
 
   return {
-    totalClientes: clientesResult.count ?? 0,
-    totalServicos: servicosResult.count ?? 0,
     servicosAtrasados,
     tarefasAtrasadas,
-    tarefasProximas,
     totalAReceber,
     servicosNaoQuitados: servicosNaoQuitados.length,
-    servicosNaoQuitadosLista: servicosNaoQuitados.map((service) => {
-      const valorContratado = getNumericValue(service.valor);
-      const recebido = receivedByServiceId.get(String(service.id)) ?? 0;
+    servicosNaoQuitadosLista: servicosNaoQuitados
+      .map((service) => {
+        const valorContratado = getNumericValue(service.valor);
+        const recebido = receivedByServiceId.get(String(service.id)) ?? 0;
 
-      return {
-        ...service,
-        valorContratado,
-        totalRecebido: recebido,
-        valorEmAberto: valorContratado - recebido,
-      };
-    }),
-    totalRecebido,
-    lucroLiquidoRealizadoGeral,
-    lucroPrevistoGeral,
-    contasVencidas,
+        return {
+          ...service,
+          valorContratado,
+          totalRecebido: recebido,
+          valorEmAberto: valorContratado - recebido,
+        };
+      })
+      .sort(
+        (firstService, secondService) =>
+          secondService.valorEmAberto - firstService.valorEmAberto
+      )
+      .slice(0, 5),
     servicosUrgentes,
     proximosPrazos,
   };
@@ -348,31 +293,6 @@ export default async function Home() {
 
   const summaryCards = [
     {
-      title: "Total de clientes",
-      value: String(dashboardData.totalClientes),
-      detail: "Quantidade de registros na tabela clientes",
-    },
-    {
-      title: "Total de serviços",
-      value: String(dashboardData.totalServicos),
-      detail: "Quantidade de registros na tabela serviços",
-    },
-    {
-      title: "Serviços atrasados",
-      value: String(dashboardData.servicosAtrasados),
-      detail: "Serviços com prazo final vencido e ainda abertos",
-    },
-    {
-      title: "Tarefas atrasadas",
-      value: String(dashboardData.tarefasAtrasadas),
-      detail: 'Tarefas com prazo vencido e status diferente de "Concluída"',
-    },
-    {
-      title: "Tarefas próximas",
-      value: String(dashboardData.tarefasProximas),
-      detail: "Tarefas que vencem entre hoje e os próximos 7 dias",
-    },
-    {
       title: "Total a receber",
       value: formatCurrency(dashboardData.totalAReceber),
       detail: "Valor contratado menos receitas recebidas",
@@ -383,24 +303,14 @@ export default async function Home() {
       detail: "Serviços com recebido menor que o contratado",
     },
     {
-      title: "Total recebido",
-      value: formatCurrency(dashboardData.totalRecebido),
-      detail: 'Receitas com status "Recebido"',
+      title: "Serviços atrasados",
+      value: String(dashboardData.servicosAtrasados),
+      detail: "Serviços com prazo final vencido e ainda abertos",
     },
     {
-      title: "Lucro líquido realizado",
-      value: formatCurrency(dashboardData.lucroLiquidoRealizadoGeral),
-      detail: "Receitas recebidas menos despesas pagas",
-    },
-    {
-      title: "Lucro previsto geral",
-      value: formatCurrency(dashboardData.lucroPrevistoGeral),
-      detail: "Valor contratado menos despesas vinculadas",
-    },
-    {
-      title: "Contas vencidas",
-      value: String(dashboardData.contasVencidas),
-      detail: 'Lançamentos com status "Vencido"',
+      title: "Tarefas atrasadas",
+      value: String(dashboardData.tarefasAtrasadas),
+      detail: 'Tarefas com prazo vencido e status diferente de "Concluída"',
     },
   ];
 
