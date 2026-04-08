@@ -110,28 +110,6 @@ function getServiceClientName(service: ServicoOption) {
   return service.cliente?.nome ?? "Cliente não encontrado";
 }
 
-function serviceMatchesSearch(
-  service: ServicoOption,
-  normalizedSearchTerm: string
-) {
-  if (!normalizedSearchTerm) {
-    return true;
-  }
-
-  const searchableFields = [
-    service.nome_servico,
-    getServiceClientName(service),
-    service.status,
-    service.valor === null || service.valor === undefined
-      ? null
-      : String(service.valor),
-  ];
-
-  return searchableFields.some((field) =>
-    normalizeText(field).includes(normalizedSearchTerm)
-  );
-}
-
 function entryMatchesSearch(
   entry: LancamentoFinanceiro,
   serviceDetails: ServiceDetails | undefined,
@@ -176,10 +154,7 @@ function getCustomPeriodLabel(startDate: string, endDate: string) {
   return "Intervalo personalizado";
 }
 
-function buildSummaryCards(
-  entries: LancamentoFinanceiro[],
-  totalEmAberto: number
-) {
+function buildSummaryCards(entries: LancamentoFinanceiro[]) {
   const receitasRecebidasEntries = entries.filter(
     (entry) =>
       normalizeText(entry.tipo) === "receita" &&
@@ -193,11 +168,20 @@ function buildSummaryCards(
   const contasVencidasEntries = entries.filter(
     (entry) => normalizeText(entry.status) === "vencido"
   );
+  const receitasEmAbertoEntries = entries.filter(
+    (entry) =>
+      normalizeText(entry.tipo) === "receita" &&
+      normalizeText(entry.status) !== "recebido"
+  );
   const receitasRecebidas = receitasRecebidasEntries.reduce(
     (total, entry) => total + getNumericValue(entry.valor),
     0
   );
   const despesasPagas = despesasPagasEntries.reduce(
+    (total, entry) => total + getNumericValue(entry.valor),
+    0
+  );
+  const totalEmAberto = receitasEmAbertoEntries.reduce(
     (total, entry) => total + getNumericValue(entry.valor),
     0
   );
@@ -222,7 +206,7 @@ function buildSummaryCards(
     {
       title: "A receber",
       value: formatCurrency(totalEmAberto),
-      detail: "Valor contratado menos receitas recebidas",
+      detail: `${receitasEmAbertoEntries.length} receitas em aberto`,
     },
     {
       title: "Vencidos",
@@ -335,79 +319,8 @@ export function FinanceiroView({
       normalizedSearchTerm
     );
   });
-  const serviceIdsMatchingSearch = new Set(
-    periodEntries
-      .filter((entry) =>
-        entryMatchesSearch(
-          entry,
-          serviceDetailsById.get(String(entry.servico_id)),
-          serviceFallbackLabel,
-          normalizedSearchTerm
-        )
-      )
-      .map((entry) =>
-        entry.servico_id === null || entry.servico_id === undefined
-          ? ""
-          : String(entry.servico_id)
-      )
-      .filter(Boolean)
-  );
-  const servicesForOpenReceivables = serviceFilter !== "general"
-    ? services.filter((service) => {
-        if (
-          !isDateInPeriod(
-            service.created_at,
-            activePeriod,
-            customStartDate,
-            customEndDate
-          )
-        ) {
-          return false;
-        }
-
-        if (serviceFilter && String(service.id) !== serviceFilter) {
-          return false;
-        }
-
-        return (
-          serviceMatchesSearch(service, normalizedSearchTerm) ||
-          serviceIdsMatchingSearch.has(String(service.id))
-        );
-      })
-    : [];
-  const receivedByServiceId = new Map<string, number>();
-
-  periodEntries
-    .filter(
-      (entry) =>
-        normalizeText(entry.tipo) === "receita" &&
-        normalizeText(entry.status) === "recebido"
-    )
-    .forEach((entry) => {
-      if (entry.servico_id === null || entry.servico_id === undefined) {
-        return;
-      }
-
-      const serviceId = String(entry.servico_id);
-      const currentTotal = receivedByServiceId.get(serviceId) ?? 0;
-
-      receivedByServiceId.set(
-        serviceId,
-        currentTotal + getNumericValue(entry.valor)
-      );
-    });
-  const totalEmAberto = servicesForOpenReceivables.reduce((total, service) => {
-    const valorContratado = getNumericValue(service.valor);
-    const totalRecebido = receivedByServiceId.get(String(service.id)) ?? 0;
-    const valorEmAberto = valorContratado - totalRecebido;
-
-    if (valorEmAberto <= 0) {
-      return total;
-    }
-
-    return total + valorEmAberto;
-  }, 0);
-  const summaryCards = buildSummaryCards(filteredEntries, totalEmAberto);
+  const tableEntries = filteredEntries;
+  const summaryCards = buildSummaryCards(tableEntries);
   const selectedTimeLabel =
     timeFilterMode === "rapido"
       ? `Período: ${getAppliedQuickPeriodLabel(periodFilter)}`
@@ -846,7 +759,7 @@ export function FinanceiroView({
                   aqui.
                 </p>
               </div>
-            ) : filteredEntries.length === 0 ? (
+            ) : tableEntries.length === 0 ? (
               <div className="px-6 py-16 text-center">
                 <h2 className="text-lg font-semibold text-[#17352b]">
                   Nenhum resultado encontrado
@@ -890,7 +803,7 @@ export function FinanceiroView({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredEntries.map((entry) => {
+                    {tableEntries.map((entry) => {
                       const serviceDetails = serviceDetailsById.get(
                         String(entry.servico_id)
                       );
