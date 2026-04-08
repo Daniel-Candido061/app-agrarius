@@ -1,18 +1,23 @@
 const dateOnlyPattern = /^(\d{4})-(\d{2})-(\d{2})/;
 const brazilTimeZone = "America/Sao_Paulo";
 
-export const periodOptions = [
+export const quickPeriodOptions = [
   { value: "semana", label: "Semana" },
   { value: "mes", label: "Mês" },
   { value: "trimestre", label: "Trimestre" },
   { value: "semestre", label: "Semestre" },
   { value: "ano", label: "Ano" },
+] as const;
+
+export const periodOptions = [
+  ...quickPeriodOptions,
   { value: "personalizado", label: "Período personalizado" },
 ] as const;
 
 export type PeriodValue = (typeof periodOptions)[number]["value"];
+export type QuickPeriodValue = (typeof quickPeriodOptions)[number]["value"];
 
-export const defaultPeriodValue: PeriodValue = "mes";
+export const defaultPeriodValue: QuickPeriodValue = "mes";
 
 function getSaoPauloDateParts(date: Date) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -100,6 +105,14 @@ export function getPeriodValue(value: string | string[] | null | undefined) {
 
   return periodOptions.some((option) => option.value === normalizedValue)
     ? (normalizedValue as PeriodValue)
+    : defaultPeriodValue;
+}
+
+export function getQuickPeriodValue(value: string | string[] | null | undefined) {
+  const normalizedValue = Array.isArray(value) ? value[0] : value;
+
+  return quickPeriodOptions.some((option) => option.value === normalizedValue)
+    ? (normalizedValue as QuickPeriodValue)
     : defaultPeriodValue;
 }
 

@@ -10,9 +10,10 @@ import {
 import { requireAuth } from "../../lib/auth";
 import {
   getPeriodLabel,
-  getPeriodValue,
+  getQuickPeriodValue,
   isDateInPeriod,
-  periodOptions,
+  quickPeriodOptions,
+  type QuickPeriodValue,
   type PeriodValue,
 } from "../../lib/period-utils";
 import { supabase } from "../../lib/supabase";
@@ -369,19 +370,36 @@ async function getDashboardData(
 
 type DashboardPageProps = {
   searchParams: Promise<{
+    modoTempo?: string | string[];
     periodo?: string | string[];
     dataInicial?: string | string[];
     dataFinal?: string | string[];
   }>;
 };
 
+type TimeFilterMode = "rapido" | "personalizado";
+
+function getTimeFilterMode(value: string | string[] | undefined): TimeFilterMode {
+  const normalizedValue = Array.isArray(value) ? value[0] : value;
+
+  return normalizedValue === "personalizado" ? "personalizado" : "rapido";
+}
+
 export default async function Home({ searchParams }: DashboardPageProps) {
   await connection();
   await requireAuth();
 
-  const { periodo, dataInicial, dataFinal } = await searchParams;
-  const selectedPeriod = getPeriodValue(periodo);
-  const selectedPeriodLabel = getPeriodLabel(selectedPeriod);
+  const { modoTempo, periodo, dataInicial, dataFinal } = await searchParams;
+  const timeFilterMode = getTimeFilterMode(modoTempo);
+  const selectedQuickPeriod: QuickPeriodValue = getQuickPeriodValue(periodo);
+  const selectedPeriod: PeriodValue =
+    timeFilterMode === "personalizado"
+      ? "personalizado"
+      : selectedQuickPeriod;
+  const selectedPeriodLabel =
+    timeFilterMode === "personalizado"
+      ? "personalizado"
+      : getPeriodLabel(selectedPeriod);
   const customStartDate = Array.isArray(dataInicial)
     ? dataInicial[0] ?? ""
     : dataInicial ?? "";
@@ -471,46 +489,71 @@ export default async function Home({ searchParams }: DashboardPageProps) {
               </p>
             </div>
 
-            <form className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-64">
-              <label
-                htmlFor="dashboard-period"
-                className="text-sm font-medium text-slate-700"
-              >
-                Período
-              </label>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.1fr_1fr_1fr_auto]">
-                <select
-                  id="dashboard-period"
-                  name="periodo"
-                  defaultValue={selectedPeriod}
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                >
-                  {periodOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="date"
-                  name="dataInicial"
-                  defaultValue={customStartDate}
-                  aria-label="Data inicial"
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                />
-                <input
-                  type="date"
-                  name="dataFinal"
-                  defaultValue={customEndDate}
-                  aria-label="Data final"
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                />
+            <form className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-4 lg:max-w-xl">
+              <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Modo do filtro
+                  <select
+                    name="modoTempo"
+                    defaultValue={timeFilterMode}
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  >
+                    <option value="rapido">Período rápido</option>
+                    <option value="personalizado">Intervalo personalizado</option>
+                  </select>
+                </label>
+
                 <button
                   type="submit"
                   className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
                 >
                   Aplicar
                 </button>
+              </div>
+
+              <div className="mt-3">
+                {timeFilterMode === "rapido" ? (
+                  <label
+                    htmlFor="dashboard-period"
+                    className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                  >
+                    Período rápido
+                    <select
+                      id="dashboard-period"
+                      name="periodo"
+                      defaultValue={selectedQuickPeriod}
+                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    >
+                      {quickPeriodOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                      Data inicial
+                      <input
+                        type="date"
+                        name="dataInicial"
+                        defaultValue={customStartDate}
+                        className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                      Data final
+                      <input
+                        type="date"
+                        name="dataFinal"
+                        defaultValue={customEndDate}
+                        className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
             </form>
           </div>
