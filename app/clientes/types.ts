@@ -23,3 +23,17 @@ export type ClienteFinanceiro = {
   servico_id: number | string | null;
   status: string | null;
 };
+
+export type ClientePortfolioServico = {
+  id: number;
+  cliente_id: number | string | null;
+  valor: number | string | null;
+  status: string | null;
+};
+
+export type ClientePortfolioFinanceiro = {
+  tipo: string | null;
+  valor: number | string | null;
+  servico_id: number | string | null;
+  status: string | null;
+};

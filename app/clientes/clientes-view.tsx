@@ -6,10 +6,16 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import { supabase } from "../../lib/supabase";
 import { CLIENT_STATUS_OPTIONS } from "./status-options";
-import type { Cliente } from "./types";
+import type {
+  Cliente,
+  ClientePortfolioFinanceiro,
+  ClientePortfolioServico,
+} from "./types";
 
 type ClientesViewProps = {
   clients: Cliente[];
+  services: ClientePortfolioServico[];
+  financialEntries: ClientePortfolioFinanceiro[];
 };
 
 type ModalMode = "create" | "edit";
@@ -40,6 +46,50 @@ function normalizeText(value: string | null) {
   );
 }
 
+function formatCurrency(value: number | string | null) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  const numericValue =
+    typeof value === "number"
+      ? value
+      : Number(String(value).replace(",", "."));
+
+  if (Number.isNaN(numericValue)) {
+    return String(value);
+  }
+
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(numericValue);
+}
+
+function getNumericValue(value: number | string | null) {
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+
+  const numericValue =
+    typeof value === "number"
+      ? value
+      : Number(String(value).replace(",", "."));
+
+  return Number.isNaN(numericValue) ? 0 : numericValue;
+}
+
+function isReceivedRevenue(entry: ClientePortfolioFinanceiro) {
+  return (
+    normalizeText(entry.tipo) === "receita" &&
+    normalizeText(entry.status) === "recebido"
+  );
+}
+
+function isServiceInProgress(service: ClientePortfolioServico) {
+  return normalizeText(service.status) === "em andamento";
+}
+
 function getStatusClassName(status: string | null) {
   const normalizedStatus = normalizeText(status);
 
@@ -58,7 +108,11 @@ function getStatusClassName(status: string | null) {
   return "bg-sky-50 text-sky-700";
 }
 
-export function ClientesView({ clients }: ClientesViewProps) {
+export function ClientesView({
+  clients,
+  services,
+  financialEntries,
+}: ClientesViewProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("create");
@@ -69,6 +123,102 @@ export function ClientesView({ clients }: ClientesViewProps) {
   const [successMessage, setSuccessMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [deletingClientId, setDeletingClientId] = useState<number | null>(null);
+  const servicesByClientId = new Map<string, ClientePortfolioServico[]>();
+  const receivedByServiceId = new Map<string, number>();
+
+  services.forEach((service) => {
+    if (service.cliente_id === null || service.cliente_id === undefined) {
+      return;
+    }
+
+    const clientId = String(service.cliente_id);
+    const clientServices = servicesByClientId.get(clientId) ?? [];
+
+    clientServices.push(service);
+    servicesByClientId.set(clientId, clientServices);
+  });
+
+  financialEntries.filter(isReceivedRevenue).forEach((entry) => {
+    if (entry.servico_id === null || entry.servico_id === undefined) {
+      return;
+    }
+
+    const serviceId = String(entry.servico_id);
+    const currentTotal = receivedByServiceId.get(serviceId) ?? 0;
+
+    receivedByServiceId.set(
+      serviceId,
+      currentTotal + getNumericValue(entry.valor)
+    );
+  });
+
+  const clientMetrics = new Map<
+    number,
+    {
+      servicesCount: number;
+      totalContratado: number;
+      totalRecebido: number;
+      valorEmAberto: number;
+      hasServiceInProgress: boolean;
+    }
+  >();
+
+  clients.forEach((client) => {
+    const clientServices = servicesByClientId.get(String(client.id)) ?? [];
+    const totalContratado = clientServices.reduce(
+      (total, service) => total + getNumericValue(service.valor),
+      0
+    );
+    const totalRecebido = clientServices.reduce((total, service) => {
+      const receivedValue = receivedByServiceId.get(String(service.id)) ?? 0;
+
+      return total + receivedValue;
+    }, 0);
+
+    clientMetrics.set(client.id, {
+      servicesCount: clientServices.length,
+      totalContratado,
+      totalRecebido,
+      valorEmAberto: totalContratado - totalRecebido,
+      hasServiceInProgress: clientServices.some(isServiceInProgress),
+    });
+  });
+
+  const totalValorAReceber = Array.from(clientMetrics.values()).reduce(
+    (total, metrics) =>
+      metrics.valorEmAberto > 0 ? total + metrics.valorEmAberto : total,
+    0
+  );
+  const portfolioCards = [
+    {
+      title: "Total de clientes",
+      value: String(clients.length),
+      detail: "Clientes cadastrados na base.",
+    },
+    {
+      title: "Clientes com serviços em andamento",
+      value: String(
+        Array.from(clientMetrics.values()).filter(
+          (metrics) => metrics.hasServiceInProgress
+        ).length
+      ),
+      detail: "Clientes com ao menos um serviço ativo.",
+    },
+    {
+      title: "Clientes com valores em aberto",
+      value: String(
+        Array.from(clientMetrics.values()).filter(
+          (metrics) => metrics.totalRecebido < metrics.totalContratado
+        ).length
+      ),
+      detail: "Clientes com saldo a receber.",
+    },
+    {
+      title: "Valor total a receber",
+      value: formatCurrency(totalValorAReceber),
+      detail: "Soma dos saldos em aberto dos clientes.",
+    },
+  ];
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
   const filteredClients = clients.filter((client) => {
     if (!normalizedSearchTerm) {
@@ -267,6 +417,25 @@ export function ClientesView({ clients }: ClientesViewProps) {
           </div>
         ) : null}
 
+        <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {portfolioCards.map((card) => (
+            <article
+              key={card.title}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
+            >
+              <p className="text-sm font-medium text-slate-500">
+                {card.title}
+              </p>
+              <p className="mt-3 text-2xl font-semibold text-[#17352b]">
+                {card.value}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-slate-400">
+                {card.detail}
+              </p>
+            </article>
+          ))}
+        </section>
+
         <div className="mb-5">
           <input
             type="text"
@@ -314,6 +483,15 @@ export function ClientesView({ clients }: ClientesViewProps) {
                       Cidade
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Serviços
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Contratado
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Em aberto
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Status
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
@@ -322,56 +500,71 @@ export function ClientesView({ clients }: ClientesViewProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredClients.map((client) => (
-                    <tr key={client.id} className="hover:bg-slate-50/80">
-                      <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                        {client.nome}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        {client.telefone ?? "-"}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        {client.email ?? "-"}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        {client.cidade ?? "-"}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
-                            client.status
-                          )}`}
-                        >
-                          {client.status ?? "Sem status"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right text-sm">
-                        <div className="flex justify-end gap-2">
-                          <Link
-                            href={`/clientes/${client.id}`}
-                            className="inline-flex items-center justify-center rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                  {filteredClients.map((client) => {
+                    const metrics = clientMetrics.get(client.id);
+
+                    return (
+                      <tr key={client.id} className="hover:bg-slate-50/80">
+                        <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                          {client.nome}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {client.telefone ?? "-"}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {client.email ?? "-"}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {client.cidade ?? "-"}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {metrics?.servicesCount ?? 0}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                          {formatCurrency(metrics?.totalContratado ?? 0)}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-[#17352b]">
+                          {formatCurrency(metrics?.valorEmAberto ?? 0)}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
+                              client.status
+                            )}`}
                           >
-                            Ver detalhes
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(client)}
-                            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(client)}
-                            disabled={deletingClientId === client.id}
-                            className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {deletingClientId === client.id ? "Excluindo..." : "Excluir"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            {client.status ?? "Sem status"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm">
+                          <div className="flex justify-end gap-2">
+                            <Link
+                              href={`/clientes/${client.id}`}
+                              className="inline-flex items-center justify-center rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                            >
+                              Ver detalhes
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(client)}
+                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(client)}
+                              disabled={deletingClientId === client.id}
+                              className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {deletingClientId === client.id
+                                ? "Excluindo..."
+                                : "Excluir"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
