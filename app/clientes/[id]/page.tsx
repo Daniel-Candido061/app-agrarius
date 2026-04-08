@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "../../components/app-shell";
 import { formatSimpleDate } from "../../../lib/date-utils";
 import { supabase } from "../../../lib/supabase";
-import type { Cliente, ClienteServico } from "../types";
+import type { Cliente, ClienteFinanceiro, ClienteServico } from "../types";
 
 function formatCurrency(value: number | string | null) {
   if (value === null || value === undefined || value === "") {
@@ -26,12 +26,43 @@ function formatCurrency(value: number | string | null) {
   }).format(numericValue);
 }
 
-function getStatusClassName(status: string | null) {
-  const normalizedStatus =
-    status
+function getNumericValue(value: number | string | null) {
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+
+  const numericValue =
+    typeof value === "number"
+      ? value
+      : Number(String(value).replace(",", "."));
+
+  return Number.isNaN(numericValue) ? 0 : numericValue;
+}
+
+function normalizeText(value: string | null | undefined) {
+  return (
+    value
       ?.normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase() ?? "";
+      .trim()
+      .toLowerCase() ?? ""
+  );
+}
+
+function isRevenue(entry: ClienteFinanceiro) {
+  return normalizeText(entry.tipo) === "receita";
+}
+
+function isExpense(entry: ClienteFinanceiro) {
+  return normalizeText(entry.tipo) === "despesa";
+}
+
+function isReceived(entry: ClienteFinanceiro) {
+  return normalizeText(entry.status) === "recebido";
+}
+
+function getStatusClassName(status: string | null) {
+  const normalizedStatus = normalizeText(status);
 
   if (normalizedStatus === "ativo") {
     return "bg-emerald-50 text-emerald-700";
@@ -49,11 +80,7 @@ function getStatusClassName(status: string | null) {
 }
 
 function getServiceStatusClassName(status: string | null) {
-  const normalizedStatus =
-    status
-      ?.normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase() ?? "";
+  const normalizedStatus = normalizeText(status);
 
   if (normalizedStatus === "proposta") {
     return "bg-amber-50 text-amber-700";
@@ -113,6 +140,24 @@ async function getServicosDoCliente(id: number) {
   return (data ?? []) as ClienteServico[];
 }
 
+async function getLancamentosDosServicos(serviceIds: number[]) {
+  if (serviceIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("financeiro")
+    .select("id, tipo, valor, servico_id, status")
+    .in("servico_id", serviceIds);
+
+  if (error) {
+    console.error("Erro ao buscar financeiro dos servicos do cliente:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as ClienteFinanceiro[];
+}
+
 export default async function ClienteDetalhesPage({
   params,
 }: {
@@ -135,6 +180,78 @@ export default async function ClienteDetalhesPage({
   if (!client) {
     notFound();
   }
+
+  const financialEntries = await getLancamentosDosServicos(
+    services.map((service) => service.id)
+  );
+
+  const entriesByServiceId = new Map<string, ClienteFinanceiro[]>();
+
+  financialEntries.forEach((entry) => {
+    if (entry.servico_id === null || entry.servico_id === undefined) {
+      return;
+    }
+
+    const serviceId = String(entry.servico_id);
+    const entries = entriesByServiceId.get(serviceId) ?? [];
+
+    entries.push(entry);
+    entriesByServiceId.set(serviceId, entries);
+  });
+
+  const totalContratado = services.reduce(
+    (total, service) => total + getNumericValue(service.valor),
+    0
+  );
+
+  const totalRecebido = financialEntries
+    .filter((entry) => isRevenue(entry) && isReceived(entry))
+    .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+
+  const totalEmAberto = totalContratado - totalRecebido;
+
+  const serviceSummaries = services.map((service) => {
+    const serviceEntries = entriesByServiceId.get(String(service.id)) ?? [];
+    const valorContratado = getNumericValue(service.valor);
+    const recebido = serviceEntries
+      .filter((entry) => isRevenue(entry) && isReceived(entry))
+      .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+    const despesasVinculadas = serviceEntries
+      .filter(isExpense)
+      .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+
+    return {
+      service,
+      valorContratado,
+      recebido,
+      emAberto: valorContratado - recebido,
+      despesasVinculadas,
+      lucroLiquidoPrevisto: valorContratado - despesasVinculadas,
+    };
+  });
+
+  const summaryCards = [
+    {
+      title: "Total contratado",
+      value: formatCurrency(totalContratado),
+      detail: "Soma dos valores contratados em serviços.",
+    },
+    {
+      title: "Total recebido",
+      value: formatCurrency(totalRecebido),
+      detail: "Receitas recebidas dos serviços do cliente.",
+    },
+    {
+      title: "Total em aberto",
+      value: formatCurrency(totalEmAberto),
+      detail: "Total contratado menos o total recebido.",
+    },
+    {
+      title: "Quantidade de serviços",
+      value: String(services.length),
+      detail: "Serviços vinculados a este cliente.",
+    },
+  ];
 
   return (
     <AppShell
@@ -207,15 +324,22 @@ export default async function ClienteDetalhesPage({
             </div>
           </article>
 
-          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-            <p className="text-sm font-medium text-slate-500">Resumo</p>
-            <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
-              {services.length}
-            </strong>
-            <p className="mt-3 text-sm text-slate-500">
-              Quantidade de serviços vinculados a este cliente.
-            </p>
-          </article>
+          <div className="grid gap-5">
+            {summaryCards.map((card) => (
+              <article
+                key={card.title}
+                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
+              >
+                <p className="text-sm font-medium text-slate-500">
+                  {card.title}
+                </p>
+                <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
+                  {card.value}
+                </strong>
+                <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
@@ -240,7 +364,19 @@ export default async function ClienteDetalhesPage({
                       Cidade
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Valor
+                      Valor contratado
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Total recebido
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Valor em aberto
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Despesas vinculadas
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Lucro previsto
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Prazo
@@ -251,27 +387,52 @@ export default async function ClienteDetalhesPage({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {services.map((service) => (
-                    <tr key={service.id} className="hover:bg-slate-50/80">
+                  {serviceSummaries.map((summary) => (
+                    <tr
+                      key={summary.service.id}
+                      className="hover:bg-slate-50/80"
+                    >
                       <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                        {service.nome_servico ?? "-"}
+                        {summary.service.nome_servico ?? "-"}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {service.cidade ?? "-"}
+                        {summary.service.cidade ?? "-"}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {formatCurrency(service.valor)}
+                        {formatCurrency(summary.valorContratado)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-emerald-700">
+                        {formatCurrency(summary.recebido)}
+                      </td>
+                      <td
+                        className={`px-6 py-4 text-sm ${
+                          summary.emAberto < 0 ? "text-rose-700" : "text-slate-500"
+                        }`}
+                      >
+                        {formatCurrency(summary.emAberto)}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {formatSimpleDate(service.prazo_final)}
+                        {formatCurrency(summary.despesasVinculadas)}
+                      </td>
+                      <td
+                        className={`px-6 py-4 text-sm ${
+                          summary.lucroLiquidoPrevisto < 0
+                            ? "text-rose-700"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        {formatCurrency(summary.lucroLiquidoPrevisto)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {formatSimpleDate(summary.service.prazo_final)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span
                           className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getServiceStatusClassName(
-                            service.status
+                            summary.service.status
                           )}`}
                         >
-                          {service.status ?? "Sem status"}
+                          {summary.service.status ?? "Sem status"}
                         </span>
                       </td>
                     </tr>

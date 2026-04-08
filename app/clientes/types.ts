@@ -15,3 +15,11 @@ export type ClienteServico = {
   prazo_final: string | null;
   status: string | null;
 };
+
+export type ClienteFinanceiro = {
+  id: number;
+  tipo: string | null;
+  valor: number | string | null;
+  servico_id: number | string | null;
+  status: string | null;
+};
