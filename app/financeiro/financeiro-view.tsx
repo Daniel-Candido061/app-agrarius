@@ -539,21 +539,21 @@ export function FinanceiroView({
             ))}
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.7fr)]">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
                 <p className="text-sm font-semibold text-[#17352b]">
                   Filtro temporal
                 </p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
                     Modo
                     <select
                       value={timeFilterMode}
                       onChange={(event) =>
                         setTimeFilterMode(event.target.value as TimeFilterMode)
                       }
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                     >
                       <option value="rapido">Período rápido</option>
                       <option value="personalizado">
@@ -563,14 +563,14 @@ export function FinanceiroView({
                   </label>
 
                   {timeFilterMode === "rapido" ? (
-                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
                       Período rápido
                       <select
                         value={periodFilter}
                         onChange={(event) =>
                           setPeriodFilter(event.target.value as QuickPeriodValue)
                         }
-                        className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                       >
                         {quickPeriodOptions.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -581,7 +581,7 @@ export function FinanceiroView({
                     </label>
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                      <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
                         Data inicial
                         <input
                           type="date"
@@ -589,11 +589,11 @@ export function FinanceiroView({
                           onChange={(event) =>
                             setCustomStartDate(event.target.value)
                           }
-                          className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                         />
                       </label>
 
-                      <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                      <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
                         Data final
                         <input
                           type="date"
@@ -601,7 +601,7 @@ export function FinanceiroView({
                           onChange={(event) =>
                             setCustomEndDate(event.target.value)
                           }
-                          className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                         />
                       </label>
                     </div>
@@ -609,52 +609,70 @@ export function FinanceiroView({
                 </div>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-[1.4fr_0.8fr_0.8fr_1.2fr]">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Buscar por descrição, cliente, serviço ou categoria"
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                />
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                <p className="text-sm font-semibold text-[#17352b]">
+                  Filtros da listagem
+                </p>
 
-                <select
-                  value={typeFilter}
-                  onChange={(event) => setTypeFilter(event.target.value)}
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                >
-                  <option value="">Todos os tipos</option>
-                  <option value="Receita">Receita</option>
-                  <option value="Despesa">Despesa</option>
-                </select>
+                <div className="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-[1.4fr_0.8fr_0.8fr_1.2fr]">
+                  <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                    Busca
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      placeholder="Descrição, cliente, serviço ou categoria"
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    />
+                  </label>
 
-                <select
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                >
-                  <option value="">Todos os status</option>
-                  {allStatusOptions.map((statusOption) => (
-                    <option key={statusOption} value={statusOption}>
-                      {statusOption}
-                    </option>
-                  ))}
-                </select>
+                  <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                    Tipo
+                    <select
+                      value={typeFilter}
+                      onChange={(event) => setTypeFilter(event.target.value)}
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    >
+                      <option value="">Todos os tipos</option>
+                      <option value="Receita">Receita</option>
+                      <option value="Despesa">Despesa</option>
+                    </select>
+                  </label>
 
-                <select
-                  value={serviceFilter}
-                  onChange={(event) => setServiceFilter(event.target.value)}
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                >
-                  <option value="">Todos os serviços</option>
-                  <option value="general">{serviceFallbackLabel}</option>
-                  {services.map((service) => (
-                    <option key={service.id} value={String(service.id)}>
-                      {service.nome_servico ?? `Serviço ${service.id}`} -{" "}
-                      {getServiceClientName(service)}
-                    </option>
-                  ))}
-                </select>
+                  <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                    Status
+                    <select
+                      value={statusFilter}
+                      onChange={(event) => setStatusFilter(event.target.value)}
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    >
+                      <option value="">Todos os status</option>
+                      {allStatusOptions.map((statusOption) => (
+                        <option key={statusOption} value={statusOption}>
+                          {statusOption}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                    Serviço
+                    <select
+                      value={serviceFilter}
+                      onChange={(event) => setServiceFilter(event.target.value)}
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    >
+                      <option value="">Todos os serviços</option>
+                      <option value="general">{serviceFallbackLabel}</option>
+                      {services.map((service) => (
+                        <option key={service.id} value={String(service.id)}>
+                          {service.nome_servico ?? `Serviço ${service.id}`} -{" "}
+                          {getServiceClientName(service)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               </div>
             </div>
           </section>
