@@ -322,19 +322,19 @@ export function ServicosView({
     }
 
     if (!nomeServico) {
-      setErrorMessage("Informe o nome do servico.");
+      setErrorMessage("Informe o nome do serviço.");
       return;
     }
 
     if (!status) {
-      setErrorMessage("Selecione o status do servico.");
+      setErrorMessage("Selecione o status do serviço.");
       return;
     }
 
     const parsedClienteId = Number(clienteId);
 
     if (Number.isNaN(parsedClienteId)) {
-      setErrorMessage("Cliente invalido.");
+      setErrorMessage("Cliente inválido.");
       return;
     }
 
@@ -385,14 +385,14 @@ export function ServicosView({
     if (response.error) {
       setErrorMessage(
         isEditing
-          ? "Nao foi possivel atualizar o servico agora. Tente novamente."
-          : "Nao foi possivel salvar o servico agora. Tente novamente."
+          ? "Não foi possível atualizar o serviço agora. Tente novamente."
+          : "Não foi possível salvar o serviço agora. Tente novamente."
       );
       return;
     }
 
     if (isEditing && !response.data?.id) {
-      setErrorMessage("Nao foi possivel identificar o servico atualizado.");
+      setErrorMessage("Não foi possível identificar o serviço atualizado.");
       return;
     }
 
@@ -419,7 +419,7 @@ export function ServicosView({
     if (linkedFinancialEntriesError) {
       setDeletingServiceId(null);
       setErrorMessage(
-        "Nao foi possivel verificar os lancamentos financeiros vinculados a este servico."
+        "Não foi possível verificar os lançamentos financeiros vinculados a este serviço."
       );
       return;
     }
@@ -427,7 +427,7 @@ export function ServicosView({
     if ((linkedFinancialEntriesCount ?? 0) > 0) {
       setDeletingServiceId(null);
       setErrorMessage(
-        "Nao e possivel excluir este servico porque ele possui lancamentos financeiros vinculados."
+        "Não é possível excluir este serviço porque ele possui lançamentos financeiros vinculados."
       );
       return;
     }
@@ -437,7 +437,7 @@ export function ServicosView({
     setDeletingServiceId(null);
 
     if (error) {
-      setErrorMessage("Nao foi possivel excluir o servico agora. Tente novamente.");
+      setErrorMessage("Não foi possível excluir o serviço agora. Tente novamente.");
       return;
     }
 
@@ -447,8 +447,8 @@ export function ServicosView({
   return (
     <>
       <AppShell
-        title="Servicos"
-        description="Lista de servicos sincronizada com os dados reais do Supabase."
+        title="Serviços"
+        description="Lista de serviços sincronizada com os dados reais do Supabase."
         currentPath="/servicos"
         action={
           <button
@@ -622,7 +622,7 @@ export function ServicosView({
                       Status
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Acoes
+                      Ações
                     </th>
                   </tr>
                 </thead>
@@ -855,7 +855,7 @@ export function ServicosView({
                   Financeiro do serviço
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  {selectedFinanceService.nome_servico ?? `Servico ${selectedFinanceService.id}`}
+                  {selectedFinanceService.nome_servico ?? `Serviço ${selectedFinanceService.id}`}
                 </p>
               </div>
 

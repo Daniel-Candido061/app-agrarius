@@ -1,5 +1,5 @@
 export const TASK_STATUS_OPTIONS = [
-  "pendente",
-  "em andamento",
-  "concluída",
+  "Pendente",
+  "Em andamento",
+  "Concluído",
 ];

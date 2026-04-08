@@ -12,7 +12,7 @@ async function getLancamentosFinanceiros() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar lancamentos financeiros:", error.message);
+    console.error("Erro ao buscar lançamentos financeiros:", error.message);
     return [];
   }
 
@@ -26,7 +26,7 @@ async function getServicos() {
     .order("nome_servico", { ascending: true });
 
   if (error) {
-    console.error("Erro ao buscar servicos no Supabase:", error.message);
+    console.error("Erro ao buscar serviços no Supabase:", error.message);
     return [];
   }
 

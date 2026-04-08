@@ -322,14 +322,14 @@ export function ClientesView({
     if (response.error) {
       setErrorMessage(
         isEditing
-          ? "Nao foi possivel atualizar o cliente agora. Tente novamente."
-          : "Nao foi possivel salvar o cliente agora. Tente novamente."
+          ? "Não foi possível atualizar o cliente agora. Tente novamente."
+          : "Não foi possível salvar o cliente agora. Tente novamente."
       );
       return;
     }
 
     if (isEditing && !response.data?.id) {
-      setErrorMessage("Nao foi possivel identificar o cliente atualizado.");
+      setErrorMessage("Não foi possível identificar o cliente atualizado.");
       return;
     }
 
@@ -361,7 +361,7 @@ export function ClientesView({
     if (linkedServicesError) {
       setDeletingClientId(null);
       setErrorMessage(
-        "Nao foi possivel verificar os servicos vinculados a este cliente."
+        "Não foi possível verificar os serviços vinculados a este cliente."
       );
       return;
     }
@@ -369,7 +369,7 @@ export function ClientesView({
     if ((linkedServicesCount ?? 0) > 0) {
       setDeletingClientId(null);
       setErrorMessage(
-        "Nao e possivel excluir este cliente porque ele possui servicos vinculados."
+        "Não é possível excluir este cliente porque ele possui serviços vinculados."
       );
       return;
     }
@@ -379,11 +379,11 @@ export function ClientesView({
     setDeletingClientId(null);
 
     if (error) {
-      setErrorMessage("Nao foi possivel excluir o cliente agora. Tente novamente.");
+      setErrorMessage("Não foi possível excluir o cliente agora. Tente novamente.");
       return;
     }
 
-    setSuccessMessage("Cliente excluido com sucesso.");
+    setSuccessMessage("Cliente excluído com sucesso.");
     router.refresh();
   }
 
@@ -481,7 +481,7 @@ export function ClientesView({
                       Status
                     </th>
                     <th className="w-[17%] px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Acoes
+                      Ações
                     </th>
                   </tr>
                 </thead>

@@ -52,7 +52,7 @@ function getTaskStatusClassName(status: string | null) {
     return "bg-sky-50 text-sky-700";
   }
 
-  if (normalizedStatus === "concluida") {
+  if (normalizedStatus === "concluida" || normalizedStatus === "concluido") {
     return "bg-emerald-50 text-emerald-700";
   }
 
@@ -82,7 +82,9 @@ function isOverdueTask(task: Tarefa) {
     return false;
   }
 
-  if (normalizeText(task.status) === "concluida") {
+  const normalizedStatus = normalizeText(task.status);
+
+  if (normalizedStatus === "concluida" || normalizedStatus === "concluido") {
     return false;
   }
 
@@ -129,7 +131,7 @@ export function ServiceTasksSection({
     const observacao = formData.observacao.trim();
 
     if (!titulo) {
-      setErrorMessage("Informe o titulo da tarefa.");
+      setErrorMessage("Informe o título da tarefa.");
       return;
     }
 
@@ -159,7 +161,7 @@ export function ServiceTasksSection({
     setIsSaving(false);
 
     if (error) {
-      setErrorMessage("Nao foi possivel salvar a tarefa agora. Tente novamente.");
+      setErrorMessage("Não foi possível salvar a tarefa agora. Tente novamente.");
       return;
     }
 
@@ -303,7 +305,7 @@ export function ServiceTasksSection({
                       type="text"
                       value={formData.titulo}
                       onChange={(event) => updateField("titulo", event.target.value)}
-                      placeholder="Digite o titulo da tarefa"
+                      placeholder="Digite o título da tarefa"
                       className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                     />
                   </label>

@@ -28,7 +28,7 @@ async function getServicos() {
     .order("nome_servico", { ascending: true });
 
   if (error) {
-    console.error("Erro ao buscar servicos para tarefas:", error.message);
+    console.error("Erro ao buscar serviços para tarefas:", error.message);
     return [];
   }
 

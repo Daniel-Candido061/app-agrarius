@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Agrarius",
-  description: "Dashboard inicial do sistema Agrarius",
+  title: "Agrarius Gestão",
+  description: "Sistema interno de gestão operacional e financeira da Agrarius.",
 };
 
 export default function RootLayout({

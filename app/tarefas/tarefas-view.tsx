@@ -64,7 +64,7 @@ function getStatusClassName(status: string | null) {
     return "bg-sky-50 text-sky-700";
   }
 
-  if (normalizedStatus === "concluida") {
+  if (normalizedStatus === "concluida" || normalizedStatus === "concluido") {
     return "bg-emerald-50 text-emerald-700";
   }
 
@@ -94,7 +94,9 @@ function isOverdueTask(task: Tarefa) {
     return false;
   }
 
-  if (normalizeText(task.status) === "concluida") {
+  const normalizedStatus = normalizeText(task.status);
+
+  if (normalizedStatus === "concluida" || normalizedStatus === "concluido") {
     return false;
   }
 
@@ -106,7 +108,9 @@ function isUpcomingTask(task: Tarefa) {
     return false;
   }
 
-  if (normalizeText(task.status) === "concluida") {
+  const normalizedStatus = normalizeText(task.status);
+
+  if (normalizedStatus === "concluida" || normalizedStatus === "concluido") {
     return false;
   }
 
@@ -127,7 +131,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
   const serviceNameById = new Map(
     services.map((service) => [
       String(service.id),
-      service.nome_servico ?? `Servico ${service.id}`,
+      service.nome_servico ?? `Serviço ${service.id}`,
     ])
   );
   const normalizedSearchTerm = normalizeText(searchTerm);
@@ -141,7 +145,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       task.responsavel,
       task.status,
       task.prioridade,
-      serviceNameById.get(String(task.servico_id)) ?? "Servico nao encontrado",
+      serviceNameById.get(String(task.servico_id)) ?? "Serviço não encontrado",
     ];
 
     return searchableFields.some((field) =>
@@ -154,7 +158,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     {
       title: "Tarefas atrasadas",
       value: String(overdueTasks.length),
-      detail: 'Prazo vencido e status diferente de "Concluída"',
+      detail: 'Prazo vencido e status diferente de "Concluído"',
     },
     {
       title: "Tarefas próximas",
@@ -224,12 +228,12 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     const observacao = formData.observacao.trim();
 
     if (!titulo) {
-      setErrorMessage("Informe o titulo da tarefa.");
+      setErrorMessage("Informe o título da tarefa.");
       return;
     }
 
     if (!servicoId) {
-      setErrorMessage("Selecione o servico vinculado.");
+      setErrorMessage("Selecione o serviço vinculado.");
       return;
     }
 
@@ -248,12 +252,12 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     const parsedServicoId = Number(servicoId);
 
     if (isEditing && taskId === null) {
-      setErrorMessage("Nao foi possivel identificar a tarefa para edicao.");
+      setErrorMessage("Não foi possível identificar a tarefa para edição.");
       return;
     }
 
     if (Number.isNaN(parsedServicoId)) {
-      setErrorMessage("Servico invalido.");
+      setErrorMessage("Serviço inválido.");
       return;
     }
 
@@ -280,8 +284,8 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     if (response.error) {
       setErrorMessage(
         isEditing
-          ? "Nao foi possivel atualizar a tarefa agora. Tente novamente."
-          : "Nao foi possivel salvar a tarefa agora. Tente novamente."
+          ? "Não foi possível atualizar a tarefa agora. Tente novamente."
+          : "Não foi possível salvar a tarefa agora. Tente novamente."
       );
       return;
     }
@@ -311,11 +315,11 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     setDeletingTaskId(null);
 
     if (error) {
-      setErrorMessage("Nao foi possivel excluir a tarefa agora. Tente novamente.");
+      setErrorMessage("Não foi possível excluir a tarefa agora. Tente novamente.");
       return;
     }
 
-    setSuccessMessage("Tarefa excluida com sucesso.");
+    setSuccessMessage("Tarefa excluída com sucesso.");
     router.refresh();
   }
 
@@ -323,7 +327,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     <>
       <AppShell
         title="Tarefas"
-        description="Atividades vinculadas aos servicos, sincronizadas com o Supabase."
+        description="Atividades vinculadas aos serviços, sincronizadas com o Supabase."
         currentPath="/tarefas"
         action={
           <button
@@ -387,7 +391,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
                       {serviceNameById.get(String(task.servico_id)) ??
-                        "Servico nao encontrado"}
+                        "Serviço não encontrado"}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
                       <span className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-rose-700">
@@ -435,7 +439,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
                       {serviceNameById.get(String(task.servico_id)) ??
-                        "Servico nao encontrado"}
+                        "Serviço não encontrado"}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
                       <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-amber-700">
@@ -461,7 +465,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
             type="text"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Buscar por titulo, servico, responsavel, prioridade ou status"
+            placeholder="Buscar por título, serviço, responsável, prioridade ou status"
             className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
           />
         </div>
@@ -482,7 +486,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                 Nenhuma tarefa encontrada
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                Tente buscar por outro titulo, servico, responsavel ou status.
+                Tente buscar por outro título, serviço, responsável ou status.
               </p>
             </div>
           ) : (
@@ -509,7 +513,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       Status
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Acoes
+                      Ações
                     </th>
                   </tr>
                 </thead>
@@ -533,7 +537,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
                         {serviceNameById.get(String(task.servico_id)) ??
-                          "Servico nao encontrado"}
+                          "Serviço não encontrado"}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
                         {task.responsavel ?? "-"}
@@ -619,7 +623,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       type="text"
                       value={formData.titulo}
                       onChange={(event) => updateField("titulo", event.target.value)}
-                      placeholder="Digite o titulo da tarefa"
+                      placeholder="Digite o título da tarefa"
                       className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                     />
                   </label>
@@ -630,10 +634,10 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                     onChange={(value) => updateField("servico_id", value)}
                     options={services.map((service) => ({
                       value: String(service.id),
-                      label: service.nome_servico ?? `Servico ${service.id}`,
+                      label: service.nome_servico ?? `Serviço ${service.id}`,
                     }))}
-                    emptyOptionLabel="Selecione um servico"
-                    searchPlaceholder="Digite para buscar um servico"
+                    emptyOptionLabel="Selecione um serviço"
+                    searchPlaceholder="Digite para buscar um serviço"
                   />
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">

@@ -14,7 +14,7 @@ async function getServicos() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar servicos no Supabase:", error.message);
+    console.error("Erro ao buscar serviços no Supabase:", error.message);
     return [];
   }
 
@@ -44,7 +44,7 @@ async function getFinanceiroPorServico() {
 
   if (error) {
     console.error(
-      "Erro ao buscar lancamentos financeiros dos servicos:",
+      "Erro ao buscar lançamentos financeiros dos serviços:",
       error.message
     );
     return [];

@@ -134,7 +134,7 @@ async function getServicosDoCliente(id: number) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar servicos do cliente:", error.message);
+    console.error("Erro ao buscar serviços do cliente:", error.message);
     return [];
   }
 
@@ -152,7 +152,7 @@ async function getLancamentosDosServicos(serviceIds: number[]) {
     .in("servico_id", serviceIds);
 
   if (error) {
-    console.error("Erro ao buscar financeiro dos servicos do cliente:", error.message);
+    console.error("Erro ao buscar financeiro dos serviços do cliente:", error.message);
     return [];
   }
 

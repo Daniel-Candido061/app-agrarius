@@ -90,10 +90,10 @@ function getStatusOptionsByType(type: string) {
 
 function getServiceClientName(service: ServicoOption) {
   if (Array.isArray(service.cliente)) {
-    return service.cliente[0]?.nome ?? "Cliente nao encontrado";
+    return service.cliente[0]?.nome ?? "Cliente não encontrado";
   }
 
-  return service.cliente?.nome ?? "Cliente nao encontrado";
+  return service.cliente?.nome ?? "Cliente não encontrado";
 }
 
 function buildSummaryCards(
@@ -143,12 +143,12 @@ function buildSummaryCards(
     {
       title: "Total recebido",
       value: formatCurrency(receitasRecebidas),
-      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "receita" && normalizeText(entry.status) === "recebido").length} lancamentos recebidos`,
+      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "receita" && normalizeText(entry.status) === "recebido").length} lançamentos recebidos`,
     },
     {
       title: "Despesas pagas",
       value: formatCurrency(despesasPagas),
-      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "despesa" && normalizeText(entry.status) === "pago").length} lancamentos pagos`,
+      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "despesa" && normalizeText(entry.status) === "pago").length} lançamentos pagos`,
     },
     {
       title: "Total a receber",
@@ -168,7 +168,7 @@ function buildSummaryCards(
     {
       title: "Contas vencidas",
       value: String(contasVencidas),
-      detail: 'Lancamentos com status "Vencido"',
+      detail: 'Lançamentos com status "Vencido"',
     },
   ];
 }
@@ -215,7 +215,7 @@ export function FinanceiroView({
       String(service.id),
       {
         clientName: getServiceClientName(service),
-        serviceName: service.nome_servico ?? `Servico ${service.id}`,
+        serviceName: service.nome_servico ?? `Serviço ${service.id}`,
       },
     ])
   );
@@ -349,37 +349,37 @@ export function FinanceiroView({
     const status = formData.status.trim();
 
     if (!tipo) {
-      setErrorMessage("Selecione o tipo do lancamento.");
+      setErrorMessage("Selecione o tipo do lançamento.");
       return;
     }
 
     if (!descricao) {
-      setErrorMessage("Informe a descricao do lancamento.");
+      setErrorMessage("Informe a descrição do lançamento.");
       return;
     }
 
     if (!categoria) {
-      setErrorMessage("Selecione a categoria do lancamento.");
+      setErrorMessage("Selecione a categoria do lançamento.");
       return;
     }
 
     if (!valor) {
-      setErrorMessage("Informe o valor do lancamento.");
+      setErrorMessage("Informe o valor do lançamento.");
       return;
     }
 
     if (!data) {
-      setErrorMessage("Informe a data do lancamento.");
+      setErrorMessage("Informe a data do lançamento.");
       return;
     }
 
     if (!status) {
-      setErrorMessage("Selecione o status do lancamento.");
+      setErrorMessage("Selecione o status do lançamento.");
       return;
     }
 
     if (!getStatusOptionsByType(tipo).includes(status)) {
-      setErrorMessage("Selecione um status compativel com o tipo do lancamento.");
+      setErrorMessage("Selecione um status compatível com o tipo do lançamento.");
       return;
     }
 
@@ -396,7 +396,7 @@ export function FinanceiroView({
     }
 
     if (servicoId && Number.isNaN(parsedServiceId)) {
-      setErrorMessage("Servico invalido.");
+      setErrorMessage("Serviço inválido.");
       return;
     }
 
@@ -436,14 +436,14 @@ export function FinanceiroView({
     if (response.error) {
       setErrorMessage(
         isEditing
-          ? "Nao foi possivel atualizar o lancamento agora. Tente novamente."
-          : "Nao foi possivel salvar o lancamento agora. Tente novamente."
+          ? "Não foi possível atualizar o lançamento agora. Tente novamente."
+          : "Não foi possível salvar o lançamento agora. Tente novamente."
       );
       return;
     }
 
     if (isEditing && !response.data?.id) {
-      setErrorMessage("Nao foi possivel identificar o lancamento atualizado.");
+      setErrorMessage("Não foi possível identificar o lançamento atualizado.");
       return;
     }
 
@@ -470,7 +470,7 @@ export function FinanceiroView({
 
     if (error) {
       setErrorMessage(
-        "Nao foi possivel excluir o lancamento agora. Tente novamente."
+        "Não foi possível excluir o lançamento agora. Tente novamente."
       );
       return;
     }
@@ -482,7 +482,7 @@ export function FinanceiroView({
     <>
       <AppShell
         title="Financeiro"
-        description="Lancamentos reais sincronizados com a tabela financeiro do Supabase."
+        description="Lançamentos reais sincronizados com a tabela financeiro do Supabase."
         currentPath="/financeiro"
         action={
           <button
@@ -518,7 +518,7 @@ export function FinanceiroView({
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Buscar por descricao, cliente, servico ou categoria"
+                placeholder="Buscar por descrição, cliente, serviço ou categoria"
                 className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
               />
 
@@ -550,11 +550,11 @@ export function FinanceiroView({
                 onChange={(event) => setServiceFilter(event.target.value)}
                 className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
               >
-                <option value="">Todos os servicos</option>
+                <option value="">Todos os serviços</option>
                 <option value="general">{serviceFallbackLabel}</option>
                 {services.map((service) => (
                   <option key={service.id} value={String(service.id)}>
-                    {service.nome_servico ?? `Servico ${service.id}`} -{" "}
+                    {service.nome_servico ?? `Serviço ${service.id}`} -{" "}
                     {getServiceClientName(service)}
                   </option>
                 ))}
@@ -612,7 +612,7 @@ export function FinanceiroView({
                         {financialDateLabel}
                       </th>
                       <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Acoes
+                        Ações
                       </th>
                     </tr>
                   </thead>
@@ -722,7 +722,7 @@ export function FinanceiroView({
                   onChange={(value) => updateField("servico_id", value)}
                   options={services.map((service) => {
                     const serviceName =
-                      service.nome_servico ?? `Servico ${service.id}`;
+                      service.nome_servico ?? `Serviço ${service.id}`;
                     const clientName = getServiceClientName(service);
 
                     return {
@@ -732,13 +732,13 @@ export function FinanceiroView({
                     };
                   })}
                   emptyOptionLabel={serviceFallbackLabel}
-                  searchPlaceholder="Digite para buscar servico ou cliente"
+                  searchPlaceholder="Digite para buscar serviço ou cliente"
                   helperText={
                     selectedService
                       ? `Cliente relacionado: ${getServiceClientName(
                           selectedService
                         )}`
-                      : "Use esta opcao para despesas sem servico vinculado."
+                      : "Use esta opção para despesas sem serviço vinculado."
                   }
                 />
 
@@ -793,7 +793,7 @@ export function FinanceiroView({
                     className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                   />
                   <span className="text-xs font-normal text-slate-500">
-                    Para parcelas, cadastre cada data como um lancamento separado.
+                    Para parcelas, cadastre cada data como um lançamento separado.
                   </span>
                 </label>
 

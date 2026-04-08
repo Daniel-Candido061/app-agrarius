@@ -148,7 +148,7 @@ async function getServico(id: number) {
     .maybeSingle();
 
   if (error) {
-    console.error("Erro ao buscar servico:", error.message);
+    console.error("Erro ao buscar serviço:", error.message);
     return null;
   }
 
@@ -164,7 +164,7 @@ async function getLancamentosDoServico(id: number) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar financeiro do servico:", error.message);
+    console.error("Erro ao buscar financeiro do serviço:", error.message);
     return [];
   }
 
@@ -180,7 +180,7 @@ async function getTarefasDoServico(id: number) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar tarefas do servico:", error.message);
+    console.error("Erro ao buscar tarefas do serviço:", error.message);
     return [];
   }
 

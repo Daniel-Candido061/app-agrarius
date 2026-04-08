@@ -109,7 +109,9 @@ function isPastDueTask(entry: TaskDashboardEntry) {
     return false;
   }
 
-  if (normalizeText(entry.status) === "concluida") {
+  const normalizedStatus = normalizeText(entry.status);
+
+  if (normalizedStatus === "concluida" || normalizedStatus === "concluido") {
     return false;
   }
 
@@ -313,7 +315,7 @@ export default async function Home() {
     {
       title: "Tarefas atrasadas",
       value: String(dashboardData.tarefasAtrasadas),
-      detail: 'Tarefas com prazo vencido e status diferente de "Concluída"',
+      detail: 'Tarefas com prazo vencido e status diferente de "Concluído"',
     },
   ];
 

@@ -28,7 +28,7 @@ async function getServicosDosClientes() {
     .select("id, cliente_id, valor, status");
 
   if (error) {
-    console.error("Erro ao buscar servicos dos clientes:", error.message);
+    console.error("Erro ao buscar serviços dos clientes:", error.message);
     return [];
   }
 
@@ -41,7 +41,7 @@ async function getFinanceiroDosServicos() {
     .select("tipo, valor, servico_id, status");
 
   if (error) {
-    console.error("Erro ao buscar financeiro dos servicos:", error.message);
+    console.error("Erro ao buscar financeiro dos serviços:", error.message);
     return [];
   }
 
