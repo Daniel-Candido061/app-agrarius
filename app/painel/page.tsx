@@ -362,7 +362,6 @@ async function getDashboardData(
 
         return {
           ...service,
-          valorContratado,
           totalRecebido: recebido,
           valorEmAberto: valorContratado - recebido,
         };
@@ -371,7 +370,7 @@ async function getDashboardData(
         (firstService, secondService) =>
           secondService.valorEmAberto - firstService.valorEmAberto
       )
-      .slice(0, 5),
+      .slice(0, 3),
     servicosUrgentes,
     proximosPrazos,
   };
@@ -544,55 +543,44 @@ export default async function Home({ searchParams }: DashboardPageProps) {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Serviço
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Cliente
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Valor contratado
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Total recebido
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Valor em aberto
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {dashboardData.servicosNaoQuitadosLista.map((service) => (
-                    <tr key={service.id} className="hover:bg-slate-50/80">
-                      <td className="px-6 py-4 text-sm font-medium text-slate-700">
+            <div className="grid gap-4 p-6 md:grid-cols-3">
+              {dashboardData.servicosNaoQuitadosLista.map((service) => (
+                <article
+                  key={service.id}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-[#17352b]">
                         {service.nome_servico ?? "-"}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-500">
                         {getClientName(service)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        {formatCurrency(service.valorContratado)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-emerald-700">
+                      </p>
+                    </div>
+
+                    <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                      {service.status ?? "Sem status"}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Recebido</span>
+                      <span className="font-medium text-emerald-700">
                         {formatCurrency(service.totalRecebido)}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-amber-700">
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Em aberto</span>
+                      <span className="font-semibold text-amber-700">
                         {formatCurrency(service.valorEmAberto)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        {service.status ?? "Sem status"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
           )}
         </section>
