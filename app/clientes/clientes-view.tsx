@@ -488,9 +488,22 @@ export function ClientesView({
                 <tbody className="divide-y divide-slate-100">
                   {filteredClients.map((client) => {
                     const metrics = clientMetrics.get(client.id);
+                    const detailsPath = `/clientes/${client.id}`;
 
                     return (
-                      <tr key={client.id} className="hover:bg-slate-50/80">
+                      <tr
+                        key={client.id}
+                        onClick={() => router.push(detailsPath)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            router.push(detailsPath);
+                          }
+                        }}
+                        role="link"
+                        tabIndex={0}
+                        className="cursor-pointer hover:bg-slate-50/80 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#17352b]/20"
+                      >
                         <td className="px-4 py-4 text-sm font-medium text-slate-700">
                           <span className="block truncate" title={client.nome}>
                             {client.nome}
@@ -538,7 +551,7 @@ export function ClientesView({
                             items={[
                               {
                                 label: "Detalhes",
-                                href: `/clientes/${client.id}`,
+                                href: detailsPath,
                               },
                               {
                                 label: "Editar",

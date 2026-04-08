@@ -627,77 +627,90 @@ export function ServicosView({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredServices.map((service) => (
-                    <tr
-                      key={service.id}
-                      className={`hover:bg-slate-50/80 ${
-                        isPastDue(service) ? "bg-rose-50/70" : ""
-                      }`}
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                        {getClientName(service)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        <Link
-                          href={`/servicos/${service.id}`}
-                          className="font-medium text-[#17352b] transition hover:text-[#204638]"
-                        >
-                          {service.nome_servico ?? "-"}
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        {service.cidade ?? "-"}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        {formatCurrency(service.valor)}
-                      </td>
-                      <td
-                        className={`px-6 py-4 text-sm ${
-                          isPastDue(service)
-                            ? "font-medium text-rose-700"
-                            : "text-slate-500"
+                  {filteredServices.map((service) => {
+                    const detailsPath = `/servicos/${service.id}`;
+
+                    return (
+                      <tr
+                        key={service.id}
+                        onClick={() => router.push(detailsPath)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            router.push(detailsPath);
+                          }
+                        }}
+                        role="link"
+                        tabIndex={0}
+                        className={`cursor-pointer hover:bg-slate-50/80 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#17352b]/20 ${
+                          isPastDue(service) ? "bg-rose-50/70" : ""
                         }`}
                       >
-                        {formatSimpleDate(service.prazo_final)}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
-                            service.status
-                          )}`}
+                        <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                          {getClientName(service)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          <Link
+                            href={detailsPath}
+                            className="font-medium text-[#17352b] transition hover:text-[#204638]"
+                          >
+                            {service.nome_servico ?? "-"}
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {service.cidade ?? "-"}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {formatCurrency(service.valor)}
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-sm ${
+                            isPastDue(service)
+                              ? "font-medium text-rose-700"
+                              : "text-slate-500"
+                          }`}
                         >
-                          {service.status ?? "Sem status"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right text-sm">
-                        <ActionsMenu
-                          items={[
-                            {
-                              label: "Ver detalhes",
-                              href: `/servicos/${service.id}`,
-                            },
-                            {
-                              label: "Financeiro",
-                              onClick: () => openFinancialModal(service),
-                            },
-                            {
-                              label: "Editar",
-                              onClick: () => openEditModal(service),
-                            },
-                            {
-                              label:
-                                deletingServiceId === service.id
-                                  ? "Excluindo..."
-                                  : "Excluir",
-                              onClick: () => handleDelete(service),
-                              disabled: deletingServiceId === service.id,
-                              tone: "danger",
-                            },
-                          ]}
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                          {formatSimpleDate(service.prazo_final)}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
+                              service.status
+                            )}`}
+                          >
+                            {service.status ?? "Sem status"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm">
+                          <ActionsMenu
+                            items={[
+                              {
+                                label: "Ver detalhes",
+                                href: detailsPath,
+                              },
+                              {
+                                label: "Financeiro",
+                                onClick: () => openFinancialModal(service),
+                              },
+                              {
+                                label: "Editar",
+                                onClick: () => openEditModal(service),
+                              },
+                              {
+                                label:
+                                  deletingServiceId === service.id
+                                    ? "Excluindo..."
+                                    : "Excluir",
+                                onClick: () => handleDelete(service),
+                                disabled: deletingServiceId === service.id,
+                                tone: "danger",
+                              },
+                            ]}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -91,11 +91,18 @@ export function ActionsMenu({ items }: ActionsMenuProps) {
   }
 
   return (
-    <div ref={menuRef} className="relative inline-flex justify-end">
+    <div
+      ref={menuRef}
+      onClick={(event) => event.stopPropagation()}
+      className="relative inline-flex justify-end"
+    >
       <button
         ref={buttonRef}
         type="button"
-        onClick={toggleMenu}
+        onClick={(event) => {
+          event.stopPropagation();
+          toggleMenu();
+        }}
         className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-[#17352b]"
         aria-haspopup="menu"
         aria-expanded={isOpen}
@@ -128,7 +135,10 @@ export function ActionsMenu({ items }: ActionsMenuProps) {
                 key={item.label}
                 href={item.href}
                 role="menuitem"
-                onClick={() => setIsOpen(false)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsOpen(false);
+                }}
                 className={getItemClassName(item)}
               >
                 {item.label}
@@ -139,7 +149,8 @@ export function ActionsMenu({ items }: ActionsMenuProps) {
                 type="button"
                 role="menuitem"
                 disabled={item.disabled}
-                onClick={() => {
+                onClick={(event) => {
+                  event.stopPropagation();
                   setIsOpen(false);
                   item.onClick?.();
                 }}
