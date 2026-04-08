@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
+import { ActionsMenu } from "../components/actions-menu";
 import { SearchableSelect } from "../components/searchable-select";
 import {
   formatSimpleDate,
@@ -669,36 +670,31 @@ export function ServicosView({
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right text-sm">
-                        <div className="flex justify-end gap-2">
-                          <Link
-                            href={`/servicos/${service.id}`}
-                            className="inline-flex items-center justify-center rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
-                          >
-                            Ver detalhes
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => openFinancialModal(service)}
-                            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                          >
-                            Financeiro
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(service)}
-                            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(service)}
-                            disabled={deletingServiceId === service.id}
-                            className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {deletingServiceId === service.id ? "Excluindo..." : "Excluir"}
-                          </button>
-                        </div>
+                        <ActionsMenu
+                          items={[
+                            {
+                              label: "Ver detalhes",
+                              href: `/servicos/${service.id}`,
+                            },
+                            {
+                              label: "Financeiro",
+                              onClick: () => openFinancialModal(service),
+                            },
+                            {
+                              label: "Editar",
+                              onClick: () => openEditModal(service),
+                            },
+                            {
+                              label:
+                                deletingServiceId === service.id
+                                  ? "Excluindo..."
+                                  : "Excluir",
+                              onClick: () => handleDelete(service),
+                              disabled: deletingServiceId === service.id,
+                              tone: "danger",
+                            },
+                          ]}
+                        />
                       </td>
                     </tr>
                   ))}

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
+import { ActionsMenu } from "../components/actions-menu";
 import { supabase } from "../../lib/supabase";
 import { CLIENT_STATUS_OPTIONS } from "./status-options";
 import type {
@@ -534,31 +534,27 @@ export function ClientesView({
                           </span>
                         </td>
                         <td className="px-4 py-4 text-right text-sm">
-                          <div className="flex flex-wrap justify-end gap-1.5">
-                            <Link
-                              href={`/clientes/${client.id}`}
-                              className="inline-flex items-center justify-center rounded-lg border border-emerald-200 px-2.5 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50"
-                            >
-                              Detalhes
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(client)}
-                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(client)}
-                              disabled={deletingClientId === client.id}
-                              className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-2.5 py-2 text-xs font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {deletingClientId === client.id
-                                ? "Excluindo..."
-                                : "Excluir"}
-                            </button>
-                          </div>
+                          <ActionsMenu
+                            items={[
+                              {
+                                label: "Detalhes",
+                                href: `/clientes/${client.id}`,
+                              },
+                              {
+                                label: "Editar",
+                                onClick: () => openEditModal(client),
+                              },
+                              {
+                                label:
+                                  deletingClientId === client.id
+                                    ? "Excluindo..."
+                                    : "Excluir",
+                                onClick: () => handleDelete(client),
+                                disabled: deletingClientId === client.id,
+                                tone: "danger",
+                              },
+                            ]}
+                          />
                         </td>
                       </tr>
                     );
