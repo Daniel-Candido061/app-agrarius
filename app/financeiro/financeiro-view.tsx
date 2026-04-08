@@ -8,7 +8,7 @@ import { SearchableSelect } from "../components/searchable-select";
 import { formatSimpleDate, getDateInputValue } from "../../lib/date-utils";
 import {
   defaultPeriodValue,
-  getPeriodLabel,
+  getAppliedQuickPeriodLabel,
   isDateInPeriod,
   quickPeriodOptions,
   type QuickPeriodValue,
@@ -34,6 +34,11 @@ type FormData = {
   data: string;
   servico_id: string;
   status: string;
+};
+
+type ServiceDetails = {
+  clientName: string;
+  serviceName: string;
 };
 
 const initialFormData: FormData = {
@@ -103,6 +108,56 @@ function getServiceClientName(service: ServicoOption) {
   }
 
   return service.cliente?.nome ?? "Cliente não encontrado";
+}
+
+function serviceMatchesSearch(
+  service: ServicoOption,
+  normalizedSearchTerm: string
+) {
+  if (!normalizedSearchTerm) {
+    return true;
+  }
+
+  const searchableFields = [
+    service.nome_servico,
+    getServiceClientName(service),
+    service.status,
+    service.valor === null || service.valor === undefined
+      ? null
+      : String(service.valor),
+  ];
+
+  return searchableFields.some((field) =>
+    normalizeText(field).includes(normalizedSearchTerm)
+  );
+}
+
+function entryMatchesSearch(
+  entry: LancamentoFinanceiro,
+  serviceDetails: ServiceDetails | undefined,
+  serviceFallbackLabel: string,
+  normalizedSearchTerm: string
+) {
+  if (!normalizedSearchTerm) {
+    return true;
+  }
+
+  const searchableFields = [
+    entry.descricao,
+    entry.categoria,
+    entry.tipo,
+    entry.status,
+    financialDateLabel,
+    serviceDetails?.serviceName ?? serviceFallbackLabel,
+    serviceDetails?.clientName,
+    entry.valor === null || entry.valor === undefined
+      ? null
+      : String(entry.valor),
+  ];
+
+  return searchableFields.some((field) =>
+    normalizeText(field).includes(normalizedSearchTerm)
+  );
 }
 
 function getCustomPeriodLabel(startDate: string, endDate: string) {
@@ -271,39 +326,57 @@ export function FinanceiroView({
       return false;
     }
 
-    const searchableFields = [
-      entry.descricao,
-      entry.categoria,
-      entry.tipo,
-      entry.status,
-      financialDateLabel,
-      serviceDetails?.serviceName ?? serviceFallbackLabel,
-      serviceDetails?.clientName,
-      entry.valor === null || entry.valor === undefined
-        ? null
-        : String(entry.valor),
-    ];
-
-    return searchableFields.some((field) =>
-      normalizeText(field).includes(normalizedSearchTerm)
+    return entryMatchesSearch(
+      entry,
+      serviceDetails,
+      serviceFallbackLabel,
+      normalizedSearchTerm
     );
   });
-  const periodServices = services
-    .filter((service) =>
-      isDateInPeriod(
-        service.created_at,
-        activePeriod,
-        customStartDate,
-        customEndDate
+  const serviceIdsMatchingSearch = new Set(
+    periodEntries
+      .filter((entry) =>
+        entryMatchesSearch(
+          entry,
+          serviceDetailsById.get(String(entry.servico_id)),
+          serviceFallbackLabel,
+          normalizedSearchTerm
+        )
       )
-    )
-    .filter((service) => {
-      if (serviceFilter === "general") {
-        return false;
-      }
+      .map((entry) =>
+        entry.servico_id === null || entry.servico_id === undefined
+          ? ""
+          : String(entry.servico_id)
+      )
+      .filter(Boolean)
+  );
+  const shouldShowOpenBalances =
+    (!typeFilter || normalizeText(typeFilter) === "receita") &&
+    (!statusFilter || normalizeText(statusFilter) === "pendente") &&
+    serviceFilter !== "general";
+  const visibleServices = shouldShowOpenBalances
+    ? services.filter((service) => {
+        if (
+          !isDateInPeriod(
+            service.created_at,
+            activePeriod,
+            customStartDate,
+            customEndDate
+          )
+        ) {
+          return false;
+        }
 
-      return !serviceFilter || String(service.id) === serviceFilter;
-    });
+        if (serviceFilter && String(service.id) !== serviceFilter) {
+          return false;
+        }
+
+        return (
+          serviceMatchesSearch(service, normalizedSearchTerm) ||
+          serviceIdsMatchingSearch.has(String(service.id))
+        );
+      })
+    : [];
   const receivedByServiceId = new Map<string, number>();
 
   periodEntries
@@ -325,7 +398,7 @@ export function FinanceiroView({
         currentTotal + getNumericValue(entry.valor)
       );
     });
-  const unPaidServiceBalances = periodServices
+  const unPaidServiceBalances = visibleServices
     .map((service) => {
       const valorContratado = getNumericValue(service.valor);
       const totalRecebido = receivedByServiceId.get(String(service.id)) ?? 0;
@@ -349,11 +422,11 @@ export function FinanceiroView({
   const summaryCards = buildSummaryCards(filteredEntries, totalAReceber);
   const selectedTimeLabel =
     timeFilterMode === "rapido"
-      ? `Período: ${getPeriodLabel(periodFilter)}`
+      ? `Período: ${getAppliedQuickPeriodLabel(periodFilter)}`
       : getCustomPeriodLabel(customStartDate, customEndDate);
   const appliedPeriodLabel =
     timeFilterMode === "rapido"
-      ? getPeriodLabel(periodFilter)
+      ? getAppliedQuickPeriodLabel(periodFilter)
       : getCustomPeriodLabel(customStartDate, customEndDate);
 
   function openModal() {

@@ -46,6 +46,27 @@ function getDateOnlyAtNoon(value: string | null) {
   return new Date(Number(year), Number(month) - 1, Number(day), 12);
 }
 
+function formatDateRangeLabel(startDate: Date, endDate: Date) {
+  const formatter = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: brazilTimeZone,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+  return `${formatter.format(startDate)} até ${formatter.format(endDate)}`;
+}
+
+function formatMonthYearLabel(date: Date) {
+  const label = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: brazilTimeZone,
+    month: "long",
+    year: "numeric",
+  }).format(date);
+
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 function getCurrentPeriodRange(period: PeriodValue) {
   const todayParts = getSaoPauloDateParts(new Date());
   const today = new Date(
@@ -122,6 +143,32 @@ export function getPeriodLabel(period: PeriodValue) {
     periodOptions.find((option) => option.value === defaultPeriodValue)?.label ??
     "Mês"
   );
+}
+
+export function getAppliedQuickPeriodLabel(period: QuickPeriodValue) {
+  const { startDate, endDate } = getCurrentPeriodRange(period);
+
+  if (period === "mes") {
+    return formatMonthYearLabel(startDate);
+  }
+
+  if (period === "ano") {
+    return `Ano de ${startDate.getFullYear()}`;
+  }
+
+  if (period === "trimestre") {
+    const quarter = Math.floor(startDate.getMonth() / 3) + 1;
+
+    return `${quarter}º trimestre de ${startDate.getFullYear()}`;
+  }
+
+  if (period === "semestre") {
+    const semester = startDate.getMonth() < 6 ? 1 : 2;
+
+    return `${semester}º semestre de ${startDate.getFullYear()}`;
+  }
+
+  return formatDateRangeLabel(startDate, endDate);
 }
 
 export function isDateInPeriod(
