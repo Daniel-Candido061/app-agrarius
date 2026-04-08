@@ -159,6 +159,7 @@ export function ClientesView({
       totalContratado: number;
       totalRecebido: number;
       valorEmAberto: number;
+      inProgressServicesCount: number;
       hasServiceInProgress: boolean;
     }
   >();
@@ -180,6 +181,7 @@ export function ClientesView({
       totalContratado,
       totalRecebido,
       valorEmAberto: totalContratado - totalRecebido,
+      inProgressServicesCount: clientServices.filter(isServiceInProgress).length,
       hasServiceInProgress: clientServices.some(isServiceInProgress),
     });
   });
@@ -511,7 +513,12 @@ export function ClientesView({
                           </span>
                         </td>
                         <td className="px-4 py-4 text-sm text-slate-500">
-                          {metrics?.servicesCount ?? 0}
+                          <span className="block font-medium text-slate-700">
+                            {metrics?.servicesCount ?? 0} total
+                          </span>
+                          <span className="mt-1 block truncate text-xs text-slate-400">
+                            {metrics?.inProgressServicesCount ?? 0} em andamento
+                          </span>
                         </td>
                         <td className="px-4 py-4 text-sm font-medium text-[#17352b]">
                           {formatCurrency(metrics?.valorEmAberto ?? 0)}

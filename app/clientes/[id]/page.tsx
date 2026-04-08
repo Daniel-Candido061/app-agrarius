@@ -211,6 +211,12 @@ export default async function ClienteDetalhesPage({
     .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
 
   const totalEmAberto = totalContratado - totalRecebido;
+  const servicosEmAndamento = services.filter(
+    (service) => normalizeText(service.status) === "em andamento"
+  ).length;
+  const servicosConcluidos = services.filter(
+    (service) => normalizeText(service.status) === "concluido"
+  ).length;
 
   const serviceSummaries = services.map((service) => {
     const serviceEntries = entriesByServiceId.get(String(service.id)) ?? [];
@@ -234,24 +240,24 @@ export default async function ClienteDetalhesPage({
 
   const summaryCards = [
     {
-      title: "Total contratado",
-      value: formatCurrency(totalContratado),
-      detail: "Soma dos valores contratados em serviços.",
-    },
-    {
-      title: "Total recebido",
-      value: formatCurrency(totalRecebido),
-      detail: "Receitas recebidas dos serviços do cliente.",
-    },
-    {
-      title: "Total em aberto",
-      value: formatCurrency(totalEmAberto),
-      detail: "Total contratado menos o total recebido.",
-    },
-    {
-      title: "Quantidade de serviços",
+      title: "Total de serviços",
       value: String(services.length),
       detail: "Serviços vinculados a este cliente.",
+    },
+    {
+      title: "Em andamento",
+      value: String(servicosEmAndamento),
+      detail: "Serviços ativos na operação.",
+    },
+    {
+      title: "Concluídos",
+      value: String(servicosConcluidos),
+      detail: "Serviços finalizados do cliente.",
+    },
+    {
+      title: "Valor em aberto",
+      value: formatCurrency(totalEmAberto),
+      detail: "Valor contratado menos receitas recebidas.",
     },
   ];
 
