@@ -209,6 +209,8 @@ export function FinanceiroView({
   const [searchTerm, setSearchTerm] = useState("");
   const [periodFilter, setPeriodFilter] =
     useState<PeriodValue>(defaultPeriodValue);
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
@@ -229,10 +231,15 @@ export function FinanceiroView({
   );
 
   const periodEntries = entries.filter((entry) =>
-    isDateInPeriod(entry.data, periodFilter)
+    isDateInPeriod(entry.data, periodFilter, customStartDate, customEndDate)
   );
   const periodServices = services.filter((service) =>
-    isDateInPeriod(service.created_at, periodFilter)
+    isDateInPeriod(
+      service.created_at,
+      periodFilter,
+      customStartDate,
+      customEndDate
+    )
   );
   const summaryCards = buildSummaryCards(periodEntries, periodServices);
   const categoryOptions = getCategoryOptionsByType(formData.tipo);
@@ -527,7 +534,7 @@ export function FinanceiroView({
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-            <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_1.2fr]">
+            <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_1fr_1fr_1.2fr]">
               <input
                 type="text"
                 value={searchTerm}
@@ -549,6 +556,24 @@ export function FinanceiroView({
                   </option>
                 ))}
               </select>
+
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(event) => setCustomStartDate(event.target.value)}
+                aria-label="Data inicial"
+                disabled={periodFilter !== "personalizado"}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition disabled:bg-slate-50 disabled:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+              />
+
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(event) => setCustomEndDate(event.target.value)}
+                aria-label="Data final"
+                disabled={periodFilter !== "personalizado"}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition disabled:bg-slate-50 disabled:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+              />
 
               <select
                 value={typeFilter}

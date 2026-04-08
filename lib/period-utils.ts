@@ -7,6 +7,7 @@ export const periodOptions = [
   { value: "trimestre", label: "Trimestre" },
   { value: "semestre", label: "Semestre" },
   { value: "ano", label: "Ano" },
+  { value: "personalizado", label: "Período personalizado" },
 ] as const;
 
 export type PeriodValue = (typeof periodOptions)[number]["value"];
@@ -110,11 +111,35 @@ export function getPeriodLabel(period: PeriodValue) {
   );
 }
 
-export function isDateInPeriod(value: string | null, period: PeriodValue) {
+export function isDateInPeriod(
+  value: string | null,
+  period: PeriodValue,
+  customStartDate?: string | null,
+  customEndDate?: string | null
+) {
   const date = getDateOnlyAtNoon(value);
 
   if (!date) {
     return false;
+  }
+
+  if (period === "personalizado") {
+    const startDate = getDateOnlyAtNoon(customStartDate ?? null);
+    const endDate = getDateOnlyAtNoon(customEndDate ?? null);
+
+    if (!startDate && !endDate) {
+      return true;
+    }
+
+    if (startDate && date < startDate) {
+      return false;
+    }
+
+    if (endDate && date > endDate) {
+      return false;
+    }
+
+    return true;
   }
 
   const { startDate, endDate } = getCurrentPeriodRange(period);

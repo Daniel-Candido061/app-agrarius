@@ -254,10 +254,23 @@ export default async function ClienteDetalhesPage({
       value: String(servicosConcluidos),
       detail: "Serviços finalizados do cliente.",
     },
+  ];
+
+  const financialSummaryCards = [
+    {
+      title: "Total contratado",
+      value: formatCurrency(totalContratado),
+      detail: "Soma dos valores contratados nos serviços.",
+    },
+    {
+      title: "Total recebido",
+      value: formatCurrency(totalRecebido),
+      detail: "Receitas recebidas dos serviços do cliente.",
+    },
     {
       title: "Valor em aberto",
       value: formatCurrency(totalEmAberto),
-      detail: "Valor contratado menos receitas recebidas.",
+      detail: "Total contratado menos total recebido.",
     },
   ];
 
@@ -348,6 +361,23 @@ export default async function ClienteDetalhesPage({
               </article>
             ))}
           </div>
+        </section>
+
+        <section className="grid gap-5 md:grid-cols-3">
+          {financialSummaryCards.map((card) => (
+            <article
+              key={card.title}
+              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
+            >
+              <p className="text-sm font-medium text-slate-500">
+                {card.title}
+              </p>
+              <strong className="mt-4 block text-2xl font-semibold text-[#17352b]">
+                {card.value}
+              </strong>
+              <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
+            </article>
+          ))}
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">

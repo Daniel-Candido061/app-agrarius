@@ -19,6 +19,7 @@ type ClientesViewProps = {
 };
 
 type ModalMode = "create" | "edit";
+type PortfolioFilter = "all" | "inProgress" | "openBalance";
 
 type FormData = {
   nome: string;
@@ -119,6 +120,8 @@ export function ClientesView({
   const [editingClientId, setEditingClientId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [searchTerm, setSearchTerm] = useState("");
+  const [portfolioFilter, setPortfolioFilter] =
+    useState<PortfolioFilter>("all");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -191,6 +194,7 @@ export function ClientesView({
       title: "Total de clientes",
       value: String(clients.length),
       detail: "Clientes cadastrados na base.",
+      filter: "all" as PortfolioFilter,
     },
     {
       title: "Clientes com serviços em andamento",
@@ -200,6 +204,7 @@ export function ClientesView({
         ).length
       ),
       detail: "Clientes com ao menos um serviço ativo.",
+      filter: "inProgress" as PortfolioFilter,
     },
     {
       title: "Clientes com valores em aberto",
@@ -209,10 +214,24 @@ export function ClientesView({
         ).length
       ),
       detail: "Clientes com saldo a receber.",
+      filter: "openBalance" as PortfolioFilter,
     },
   ];
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
   const filteredClients = clients.filter((client) => {
+    const metrics = clientMetrics.get(client.id);
+
+    if (portfolioFilter === "inProgress" && !metrics?.hasServiceInProgress) {
+      return false;
+    }
+
+    if (
+      portfolioFilter === "openBalance" &&
+      (metrics?.valorEmAberto ?? 0) <= 0
+    ) {
+      return false;
+    }
+
     if (!normalizedSearchTerm) {
       return true;
     }
@@ -259,6 +278,14 @@ export function ClientesView({
     setEditingClientId(null);
     setErrorMessage("");
     setFormData(initialFormData);
+  }
+
+  function applyPortfolioFilter(filter: PortfolioFilter) {
+    setPortfolioFilter(filter);
+
+    if (filter === "all") {
+      setSearchTerm("");
+    }
   }
 
   function updateField(field: keyof FormData, value: string) {
@@ -411,9 +438,16 @@ export function ClientesView({
 
         <section className="mb-5 grid gap-4 md:grid-cols-3">
           {portfolioCards.map((card) => (
-            <article
+            <button
               key={card.title}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
+              type="button"
+              onClick={() => applyPortfolioFilter(card.filter)}
+              aria-pressed={portfolioFilter === card.filter}
+              className={`rounded-2xl border p-5 text-left shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:border-[#17352b]/40 hover:shadow-[0_18px_36px_-24px_rgba(15,23,42,0.5)] ${
+                portfolioFilter === card.filter
+                  ? "border-[#17352b] bg-emerald-50/70"
+                  : "border-slate-200 bg-white"
+              }`}
             >
               <p className="text-sm font-medium text-slate-500">
                 {card.title}
@@ -424,7 +458,7 @@ export function ClientesView({
               <p className="mt-2 text-xs leading-5 text-slate-400">
                 {card.detail}
               </p>
-            </article>
+            </button>
           ))}
         </section>
 

@@ -193,7 +193,11 @@ function getOverdueLabel(value: string | null) {
   return `${overdueDays} dias de atraso`;
 }
 
-async function getDashboardData(selectedPeriod: PeriodValue) {
+async function getDashboardData(
+  selectedPeriod: PeriodValue,
+  customStartDate: string,
+  customEndDate: string
+) {
   const [
     clientsResult,
     servicesResult,
@@ -232,7 +236,7 @@ async function getDashboardData(selectedPeriod: PeriodValue) {
   const financialEntries = (financeiroResult.data ?? []) as FinancialEntry[];
   const tasks = (tasksResult.data ?? []) as TaskDashboardEntry[];
   const periodFinancialEntries = financialEntries.filter((entry) =>
-    isDateInPeriod(entry.data, selectedPeriod)
+    isDateInPeriod(entry.data, selectedPeriod, customStartDate, customEndDate)
   );
 
   const servicosAtrasados = services.filter(isPastDueService).length;
@@ -250,11 +254,21 @@ async function getDashboardData(selectedPeriod: PeriodValue) {
   const totalAReceber = valorContratadoTotal - totalRecebido;
 
   const clientesNovos = clients.filter((client) =>
-    isDateInPeriod(client.created_at, selectedPeriod)
+    isDateInPeriod(
+      client.created_at,
+      selectedPeriod,
+      customStartDate,
+      customEndDate
+    )
   ).length;
 
   const servicosCriados = services.filter((service) =>
-    isDateInPeriod(service.created_at, selectedPeriod)
+    isDateInPeriod(
+      service.created_at,
+      selectedPeriod,
+      customStartDate,
+      customEndDate
+    )
   ).length;
 
   const totalRecebidoPeriodo = periodFinancialEntries
@@ -347,6 +361,8 @@ async function getDashboardData(selectedPeriod: PeriodValue) {
 type DashboardPageProps = {
   searchParams: Promise<{
     periodo?: string | string[];
+    dataInicial?: string | string[];
+    dataFinal?: string | string[];
   }>;
 };
 
@@ -354,10 +370,20 @@ export default async function Home({ searchParams }: DashboardPageProps) {
   await connection();
   await requireAuth();
 
-  const { periodo } = await searchParams;
+  const { periodo, dataInicial, dataFinal } = await searchParams;
   const selectedPeriod = getPeriodValue(periodo);
   const selectedPeriodLabel = getPeriodLabel(selectedPeriod);
-  const dashboardData = await getDashboardData(selectedPeriod);
+  const customStartDate = Array.isArray(dataInicial)
+    ? dataInicial[0] ?? ""
+    : dataInicial ?? "";
+  const customEndDate = Array.isArray(dataFinal)
+    ? dataFinal[0] ?? ""
+    : dataFinal ?? "";
+  const dashboardData = await getDashboardData(
+    selectedPeriod,
+    customStartDate,
+    customEndDate
+  );
 
   const periodCards = [
     {
@@ -438,7 +464,7 @@ export default async function Home({ searchParams }: DashboardPageProps) {
               >
                 Período
               </label>
-              <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.1fr_1fr_1fr_auto]">
                 <select
                   id="dashboard-period"
                   name="periodo"
@@ -451,6 +477,20 @@ export default async function Home({ searchParams }: DashboardPageProps) {
                     </option>
                   ))}
                 </select>
+                <input
+                  type="date"
+                  name="dataInicial"
+                  defaultValue={customStartDate}
+                  aria-label="Data inicial"
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                />
+                <input
+                  type="date"
+                  name="dataFinal"
+                  defaultValue={customEndDate}
+                  aria-label="Data final"
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                />
                 <button
                   type="submit"
                   className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
