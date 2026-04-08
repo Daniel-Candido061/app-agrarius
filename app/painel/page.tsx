@@ -8,6 +8,13 @@ import {
   isTodayOrFutureDateOnly,
 } from "../../lib/date-utils";
 import { requireAuth } from "../../lib/auth";
+import {
+  getPeriodLabel,
+  getPeriodValue,
+  isDateInPeriod,
+  periodOptions,
+  type PeriodValue,
+} from "../../lib/period-utils";
 import { supabase } from "../../lib/supabase";
 
 type FinancialEntry = {
@@ -24,10 +31,16 @@ type TaskDashboardEntry = {
   status: string | null;
 };
 
+type ClientDashboardEntry = {
+  id: number;
+  created_at: string | null;
+};
+
 type ServiceDashboardEntry = {
   id: number;
   nome_servico: string | null;
   valor: number | string | null;
+  created_at: string | null;
   prazo_final: string | null;
   status: string | null;
   cliente:
@@ -126,6 +139,14 @@ function isReceived(entry: FinancialEntry) {
   return normalizeText(entry.status) === "recebido";
 }
 
+function isExpense(entry: FinancialEntry) {
+  return normalizeText(entry.tipo) === "despesa";
+}
+
+function isPaid(entry: FinancialEntry) {
+  return normalizeText(entry.status) === "pago";
+}
+
 function getDaysUntilDeadline(value: string | null) {
   if (!value) {
     return null;
@@ -172,18 +193,24 @@ function getOverdueLabel(value: string | null) {
   return `${overdueDays} dias de atraso`;
 }
 
-async function getDashboardData() {
+async function getDashboardData(selectedPeriod: PeriodValue) {
   const [
+    clientsResult,
     servicesResult,
     financeiroResult,
     tasksResult,
   ] = await Promise.all([
+    supabase.from("clientes").select("id, created_at"),
     supabase
       .from("servicos")
-      .select("id, nome_servico, valor, prazo_final, status, cliente:clientes(nome)"),
+      .select("id, nome_servico, valor, created_at, prazo_final, status, cliente:clientes(nome)"),
     supabase.from("financeiro").select("tipo, valor, status, data, servico_id"),
     supabase.from("tarefas").select("id, data_limite, status"),
   ]);
+
+  if (clientsResult.error) {
+    console.error("Erro ao buscar clientes do painel:", clientsResult.error.message);
+  }
 
   if (servicesResult.error) {
     console.error("Erro ao buscar serviços do painel:", servicesResult.error.message);
@@ -200,9 +227,13 @@ async function getDashboardData() {
     console.error("Erro ao buscar tarefas do painel:", tasksResult.error.message);
   }
 
+  const clients = (clientsResult.data ?? []) as ClientDashboardEntry[];
   const services = (servicesResult.data ?? []) as ServiceDashboardEntry[];
   const financialEntries = (financeiroResult.data ?? []) as FinancialEntry[];
   const tasks = (tasksResult.data ?? []) as TaskDashboardEntry[];
+  const periodFinancialEntries = financialEntries.filter((entry) =>
+    isDateInPeriod(entry.data, selectedPeriod)
+  );
 
   const servicosAtrasados = services.filter(isPastDueService).length;
   const tarefasAtrasadas = tasks.filter(isPastDueTask).length;
@@ -217,6 +248,24 @@ async function getDashboardData() {
     .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
 
   const totalAReceber = valorContratadoTotal - totalRecebido;
+
+  const clientesNovos = clients.filter((client) =>
+    isDateInPeriod(client.created_at, selectedPeriod)
+  ).length;
+
+  const servicosCriados = services.filter((service) =>
+    isDateInPeriod(service.created_at, selectedPeriod)
+  ).length;
+
+  const totalRecebidoPeriodo = periodFinancialEntries
+    .filter((entry) => isRevenue(entry) && isReceived(entry))
+    .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+
+  const despesasPagasPeriodo = periodFinancialEntries
+    .filter((entry) => isExpense(entry) && isPaid(entry))
+    .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+
+  const lucroRealizadoPeriodo = totalRecebidoPeriodo - despesasPagasPeriodo;
 
   const receivedByServiceId = new Map<string, number>();
 
@@ -264,6 +313,11 @@ async function getDashboardData() {
     .slice(0, 4);
 
   return {
+    clientesNovos,
+    servicosCriados,
+    totalRecebidoPeriodo,
+    despesasPagasPeriodo,
+    lucroRealizadoPeriodo,
     servicosAtrasados,
     tarefasAtrasadas,
     totalAReceber,
@@ -290,11 +344,48 @@ async function getDashboardData() {
   };
 }
 
-export default async function Home() {
+type DashboardPageProps = {
+  searchParams: Promise<{
+    periodo?: string | string[];
+  }>;
+};
+
+export default async function Home({ searchParams }: DashboardPageProps) {
   await connection();
   await requireAuth();
 
-  const dashboardData = await getDashboardData();
+  const { periodo } = await searchParams;
+  const selectedPeriod = getPeriodValue(periodo);
+  const selectedPeriodLabel = getPeriodLabel(selectedPeriod);
+  const dashboardData = await getDashboardData(selectedPeriod);
+
+  const periodCards = [
+    {
+      title: "Clientes novos",
+      value: String(dashboardData.clientesNovos),
+      detail: `Clientes cadastrados no período: ${selectedPeriodLabel.toLowerCase()}`,
+    },
+    {
+      title: "Serviços criados",
+      value: String(dashboardData.servicosCriados),
+      detail: `Serviços cadastrados no período: ${selectedPeriodLabel.toLowerCase()}`,
+    },
+    {
+      title: "Total recebido",
+      value: formatCurrency(dashboardData.totalRecebidoPeriodo),
+      detail: "Receitas recebidas no período",
+    },
+    {
+      title: "Despesas pagas",
+      value: formatCurrency(dashboardData.despesasPagasPeriodo),
+      detail: "Despesas pagas no período",
+    },
+    {
+      title: "Lucro realizado",
+      value: formatCurrency(dashboardData.lucroRealizadoPeriodo),
+      detail: "Receitas recebidas menos despesas pagas no período",
+    },
+  ];
 
   const summaryCards = [
     {
@@ -326,6 +417,66 @@ export default async function Home() {
       currentPath="/painel"
     >
       <div className="space-y-6">
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">
+                Recorte de tempo
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-[#17352b]">
+                Resumo do período
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Indicadores calculados para o período selecionado.
+              </p>
+            </div>
+
+            <form className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-64">
+              <label
+                htmlFor="dashboard-period"
+                className="text-sm font-medium text-slate-700"
+              >
+                Período
+              </label>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <select
+                  id="dashboard-period"
+                  name="periodo"
+                  defaultValue={selectedPeriod}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                >
+                  {periodOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+                >
+                  Aplicar
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+            {periodCards.map((card) => (
+              <article
+                key={card.title}
+                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5"
+              >
+                <p className="text-sm font-medium text-slate-500">{card.title}</p>
+                <strong className="mt-4 block text-2xl font-semibold text-[#17352b]">
+                  {card.value}
+                </strong>
+                <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {summaryCards.map((card) => (
             <article

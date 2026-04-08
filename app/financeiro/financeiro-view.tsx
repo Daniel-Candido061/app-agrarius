@@ -6,6 +6,12 @@ import { AppShell } from "../components/app-shell";
 import { ActionsMenu } from "../components/actions-menu";
 import { SearchableSelect } from "../components/searchable-select";
 import { formatSimpleDate, getDateInputValue } from "../../lib/date-utils";
+import {
+  defaultPeriodValue,
+  isDateInPeriod,
+  periodOptions,
+  type PeriodValue,
+} from "../../lib/period-utils";
 import { supabase } from "../../lib/supabase";
 import { getCategoryOptionsByType } from "./category-options";
 import type { LancamentoFinanceiro, ServicoOption } from "./types";
@@ -201,6 +207,8 @@ export function FinanceiroView({
   const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [searchTerm, setSearchTerm] = useState("");
+  const [periodFilter, setPeriodFilter] =
+    useState<PeriodValue>(defaultPeriodValue);
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
@@ -220,7 +228,13 @@ export function FinanceiroView({
     ])
   );
 
-  const summaryCards = buildSummaryCards(entries, services);
+  const periodEntries = entries.filter((entry) =>
+    isDateInPeriod(entry.data, periodFilter)
+  );
+  const periodServices = services.filter((service) =>
+    isDateInPeriod(service.created_at, periodFilter)
+  );
+  const summaryCards = buildSummaryCards(periodEntries, periodServices);
   const categoryOptions = getCategoryOptionsByType(formData.tipo);
   const statusOptions = getStatusOptionsByType(formData.tipo);
   const serviceFallbackLabel = "Despesa geral da empresa";
@@ -229,7 +243,7 @@ export function FinanceiroView({
     : null;
   const allStatusOptions = ["Pendente", "Recebido", "Pago", "Vencido"];
   const normalizedSearchTerm = normalizeText(searchTerm);
-  const filteredEntries = entries.filter((entry) => {
+  const filteredEntries = periodEntries.filter((entry) => {
     const serviceDetails = serviceDetailsById.get(String(entry.servico_id));
 
     if (typeFilter && normalizeText(entry.tipo) !== normalizeText(typeFilter)) {
@@ -513,7 +527,7 @@ export function FinanceiroView({
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-            <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.8fr_1.2fr]">
+            <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_1.2fr]">
               <input
                 type="text"
                 value={searchTerm}
@@ -521,6 +535,20 @@ export function FinanceiroView({
                 placeholder="Buscar por descrição, cliente, serviço ou categoria"
                 className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
               />
+
+              <select
+                value={periodFilter}
+                onChange={(event) =>
+                  setPeriodFilter(event.target.value as PeriodValue)
+                }
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+              >
+                {periodOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
 
               <select
                 value={typeFilter}
