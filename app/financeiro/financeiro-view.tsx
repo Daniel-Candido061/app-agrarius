@@ -8,6 +8,7 @@ import { SearchableSelect } from "../components/searchable-select";
 import { formatSimpleDate, getDateInputValue } from "../../lib/date-utils";
 import {
   defaultPeriodValue,
+  getPeriodLabel,
   isDateInPeriod,
   quickPeriodOptions,
   type QuickPeriodValue,
@@ -272,6 +273,12 @@ export function FinanceiroView({
     );
   });
   const summaryCards = buildSummaryCards(filteredEntries);
+  const selectedTimeLabel =
+    timeFilterMode === "rapido"
+      ? `Período: ${getPeriodLabel(periodFilter)}`
+      : customStartDate || customEndDate
+        ? `${customStartDate || "Início"} até ${customEndDate || "Fim"}`
+        : "Intervalo personalizado";
 
   function openModal() {
     setModalMode("create");
@@ -500,20 +507,42 @@ export function FinanceiroView({
       >
         <div className="space-y-6">
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.7fr)]">
-              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-                <p className="text-sm font-semibold text-[#17352b]">
-                  Filtro temporal
-                </p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+            <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(260px,0.85fr)_minmax(0,1.7fr)]">
+              <details className="group min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/60">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 transition hover:bg-slate-50">
+                  <span className="min-w-0">
+                    <span className="block text-xs font-medium text-slate-500">
+                      Filtro temporal
+                    </span>
+                    <span className="block truncate text-sm font-semibold text-[#17352b]">
+                      {selectedTimeLabel}
+                    </span>
+                  </span>
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 20 20"
+                    className="h-4 w-4 shrink-0 text-slate-500 transition group-open:rotate-180"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  >
+                    <path
+                      d="M5 8l5 5 5-5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </summary>
+
+                <div className="grid min-w-0 gap-3 border-t border-slate-200 px-3 py-3 sm:grid-cols-2">
+                  <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
                     Modo
                     <select
                       value={timeFilterMode}
                       onChange={(event) =>
                         setTimeFilterMode(event.target.value as TimeFilterMode)
                       }
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
                     >
                       <option value="rapido">Período rápido</option>
                       <option value="personalizado">
@@ -523,14 +552,14 @@ export function FinanceiroView({
                   </label>
 
                   {timeFilterMode === "rapido" ? (
-                    <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
                       Período rápido
                       <select
                         value={periodFilter}
                         onChange={(event) =>
                           setPeriodFilter(event.target.value as QuickPeriodValue)
                         }
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                        className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
                       >
                         {quickPeriodOptions.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -540,8 +569,8 @@ export function FinanceiroView({
                       </select>
                     </label>
                   ) : (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                    <div className="grid min-w-0 gap-3 sm:col-span-2 sm:grid-cols-2">
+                      <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
                         Data inicial
                         <input
                           type="date"
@@ -549,11 +578,11 @@ export function FinanceiroView({
                           onChange={(event) =>
                             setCustomStartDate(event.target.value)
                           }
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                          className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
                         />
                       </label>
 
-                      <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                      <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
                         Data final
                         <input
                           type="date"
@@ -561,38 +590,38 @@ export function FinanceiroView({
                           onChange={(event) =>
                             setCustomEndDate(event.target.value)
                           }
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                          className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
                         />
                       </label>
                     </div>
                   )}
                 </div>
-              </div>
+              </details>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+              <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
                 <p className="text-sm font-semibold text-[#17352b]">
                   Filtros da listagem
                 </p>
 
                 <div className="mt-3 space-y-3">
-                  <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                  <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
                     Busca textual
                     <input
                       type="text"
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
                       placeholder="Digite cliente, serviço, descrição, categoria ou valor"
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
                     />
                   </label>
 
-                  <div className="grid gap-3 lg:grid-cols-3">
-                    <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                  <div className="grid min-w-0 gap-3 lg:grid-cols-3">
+                    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
                       Tipo
                       <select
                         value={typeFilter}
                         onChange={(event) => setTypeFilter(event.target.value)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                        className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
                       >
                         <option value="">Todos os tipos</option>
                         <option value="Receita">Receita</option>
@@ -600,12 +629,12 @@ export function FinanceiroView({
                       </select>
                     </label>
 
-                    <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
                       Status
                       <select
                         value={statusFilter}
                         onChange={(event) => setStatusFilter(event.target.value)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                        className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
                       >
                         <option value="">Todos os status</option>
                         {allStatusOptions.map((statusOption) => (
@@ -616,12 +645,12 @@ export function FinanceiroView({
                       </select>
                     </label>
 
-                    <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
                       Serviço
                       <select
                         value={serviceFilter}
                         onChange={(event) => setServiceFilter(event.target.value)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                        className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
                       >
                         <option value="">Todos os serviços</option>
                         <option value="general">{serviceFallbackLabel}</option>

@@ -437,19 +437,19 @@ export function ClientesView({
         ) : null}
 
         <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.35)]">
-          <div className="grid gap-4 xl:grid-cols-[minmax(260px,1.1fr)_minmax(0,2fr)] xl:items-end">
-            <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+          <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(260px,1.1fr)_minmax(0,2fr)] xl:items-end">
+            <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
               Busca
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Buscar por nome, email, telefone ou cidade"
-                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
               />
             </label>
 
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid min-w-0 gap-3 md:grid-cols-3">
               {portfolioCards.map((card) => (
                 <button
                   key={card.title}
@@ -499,8 +499,8 @@ export function ClientesView({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full table-fixed divide-y divide-slate-200">
+            <div className="w-full overflow-x-auto">
+              <table className="min-w-[760px] table-fixed divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="w-[22%] px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
