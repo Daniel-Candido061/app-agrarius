@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { ClientesView } from "./clientes-view";
+import { requireAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import type { Cliente } from "./types";
 
@@ -19,6 +20,8 @@ async function getClientes() {
 
 export default async function ClientesPage() {
   await connection();
+  await requireAuth();
+
   const clients = await getClientes();
 
   return <ClientesView clients={clients} />;

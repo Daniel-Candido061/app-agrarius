@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { AppShell } from "../../components/app-shell";
 import { formatSimpleDate } from "../../../lib/date-utils";
+import { requireAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 import type { Servico, ServicoFinanceiro } from "../types";
 import type { Tarefa } from "../../tarefas/types";
@@ -192,6 +193,7 @@ export default async function ServicoDetalhesPage({
   params: Promise<{ id: string }>;
 }) {
   await connection();
+  await requireAuth();
 
   const { id } = await params;
   const serviceId = Number(id);

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 const navigationItems = [
-  { label: "Painel", href: "/", icon: DashboardIcon },
+  { label: "Painel", href: "/painel", icon: DashboardIcon },
   { label: "Clientes", href: "/clientes", icon: UserIcon },
   { label: "Serviços", href: "/servicos", icon: ClipboardIcon },
   { label: "Tarefas", href: "/tarefas", icon: CheckIcon },
@@ -93,7 +93,11 @@ function CheckIcon() {
   );
 }
 
-function AgrariusLogo({ className = "h-12 w-12" }: { className?: string }) {
+export function AgrariusLogo({
+  className = "h-12 w-12",
+}: {
+  className?: string;
+}) {
   return (
     <svg
       aria-hidden="true"
@@ -205,6 +209,15 @@ export function AppShell({
                 );
               })}
             </nav>
+
+            <form action="/auth/logout" method="post" className="mt-auto pt-8">
+              <button
+                type="submit"
+                className="flex w-full items-center justify-center rounded-lg border border-white/15 px-4 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/10 hover:text-white"
+              >
+                Sair
+              </button>
+            </form>
           </div>
         </aside>
 

@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { requireAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { TarefasView } from "./tarefas-view";
 import type { ServicoOption, Tarefa } from "./types";
@@ -36,6 +37,7 @@ async function getServicos() {
 
 export default async function TarefasPage() {
   await connection();
+  await requireAuth();
 
   const [tasks, services] = await Promise.all([getTarefas(), getServicos()]);
 

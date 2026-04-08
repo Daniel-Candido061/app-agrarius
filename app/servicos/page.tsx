@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { requireAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { ServicosView } from "./servicos-view";
 import type { ClienteOption, Servico, ServicoFinanceiro } from "./types";
@@ -54,6 +55,7 @@ async function getFinanceiroPorServico() {
 
 export default async function ServicosPage() {
   await connection();
+  await requireAuth();
 
   const [services, clients, financialEntries] = await Promise.all([
     getServicos(),

@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { requireAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { FinanceiroView } from "./financeiro-view";
 import type { LancamentoFinanceiro, ServicoOption } from "./types";
@@ -34,6 +35,7 @@ async function getServicos() {
 
 export default async function FinanceiroPage() {
   await connection();
+  await requireAuth();
 
   const [entries, services] = await Promise.all([
     getLancamentosFinanceiros(),
