@@ -122,10 +122,6 @@ function buildSummaryCards(
     )
     .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
 
-  const despesaTotal = entries
-    .filter((entry) => normalizeText(entry.tipo) === "despesa")
-    .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
-
   const despesasVinculadas = entries
     .filter(
       (entry) =>
@@ -144,14 +140,19 @@ function buildSummaryCards(
 
   return [
     {
-      title: "Total a receber",
-      value: formatCurrency(totalAReceber),
-      detail: "Valor contratado menos receitas recebidas",
-    },
-    {
       title: "Total recebido",
       value: formatCurrency(receitasRecebidas),
       detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "receita" && normalizeText(entry.status) === "recebido").length} lancamentos recebidos`,
+    },
+    {
+      title: "Despesas pagas",
+      value: formatCurrency(despesasPagas),
+      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "despesa" && normalizeText(entry.status) === "pago").length} lancamentos pagos`,
+    },
+    {
+      title: "Total a receber",
+      value: formatCurrency(totalAReceber),
+      detail: "Valor contratado menos receitas recebidas",
     },
     {
       title: "Lucro líquido realizado",
@@ -167,11 +168,6 @@ function buildSummaryCards(
       title: "Contas vencidas",
       value: String(contasVencidas),
       detail: 'Lancamentos com status "Vencido"',
-    },
-    {
-      title: "Despesas cadastradas",
-      value: formatCurrency(despesaTotal),
-      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "despesa").length} lancamentos de despesa`,
     },
   ];
 }
@@ -204,6 +200,9 @@ export function FinanceiroView({
   const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [serviceFilter, setServiceFilter] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
@@ -227,20 +226,41 @@ export function FinanceiroView({
   const selectedService = formData.servico_id
     ? serviceById.get(formData.servico_id)
     : null;
+  const allStatusOptions = ["Pendente", "Recebido", "Pago", "Vencido"];
   const normalizedSearchTerm = normalizeText(searchTerm);
   const filteredEntries = entries.filter((entry) => {
-    if (!normalizedSearchTerm) {
-      return true;
+    const serviceDetails = serviceDetailsById.get(String(entry.servico_id));
+
+    if (typeFilter && normalizeText(entry.tipo) !== normalizeText(typeFilter)) {
+      return false;
+    }
+
+    if (
+      statusFilter &&
+      normalizeText(entry.status) !== normalizeText(statusFilter)
+    ) {
+      return false;
+    }
+
+    if (serviceFilter === "general") {
+      if (entry.servico_id !== null && entry.servico_id !== undefined) {
+        return false;
+      }
+    } else if (
+      serviceFilter &&
+      String(entry.servico_id ?? "") !== serviceFilter
+    ) {
+      return false;
     }
 
     const searchableFields = [
       entry.descricao,
+      entry.categoria,
       entry.tipo,
       entry.status,
       financialDateLabel,
-      serviceDetailsById.get(String(entry.servico_id))?.serviceName ??
-        serviceFallbackLabel,
-      serviceDetailsById.get(String(entry.servico_id))?.clientName,
+      serviceDetails?.serviceName ?? serviceFallbackLabel,
+      serviceDetails?.clientName,
     ];
 
     return searchableFields.some((field) =>
@@ -474,16 +494,6 @@ export function FinanceiroView({
         }
       >
         <div className="space-y-6">
-          <div>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Buscar por descricao, tipo, status, servico ou cliente"
-              className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-            />
-          </div>
-
           <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {summaryCards.map((card) => (
               <article
@@ -499,6 +509,56 @@ export function FinanceiroView({
                 <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
               </article>
             ))}
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+            <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.8fr_1.2fr]">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Buscar por descricao, cliente, servico ou categoria"
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+              />
+
+              <select
+                value={typeFilter}
+                onChange={(event) => setTypeFilter(event.target.value)}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+              >
+                <option value="">Todos os tipos</option>
+                <option value="Receita">Receitas</option>
+                <option value="Despesa">Despesas</option>
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+              >
+                <option value="">Todos os status</option>
+                {allStatusOptions.map((statusOption) => (
+                  <option key={statusOption} value={statusOption}>
+                    {statusOption}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={serviceFilter}
+                onChange={(event) => setServiceFilter(event.target.value)}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+              >
+                <option value="">Todos os servicos</option>
+                <option value="general">{serviceFallbackLabel}</option>
+                {services.map((service) => (
+                  <option key={service.id} value={String(service.id)}>
+                    {service.nome_servico ?? `Servico ${service.id}`} -{" "}
+                    {getServiceClientName(service)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </section>
 
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
@@ -530,22 +590,25 @@ export function FinanceiroView({
                         Tipo
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Categoria
+                        Descricao
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Descrição
+                        Cliente
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Servico
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Categoria
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Valor
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        {financialDateLabel}
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Servico e cliente
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Status
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        {financialDateLabel}
                       </th>
                       <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Acoes
@@ -553,76 +616,67 @@ export function FinanceiroView({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredEntries.map((entry) => (
-                      <tr key={entry.id} className="hover:bg-slate-50/80">
-                        <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                          {entry.tipo ?? "-"}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
-                          {entry.categoria ?? "-"}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
-                          {entry.descricao ?? "-"}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
-                          {formatCurrency(entry.valor)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
-                          <span className="block font-medium text-slate-700">
-                            {formatSimpleDate(entry.data)}
-                          </span>
-                          <span className="mt-1 block text-xs text-slate-400">
-                            {financialDateLabel}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
-                          <span className="block font-medium text-slate-700">
-                            {serviceDetailsById.get(String(entry.servico_id))
-                              ?.serviceName ?? serviceFallbackLabel}
-                          </span>
-                          {serviceDetailsById.get(String(entry.servico_id))
-                            ?.clientName ? (
-                            <span className="mt-1 block text-xs text-slate-400">
-                              Cliente:{" "}
-                              {
-                                serviceDetailsById.get(String(entry.servico_id))
-                                  ?.clientName
-                              }
+                    {filteredEntries.map((entry) => {
+                      const serviceDetails = serviceDetailsById.get(
+                        String(entry.servico_id)
+                      );
+
+                      return (
+                        <tr key={entry.id} className="hover:bg-slate-50/80">
+                          <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                            {entry.tipo ?? "-"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-500">
+                            {entry.descricao ?? "-"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-500">
+                            {serviceDetails?.clientName ?? "-"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-500">
+                            {serviceDetails?.serviceName ?? serviceFallbackLabel}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-500">
+                            {entry.categoria ?? "-"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-500">
+                            {formatCurrency(entry.valor)}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
+                                entry.status
+                              )}`}
+                            >
+                              {entry.status ?? "-"}
                             </span>
-                          ) : null}
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
-                              entry.status
-                            )}`}
-                          >
-                            {entry.status ?? "-"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right text-sm">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(entry)}
-                              className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(entry)}
-                              disabled={deletingEntryId === entry.id}
-                              className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {deletingEntryId === entry.id
-                                ? "Excluindo..."
-                                : "Excluir"}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-500">
+                            {formatSimpleDate(entry.data)}
+                          </td>
+                          <td className="px-6 py-4 text-right text-sm">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(entry)}
+                                className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(entry)}
+                                disabled={deletingEntryId === entry.id}
+                                className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {deletingEntryId === entry.id
+                                  ? "Excluindo..."
+                                  : "Excluir"}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
