@@ -36,6 +36,8 @@ const initialFormData: FormData = {
   status: "Pendente",
 };
 
+const financialDateLabel = "Data financeira";
+
 function formatCurrency(value: number | string | null) {
   if (value === null || value === undefined || value === "") {
     return "-";
@@ -89,16 +91,6 @@ function isEntrySettled(status: string | null) {
   const normalizedStatus = normalizeText(status);
 
   return normalizedStatus === "recebido" || normalizedStatus === "pago";
-}
-
-function getDateLabel(type: string | null, status: string | null) {
-  if (!isEntrySettled(status)) {
-    return "Vencimento";
-  }
-
-  return normalizeText(type) === "despesa"
-    ? "Data do pagamento"
-    : "Data do recebimento";
 }
 
 function getServiceClientName(service: ServicoOption) {
@@ -208,7 +200,7 @@ export function FinanceiroView({
       entry.descricao,
       entry.tipo,
       entry.status,
-      getDateLabel(entry.tipo, entry.status),
+      financialDateLabel,
       serviceDetailsById.get(String(entry.servico_id))?.serviceName ??
         serviceFallbackLabel,
       serviceDetailsById.get(String(entry.servico_id))?.clientName,
@@ -510,7 +502,7 @@ export function FinanceiroView({
                         Valor
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Data / vencimento
+                        {financialDateLabel}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Servico e cliente
@@ -543,7 +535,7 @@ export function FinanceiroView({
                             {formatSimpleDate(entry.data)}
                           </span>
                           <span className="mt-1 block text-xs text-slate-400">
-                            {getDateLabel(entry.tipo, entry.status)}
+                            {financialDateLabel}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-500">
@@ -703,7 +695,7 @@ export function FinanceiroView({
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  {getDateLabel(formData.tipo, formData.status)}
+                  {financialDateLabel}
                   <input
                     type="date"
                     value={formData.data}
