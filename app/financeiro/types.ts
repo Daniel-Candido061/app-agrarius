@@ -9,7 +9,13 @@ export type LancamentoFinanceiro = {
   status: string | null;
 };
 
+export type ClienteDoServico = {
+  id: number;
+  nome: string | null;
+};
+
 export type ServicoOption = {
   id: number;
   nome_servico: string | null;
+  cliente: ClienteDoServico | ClienteDoServico[] | null;
 };

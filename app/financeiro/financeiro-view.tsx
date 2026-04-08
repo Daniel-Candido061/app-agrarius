@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
-import { formatDateOnly, getDateInputValue } from "../../lib/date-utils";
+import { formatSimpleDate, getDateInputValue } from "../../lib/date-utils";
 import { supabase } from "../../lib/supabase";
 import { getCategoryOptionsByType } from "./category-options";
-import { FINANCIAL_STATUS_OPTIONS } from "./status-options";
 import type { LancamentoFinanceiro, ServicoOption } from "./types";
 
 type FinanceiroViewProps = {
@@ -27,13 +26,13 @@ type FormData = {
 };
 
 const initialFormData: FormData = {
-  tipo: "receita",
-  categoria: getCategoryOptionsByType("receita")[0],
+  tipo: "Receita",
+  categoria: getCategoryOptionsByType("Receita")[0],
   descricao: "",
   valor: "",
   data: "",
   servico_id: "",
-  status: FINANCIAL_STATUS_OPTIONS[0],
+  status: "Pendente",
 };
 
 function formatCurrency(value: number | string | null) {
@@ -69,7 +68,7 @@ function getNumericValue(value: number | string | null) {
   return Number.isNaN(numericValue) ? 0 : numericValue;
 }
 
-function normalizeText(value: string | null) {
+function normalizeText(value: string | null | undefined) {
   return (
     value
       ?.normalize("NFD")
@@ -79,9 +78,49 @@ function normalizeText(value: string | null) {
   );
 }
 
+function getStatusOptionsByType(type: string) {
+  return normalizeText(type) === "despesa"
+    ? ["Pendente", "Pago", "Vencido"]
+    : ["Pendente", "Recebido", "Vencido"];
+}
+
+function isEntrySettled(status: string | null) {
+  const normalizedStatus = normalizeText(status);
+
+  return normalizedStatus === "recebido" || normalizedStatus === "pago";
+}
+
+function getDateLabel(type: string | null, status: string | null) {
+  if (!isEntrySettled(status)) {
+    return "Vencimento";
+  }
+
+  return normalizeText(type) === "despesa"
+    ? "Data do pagamento"
+    : "Data do recebimento";
+}
+
+function getServiceClientName(service: ServicoOption) {
+  if (Array.isArray(service.cliente)) {
+    return service.cliente[0]?.nome ?? "Cliente nao encontrado";
+  }
+
+  return service.cliente?.nome ?? "Cliente nao encontrado";
+}
+
 function buildSummaryCards(entries: LancamentoFinanceiro[]) {
-  const receitaTotal = entries
-    .filter((entry) => normalizeText(entry.tipo) === "receita")
+  const receitasPendentes = entries
+    .filter(
+      (entry) =>
+        normalizeText(entry.tipo) === "receita" && !isEntrySettled(entry.status)
+    )
+    .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
+
+  const receitasRecebidas = entries
+    .filter(
+      (entry) =>
+        normalizeText(entry.tipo) === "receita" && isEntrySettled(entry.status)
+    )
     .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
 
   const despesaTotal = entries
@@ -90,19 +129,19 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
 
   return [
     {
-      title: "Total a receber",
-      value: formatCurrency(receitaTotal),
-      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "receita").length} lançamentos de receita`,
+      title: "Receitas pendentes",
+      value: formatCurrency(receitasPendentes),
+      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "receita" && !isEntrySettled(entry.status)).length} lancamentos em aberto`,
     },
     {
-      title: "Total recebido no mes",
-      value: formatCurrency(receitaTotal),
-      detail: "Valores listados na tabela financeiro",
+      title: "Receitas recebidas",
+      value: formatCurrency(receitasRecebidas),
+      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "receita" && isEntrySettled(entry.status)).length} lancamentos quitados`,
     },
     {
-      title: "Total de despesas no mes",
+      title: "Despesas cadastradas",
       value: formatCurrency(despesaTotal),
-      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "despesa").length} lançamentos de despesa`,
+      detail: `${entries.filter((entry) => normalizeText(entry.tipo) === "despesa").length} lancamentos de despesa`,
     },
   ];
 }
@@ -138,16 +177,26 @@ export function FinanceiroView({
   const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
-  const serviceNameById = new Map(
+  const serviceById = new Map(
+    services.map((service) => [String(service.id), service])
+  );
+  const serviceDetailsById = new Map(
     services.map((service) => [
       String(service.id),
-      service.nome_servico ?? `Servico ${service.id}`,
+      {
+        clientName: getServiceClientName(service),
+        serviceName: service.nome_servico ?? `Servico ${service.id}`,
+      },
     ])
   );
 
   const summaryCards = buildSummaryCards(entries);
   const categoryOptions = getCategoryOptionsByType(formData.tipo);
+  const statusOptions = getStatusOptionsByType(formData.tipo);
   const serviceFallbackLabel = "Despesa geral da empresa";
+  const selectedService = formData.servico_id
+    ? serviceById.get(formData.servico_id)
+    : null;
   const normalizedSearchTerm = normalizeText(searchTerm);
   const filteredEntries = entries.filter((entry) => {
     if (!normalizedSearchTerm) {
@@ -158,7 +207,10 @@ export function FinanceiroView({
       entry.descricao,
       entry.tipo,
       entry.status,
-      serviceNameById.get(String(entry.servico_id)) ?? serviceFallbackLabel,
+      getDateLabel(entry.tipo, entry.status),
+      serviceDetailsById.get(String(entry.servico_id))?.serviceName ??
+        serviceFallbackLabel,
+      serviceDetailsById.get(String(entry.servico_id))?.clientName,
     ];
 
     return searchableFields.some((field) =>
@@ -175,13 +227,16 @@ export function FinanceiroView({
   }
 
   function openEditModal(entry: LancamentoFinanceiro) {
+    const entryType = entry.tipo ?? "Receita";
+    const entryStatusOptions = getStatusOptionsByType(entryType);
+
     setModalMode("edit");
     setEditingEntryId(entry.id);
     setFormData({
-      tipo: entry.tipo ?? "receita",
+      tipo: entryType,
       categoria:
         entry.categoria ??
-        getCategoryOptionsByType(entry.tipo ?? "receita")[0],
+        getCategoryOptionsByType(entryType)[0],
       descricao: entry.descricao ?? "",
       valor:
         entry.valor === null || entry.valor === undefined
@@ -192,7 +247,10 @@ export function FinanceiroView({
         entry.servico_id === null || entry.servico_id === undefined
           ? ""
           : String(entry.servico_id),
-      status: entry.status ?? FINANCIAL_STATUS_OPTIONS[0],
+      status:
+        entry.status && entryStatusOptions.includes(entry.status)
+          ? entry.status
+          : entryStatusOptions[0],
     });
     setErrorMessage("");
     setIsModalOpen(true);
@@ -209,10 +267,15 @@ export function FinanceiroView({
   function updateField(field: keyof FormData, value: string) {
     setFormData((currentData) => {
       if (field === "tipo") {
+        const nextStatusOptions = getStatusOptionsByType(value);
+
         return {
           ...currentData,
           tipo: value,
           categoria: getCategoryOptionsByType(value)[0],
+          status: nextStatusOptions.includes(currentData.status)
+            ? currentData.status
+            : nextStatusOptions[0],
         };
       }
 
@@ -261,6 +324,11 @@ export function FinanceiroView({
 
     if (!status) {
       setErrorMessage("Selecione o status do lancamento.");
+      return;
+    }
+
+    if (!getStatusOptionsByType(tipo).includes(status)) {
+      setErrorMessage("Selecione um status compativel com o tipo do lancamento.");
       return;
     }
 
@@ -381,7 +449,7 @@ export function FinanceiroView({
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Buscar por descrição, tipo, status ou serviço"
+              placeholder="Buscar por descricao, tipo, status, servico ou cliente"
               className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
             />
           </div>
@@ -441,10 +509,10 @@ export function FinanceiroView({
                         Valor
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Data
+                        Data / vencimento
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Serviço
+                        Servico e cliente
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Status
@@ -470,11 +538,28 @@ export function FinanceiroView({
                           {formatCurrency(entry.valor)}
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-500">
-                          {formatDateOnly(entry.data)}
+                          <span className="block font-medium text-slate-700">
+                            {formatSimpleDate(entry.data)}
+                          </span>
+                          <span className="mt-1 block text-xs text-slate-400">
+                            {getDateLabel(entry.tipo, entry.status)}
+                          </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-500">
-                          {serviceNameById.get(String(entry.servico_id)) ??
-                            serviceFallbackLabel}
+                          <span className="block font-medium text-slate-700">
+                            {serviceDetailsById.get(String(entry.servico_id))
+                              ?.serviceName ?? serviceFallbackLabel}
+                          </span>
+                          {serviceDetailsById.get(String(entry.servico_id))
+                            ?.clientName ? (
+                            <span className="mt-1 block text-xs text-slate-400">
+                              Cliente:{" "}
+                              {
+                                serviceDetailsById.get(String(entry.servico_id))
+                                  ?.clientName
+                              }
+                            </span>
+                          ) : null}
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <span
@@ -549,7 +634,7 @@ export function FinanceiroView({
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  Serviço
+                  Servico vinculado opcional
                   <select
                     value={formData.servico_id}
                     onChange={(event) =>
@@ -560,10 +645,20 @@ export function FinanceiroView({
                     <option value="">{serviceFallbackLabel}</option>
                     {services.map((service) => (
                       <option key={service.id} value={service.id}>
-                        {service.nome_servico ?? `Servico ${service.id}`}
+                        {service.nome_servico ?? `Servico ${service.id}`} -{" "}
+                        {getServiceClientName(service)}
                       </option>
                     ))}
                   </select>
+                  {selectedService ? (
+                    <span className="text-xs font-normal text-slate-500">
+                      Cliente relacionado: {getServiceClientName(selectedService)}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-normal text-slate-500">
+                      Use esta opcao para despesas sem servico vinculado.
+                    </span>
+                  )}
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
@@ -609,13 +704,16 @@ export function FinanceiroView({
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  Data
+                  {getDateLabel(formData.tipo, formData.status)}
                   <input
                     type="date"
                     value={formData.data}
                     onChange={(event) => updateField("data", event.target.value)}
                     className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                   />
+                  <span className="text-xs font-normal text-slate-500">
+                    Para parcelas, cadastre cada data como um lancamento separado.
+                  </span>
                 </label>
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
@@ -625,7 +723,7 @@ export function FinanceiroView({
                       onChange={(event) => updateField("status", event.target.value)}
                       className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                     >
-                      {FINANCIAL_STATUS_OPTIONS.map((statusOption) => (
+                      {statusOptions.map((statusOption) => (
                         <option key={statusOption} value={statusOption}>
                           {statusOption}
                         </option>

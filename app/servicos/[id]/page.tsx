@@ -2,7 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { AppShell } from "../../components/app-shell";
-import { formatDateOnly } from "../../../lib/date-utils";
+import { formatSimpleDate } from "../../../lib/date-utils";
 import { supabase } from "../../../lib/supabase";
 import type { Servico, ServicoFinanceiro } from "../types";
 import type { Tarefa } from "../../tarefas/types";
@@ -270,7 +270,7 @@ export default async function ServicoDetalhesPage({
                   Prazo
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  {formatDateOnly(service.prazo)}
+                  {formatSimpleDate(service.prazo)}
                 </p>
               </div>
 
@@ -279,7 +279,7 @@ export default async function ServicoDetalhesPage({
                   Prazo final
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  {formatDateOnly(service.prazo_final)}
+                  {formatSimpleDate(service.prazo_final)}
                 </p>
               </div>
 
@@ -432,7 +432,7 @@ export default async function ServicoDetalhesPage({
                         {formatCurrency(entry.valor)}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {formatDateOnly(entry.data)}
+                        {formatSimpleDate(entry.data)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span

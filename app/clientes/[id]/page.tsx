@@ -2,7 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { AppShell } from "../../components/app-shell";
-import { formatDateOnly } from "../../../lib/date-utils";
+import { formatSimpleDate } from "../../../lib/date-utils";
 import { supabase } from "../../../lib/supabase";
 import type { Cliente, ClienteServico } from "../types";
 
@@ -263,7 +263,7 @@ export default async function ClienteDetalhesPage({
                         {formatCurrency(service.valor)}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {formatDateOnly(service.prazo_final)}
+                        {formatSimpleDate(service.prazo_final)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span

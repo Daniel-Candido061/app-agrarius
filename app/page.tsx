@@ -1,9 +1,9 @@
 import { connection } from "next/server";
 import { AppShell } from "./components/app-shell";
 import {
-  formatDateOnly,
-  getDateOnlyTime,
-  getDaysUntilDateOnly,
+  formatSimpleDate,
+  getDaysUntilSimpleDate,
+  getSimpleDateTime,
   isBeforeTodayDateOnly,
   isBetweenTodayAndFutureDays,
   isTodayOrFutureDateOnly,
@@ -131,7 +131,7 @@ function getDaysUntilDeadline(value: string | null) {
     return null;
   }
 
-  return getDaysUntilDateOnly(value);
+  return getDaysUntilSimpleDate(value);
 }
 
 function getDeadlineLabel(value: string | null) {
@@ -236,8 +236,8 @@ async function getDashboardData() {
     .filter(isUpcomingService)
     .sort((firstService, secondService) => {
       return (
-        getDateOnlyTime(firstService.prazo_final) -
-        getDateOnlyTime(secondService.prazo_final)
+        getSimpleDateTime(firstService.prazo_final) -
+        getSimpleDateTime(secondService.prazo_final)
       );
     })
     .slice(0, 5);
@@ -246,8 +246,8 @@ async function getDashboardData() {
     .filter(isPastDueService)
     .sort((firstService, secondService) => {
       return (
-        getDateOnlyTime(firstService.prazo_final) -
-        getDateOnlyTime(secondService.prazo_final)
+        getSimpleDateTime(firstService.prazo_final) -
+        getSimpleDateTime(secondService.prazo_final)
       );
     })
     .slice(0, 4);
@@ -385,7 +385,7 @@ export default async function Home() {
                       Prazo final
                     </p>
                     <p className="mt-2 text-sm font-medium text-rose-700">
-                      {formatDateOnly(service.prazo_final)}
+                      {formatSimpleDate(service.prazo_final)}
                     </p>
                   </div>
                 </article>
@@ -444,7 +444,7 @@ export default async function Home() {
                         {service.nome_servico ?? "-"}
                       </td>
                       <td className="px-4 py-4 text-sm text-slate-500">
-                        {formatDateOnly(service.prazo_final)}
+                        {formatSimpleDate(service.prazo_final)}
                       </td>
                       <td className="px-4 py-4 text-sm">
                         <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">

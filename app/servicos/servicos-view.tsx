@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import {
-  formatDateOnly,
+  formatSimpleDate,
   getDateInputValue,
   isBeforeTodayDateOnly,
 } from "../../lib/date-utils";
@@ -520,7 +520,7 @@ export function ServicosView({
                             : "text-slate-500"
                         }`}
                       >
-                        {formatDateOnly(service.prazo_final)}
+                        {formatSimpleDate(service.prazo_final)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span
@@ -802,7 +802,7 @@ export function ServicosView({
                               {formatCurrency(entry.valor)}
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-500">
-                              {formatDateOnly(entry.data)}
+                              {formatSimpleDate(entry.data)}
                             </td>
                             <td className="px-6 py-4 text-sm">
                               <span

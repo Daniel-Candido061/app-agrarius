@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import {
-  formatDateOnly,
+  formatSimpleDate,
   getDateInputValue,
   isBeforeTodayDateOnly,
 } from "../../lib/date-utils";
@@ -396,7 +396,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                             : "text-slate-500"
                         }`}
                       >
-                        {formatDateOnly(task.data_limite)}
+                        {formatSimpleDate(task.data_limite)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span
