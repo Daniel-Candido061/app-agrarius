@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
+import { SearchableSelect } from "../components/searchable-select";
 import {
   formatSimpleDate,
   getDateInputValue,
@@ -475,23 +476,17 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                     />
                   </label>
 
-                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    Servico
-                    <select
-                      value={formData.servico_id}
-                      onChange={(event) =>
-                        updateField("servico_id", event.target.value)
-                      }
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                    >
-                      <option value="">Selecione um servico</option>
-                      {services.map((service) => (
-                        <option key={service.id} value={service.id}>
-                          {service.nome_servico ?? `Servico ${service.id}`}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <SearchableSelect
+                    label="Servico"
+                    value={formData.servico_id}
+                    onChange={(value) => updateField("servico_id", value)}
+                    options={services.map((service) => ({
+                      value: String(service.id),
+                      label: service.nome_servico ?? `Servico ${service.id}`,
+                    }))}
+                    emptyOptionLabel="Selecione um servico"
+                    searchPlaceholder="Digite para buscar um servico"
+                  />
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
                     Responsavel

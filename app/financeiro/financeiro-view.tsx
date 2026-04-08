@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
+import { SearchableSelect } from "../components/searchable-select";
 import { formatSimpleDate, getDateInputValue } from "../../lib/date-utils";
 import { supabase } from "../../lib/supabase";
 import { getCategoryOptionsByType } from "./category-options";
@@ -633,33 +634,31 @@ export function FinanceiroView({
                   </select>
                 </label>
 
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  Servico vinculado opcional
-                  <select
-                    value={formData.servico_id}
-                    onChange={(event) =>
-                      updateField("servico_id", event.target.value)
-                    }
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                  >
-                    <option value="">{serviceFallbackLabel}</option>
-                    {services.map((service) => (
-                      <option key={service.id} value={service.id}>
-                        {service.nome_servico ?? `Servico ${service.id}`} -{" "}
-                        {getServiceClientName(service)}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedService ? (
-                    <span className="text-xs font-normal text-slate-500">
-                      Cliente relacionado: {getServiceClientName(selectedService)}
-                    </span>
-                  ) : (
-                    <span className="text-xs font-normal text-slate-500">
-                      Use esta opcao para despesas sem servico vinculado.
-                    </span>
-                  )}
-                </label>
+                <SearchableSelect
+                  label="Servico vinculado opcional"
+                  value={formData.servico_id}
+                  onChange={(value) => updateField("servico_id", value)}
+                  options={services.map((service) => {
+                    const serviceName =
+                      service.nome_servico ?? `Servico ${service.id}`;
+                    const clientName = getServiceClientName(service);
+
+                    return {
+                      value: String(service.id),
+                      label: `${serviceName} - ${clientName}`,
+                      searchText: `${serviceName} ${clientName}`,
+                    };
+                  })}
+                  emptyOptionLabel={serviceFallbackLabel}
+                  searchPlaceholder="Digite para buscar servico ou cliente"
+                  helperText={
+                    selectedService
+                      ? `Cliente relacionado: ${getServiceClientName(
+                          selectedService
+                        )}`
+                      : "Use esta opcao para despesas sem servico vinculado."
+                  }
+                />
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
                   Categoria

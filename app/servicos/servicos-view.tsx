@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
+import { SearchableSelect } from "../components/searchable-select";
 import {
   formatSimpleDate,
   getDateInputValue,
@@ -592,23 +593,18 @@ export function ServicosView({
             >
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
                 <div className="grid gap-5 sm:grid-cols-2">
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                  Cliente
-                  <select
-                    value={formData.cliente_id}
-                    onChange={(event) =>
-                      updateField("cliente_id", event.target.value)
-                    }
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                  >
-                    <option value="">Selecione um cliente</option>
-                    {clients.map((client) => (
-                      <option key={client.id} value={client.id}>
-                        {client.nome}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <SearchableSelect
+                  label="Cliente"
+                  value={formData.cliente_id}
+                  onChange={(value) => updateField("cliente_id", value)}
+                  options={clients.map((client) => ({
+                    value: String(client.id),
+                    label: client.nome,
+                  }))}
+                  emptyOptionLabel="Selecione um cliente"
+                  searchPlaceholder="Digite para buscar um cliente"
+                  className="sm:col-span-2"
+                />
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
                   Nome do serviço
