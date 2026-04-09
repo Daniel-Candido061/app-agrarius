@@ -11,35 +11,62 @@ import {
 type TimeFilterMode = "rapido" | "personalizado";
 
 type DashboardTimeFilterProps = {
-  initialMode: TimeFilterMode;
-  initialPeriod: QuickPeriodValue;
-  initialStartDate: string;
-  initialEndDate: string;
+  mode: TimeFilterMode;
+  quickPeriod: QuickPeriodValue;
+  startDate: string;
+  endDate: string;
+  initialIsOpen: boolean;
+  isPending: boolean;
+  errorMessage?: string;
+  onModeChange: (value: TimeFilterMode) => void;
+  onQuickPeriodChange: (value: QuickPeriodValue) => void;
+  onStartDateChange: (value: string) => void;
+  onEndDateChange: (value: string) => void;
+  onApply: () => Promise<void> | void;
   children?: ReactNode;
 };
 
 export function DashboardTimeFilter({
-  initialMode,
-  initialPeriod,
-  initialStartDate,
-  initialEndDate,
+  mode,
+  quickPeriod,
+  startDate,
+  endDate,
+  initialIsOpen,
+  isPending,
+  errorMessage,
+  onModeChange,
+  onQuickPeriodChange,
+  onStartDateChange,
+  onEndDateChange,
+  onApply,
   children,
 }: DashboardTimeFilterProps) {
-  const [mode, setMode] = useState<TimeFilterMode>(initialMode);
-  const [quickPeriod, setQuickPeriod] =
-    useState<QuickPeriodValue>(initialPeriod);
-  const [startDate, setStartDate] = useState(initialStartDate);
-  const [endDate, setEndDate] = useState(initialEndDate);
+  const [isOpen, setIsOpen] = useState(initialIsOpen);
   const selectedLabel =
     mode === "rapido"
-      ? `Período: ${getPeriodLabel(quickPeriod)}`
+      ? `Periodo: ${getPeriodLabel(quickPeriod)}`
       : startDate || endDate
-        ? `${startDate || "Início"} até ${endDate || "Fim"}`
+        ? `${startDate || "Inicio"} ate ${endDate || "Fim"}`
         : "Intervalo personalizado";
 
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsOpen(true);
+    void onApply();
+  }
+
   return (
-    <details className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.32)]">
-      <summary className="flex cursor-pointer list-none flex-col gap-3 px-4 py-3 transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between">
+    <details
+      open={isOpen}
+      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.32)]"
+    >
+      <summary
+        onClick={(event) => {
+          event.preventDefault();
+          setIsOpen((currentValue) => !currentValue);
+        }}
+        className="flex cursor-pointer list-none flex-col gap-3 px-4 py-3 transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+      >
         <span className="inline-flex items-center gap-3">
           <span
             aria-hidden="true"
@@ -59,7 +86,7 @@ export function DashboardTimeFilter({
               />
             </svg>
           </span>
-          <span>
+          <span className="min-w-0">
             <span className="block text-xs font-medium text-slate-500">
               Filtro de tempo
             </span>
@@ -74,7 +101,7 @@ export function DashboardTimeFilter({
           <svg
             aria-hidden="true"
             viewBox="0 0 20 20"
-            className="h-4 w-4 transition group-open:rotate-180"
+            className={`h-4 w-4 transition ${isOpen ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             strokeWidth="1.8"
@@ -85,10 +112,10 @@ export function DashboardTimeFilter({
       </summary>
 
       <div className="border-t border-slate-100 px-4 py-4">
-        <div className="grid gap-5 xl:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.8fr)] xl:items-start">
+        <div className="grid gap-5 xl:grid-cols-[minmax(280px,0.82fr)_minmax(0,1.85fr)] xl:items-start">
           <form
             className="rounded-xl border border-slate-200 bg-slate-50/70 p-4"
-            method="get"
+            onSubmit={handleSubmit}
           >
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end xl:grid-cols-1">
               <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
@@ -97,25 +124,27 @@ export function DashboardTimeFilter({
                   name="modoTempo"
                   value={mode}
                   onChange={(event) =>
-                    setMode(event.target.value as TimeFilterMode)
+                    onModeChange(event.target.value as TimeFilterMode)
                   }
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  disabled={isPending}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  <option value="rapido">Período rápido</option>
+                  <option value="rapido">Periodo rapido</option>
                   <option value="personalizado">Intervalo personalizado</option>
                 </select>
               </label>
 
               {mode === "rapido" ? (
                 <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-                  Período
+                  Periodo
                   <select
                     name="periodo"
                     value={quickPeriod}
                     onChange={(event) =>
-                      setQuickPeriod(event.target.value as QuickPeriodValue)
+                      onQuickPeriodChange(event.target.value as QuickPeriodValue)
                     }
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    disabled={isPending}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {quickPeriodOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -132,8 +161,9 @@ export function DashboardTimeFilter({
                       type="date"
                       name="dataInicial"
                       value={startDate}
-                      onChange={(event) => setStartDate(event.target.value)}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      onChange={(event) => onStartDateChange(event.target.value)}
+                      disabled={isPending}
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
                     />
                   </label>
 
@@ -143,8 +173,9 @@ export function DashboardTimeFilter({
                       type="date"
                       name="dataFinal"
                       value={endDate}
-                      onChange={(event) => setEndDate(event.target.value)}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      onChange={(event) => onEndDateChange(event.target.value)}
+                      disabled={isPending}
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
                     />
                   </label>
                 </div>
@@ -152,18 +183,23 @@ export function DashboardTimeFilter({
 
               <button
                 type="submit"
-                className="inline-flex items-center justify-center rounded-lg bg-[#17352b] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+                disabled={isPending}
+                className="inline-flex items-center justify-center rounded-lg bg-[#17352b] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Aplicar
+                {isPending ? "Atualizando..." : "Aplicar"}
               </button>
             </div>
+
+            {errorMessage ? (
+              <p className="mt-3 text-sm text-rose-600">{errorMessage}</p>
+            ) : null}
           </form>
 
           {children ? (
             <div>
               <div className="mb-4">
                 <h2 className="text-lg font-semibold text-[#17352b]">
-                  Resumo do período
+                  Resumo do periodo
                 </h2>
                 <p className="text-sm text-slate-500">
                   Indicadores calculados para o recorte selecionado.
