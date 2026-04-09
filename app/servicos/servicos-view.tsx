@@ -526,98 +526,6 @@ export function ServicosView({
           </div>
         </section>
 
-        <section className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-          <div className="border-b border-slate-200 px-6 py-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-[#17352b]">
-                  Serviços não quitados
-                </h2>
-                <p className="text-sm text-slate-500">
-                  Saldos calculados pelo valor contratado menos receitas recebidas.
-                </p>
-              </div>
-
-              <span className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                {unPaidServiceBalances.length} em aberto
-              </span>
-            </div>
-          </div>
-
-          {unPaidServiceBalances.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm font-medium text-emerald-700">
-                Nenhum serviço em aberto no momento
-              </p>
-              <p className="mt-2 text-sm text-slate-500">
-                Todos os serviços cadastrados estão quitados.
-              </p>
-            </div>
-          ) : (
-            <div className="w-full overflow-x-auto">
-              <table className="min-w-[820px] divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Serviço
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Cliente
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Valor contratado
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Total recebido
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Valor em aberto
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {unPaidServiceBalances.map((summary) => (
-                    <tr key={summary.service.id} className="hover:bg-slate-50/80">
-                      <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                        <Link
-                          href={`/servicos/${summary.service.id}`}
-                          className="font-medium text-[#17352b] transition hover:text-[#204638]"
-                        >
-                          {summary.service.nome_servico ?? "-"}
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        {getClientName(summary.service)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        {formatCurrency(summary.valorContratado)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-emerald-700">
-                        {formatCurrency(summary.totalRecebido)}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-amber-700">
-                        {formatCurrency(summary.valorEmAberto)}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
-                            summary.service.status
-                          )}`}
-                        >
-                          {summary.service.status ?? "Sem status"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
           {serviceList.length === 0 ? (
             <div className="px-6 py-16 text-center">
@@ -723,7 +631,7 @@ export function ServicosView({
                               onChange={(event) =>
                                 updateServiceStatus(service, event.target.value)
                               }
-                              className={`min-h-10 w-full rounded-xl px-3 py-2 text-sm font-medium outline-none transition focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70 ${getStatusClassName(
+                              className={`h-10 w-full rounded-xl px-3 py-2 text-sm leading-5 font-medium outline-none transition focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70 ${getStatusClassName(
                                 service.status
                               )}`}
                               aria-label={`Alterar status do serviço ${service.nome_servico ?? service.id}`}
@@ -771,6 +679,98 @@ export function ServicosView({
                       </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+          <div className="border-b border-slate-200 px-6 py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-[#17352b]">
+                  Serviços não quitados
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Saldos calculados pelo valor contratado menos receitas recebidas.
+                </p>
+              </div>
+
+              <span className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                {unPaidServiceBalances.length} em aberto
+              </span>
+            </div>
+          </div>
+
+          {unPaidServiceBalances.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <p className="text-sm font-medium text-emerald-700">
+                Nenhum serviço em aberto no momento
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Todos os serviços cadastrados estão quitados.
+              </p>
+            </div>
+          ) : (
+            <div className="w-full overflow-x-auto">
+              <table className="min-w-[860px] divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Nome do serviço
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Valor contratado
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Total recebido
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Valor em aberto
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {unPaidServiceBalances.map((summary) => (
+                    <tr key={summary.service.id} className="hover:bg-slate-50/80">
+                      <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                        {getClientName(summary.service)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        <Link
+                          href={`/servicos/${summary.service.id}`}
+                          className="font-medium text-[#17352b] transition hover:text-[#204638]"
+                        >
+                          {summary.service.nome_servico ?? "-"}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {formatCurrency(summary.valorContratado)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-emerald-700">
+                        {formatCurrency(summary.totalRecebido)}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-amber-700">
+                        {formatCurrency(summary.valorEmAberto)}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
+                            summary.service.status
+                          )}`}
+                        >
+                          {summary.service.status ?? "Sem status"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

@@ -5,10 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import { ActionsMenu } from "../components/actions-menu";
 import { SearchableSelect } from "../components/searchable-select";
-import {
-  getStatusClassName,
-  normalizeStatusText,
-} from "../components/status-utils";
+import { getStatusClassName, normalizeStatusText } from "../components/status-utils";
 import {
   formatSimpleDate,
   getDateInputValue,
@@ -75,6 +72,18 @@ function getPriorityClassName(priority: string | null) {
   }
 
   return "bg-slate-100 text-slate-700";
+}
+
+function getTaskStatusLabel(task: Tarefa) {
+  if (isOverdueTask(task)) {
+    return "Atrasada";
+  }
+
+  if (normalizeStatusText(task.status) === "concluido") {
+    return "Concluída";
+  }
+
+  return "Pendente";
 }
 
 function isOverdueTask(task: Tarefa) {
@@ -161,7 +170,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     const searchableFields = [
       task.titulo,
       task.responsavel,
-      task.status,
+      getTaskStatusLabel(task),
       task.prioridade,
       getTaskServiceName(task),
     ];
@@ -514,10 +523,10 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       </span>
                       <span
                         className={`inline-flex rounded-full px-3 py-1 ${getStatusClassName(
-                          task.status
+                          getTaskStatusLabel(task)
                         )}`}
                       >
-                        {task.status ?? "Sem status"}
+                        {getTaskStatusLabel(task)}
                       </span>
                     </div>
                   </div>
@@ -618,7 +627,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <div className="flex min-w-[220px] items-center gap-3">
-                          <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
+                          <label className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-slate-600">
                             <input
                               type="checkbox"
                               checked={
@@ -630,32 +639,22 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                                   task,
                                   event.target.checked
                                     ? "Concluído"
-                                    : TASK_STATUS_OPTIONS[0]
+                                    : "Pendente"
                                 )
                               }
-                              className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-200"
+                              className="h-4 w-4 rounded border-slate-300 align-middle text-emerald-600 focus:ring-emerald-200"
                               aria-label={`Marcar tarefa ${task.titulo ?? task.id} como concluída`}
                             />
                             Concluir
                           </label>
 
-                          <select
-                            value={task.status ?? ""}
-                            disabled={updatingTaskId === task.id}
-                            onChange={(event) =>
-                              updateTaskStatus(task, event.target.value)
-                            }
-                            className={`min-h-10 flex-1 rounded-xl px-3 py-2 text-sm font-medium outline-none transition focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70 ${getStatusClassName(
-                              task.status
+                          <span
+                            className={`inline-flex min-h-10 items-center rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
+                              getTaskStatusLabel(task)
                             )}`}
-                            aria-label={`Alterar status da tarefa ${task.titulo ?? task.id}`}
                           >
-                            {TASK_STATUS_OPTIONS.map((statusOption) => (
-                              <option key={statusOption} value={statusOption}>
-                                {statusOption}
-                              </option>
-                            ))}
-                          </select>
+                            {getTaskStatusLabel(task)}
+                          </span>
                         </div>
                         {updatingTaskId === task.id ? (
                           <p className="mt-1 text-xs text-slate-400">

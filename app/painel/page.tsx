@@ -515,76 +515,6 @@ export default async function Home({ searchParams }: DashboardPageProps) {
           ))}
         </div>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-          <div className="border-b border-slate-200 px-6 py-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-[#17352b]">
-                  Serviços não quitados
-                </h2>
-                <p className="text-sm text-slate-500">
-                  Serviços com total recebido menor que o valor contratado.
-                </p>
-              </div>
-
-              <span className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                {dashboardData.servicosNaoQuitados} em aberto
-              </span>
-            </div>
-          </div>
-
-          {dashboardData.servicosNaoQuitadosLista.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm font-medium text-emerald-700">
-                Nenhum serviço em aberto no momento
-              </p>
-              <p className="mt-2 text-sm text-slate-500">
-                Todos os serviços cadastrados estão quitados.
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-4 p-6 md:grid-cols-3">
-              {dashboardData.servicosNaoQuitadosLista.map((service) => (
-                <article
-                  key={service.id}
-                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold text-[#17352b]">
-                        {service.nome_servico ?? "-"}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {getClientName(service)}
-                      </p>
-                    </div>
-
-                    <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                      {service.status ?? "Sem status"}
-                    </span>
-                  </div>
-
-                  <div className="mt-5 grid gap-3 text-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-slate-500">Recebido</span>
-                      <span className="font-medium text-emerald-700">
-                        {formatCurrency(service.totalRecebido)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-slate-500">Em aberto</span>
-                      <span className="font-semibold text-amber-700">
-                        {formatCurrency(service.valorEmAberto)}
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-
         <section className="overflow-hidden rounded-2xl border border-rose-200 bg-[linear-gradient(135deg,rgba(255,241,242,0.95),rgba(255,255,255,1))] shadow-[0_18px_40px_-24px_rgba(190,24,93,0.35)]">
           <div className="border-b border-rose-100 px-6 py-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -717,6 +647,76 @@ export default async function Home({ searchParams }: DashboardPageProps) {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+          <div className="border-b border-slate-200 px-6 py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-[#17352b]">
+                  Serviços não quitados
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Serviços com total recebido menor que o valor contratado.
+                </p>
+              </div>
+
+              <span className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                {dashboardData.servicosNaoQuitados} em aberto
+              </span>
+            </div>
+          </div>
+
+          {dashboardData.servicosNaoQuitadosLista.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <p className="text-sm font-medium text-emerald-700">
+                Nenhum serviço em aberto no momento
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Todos os serviços cadastrados estão quitados.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 p-6 md:grid-cols-3">
+              {dashboardData.servicosNaoQuitadosLista.map((service) => (
+                <article
+                  key={service.id}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-[#17352b]">
+                        {service.nome_servico ?? "-"}
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {getClientName(service)}
+                      </p>
+                    </div>
+
+                    <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                      {service.status ?? "Sem status"}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Recebido</span>
+                      <span className="font-medium text-emerald-700">
+                        {formatCurrency(service.totalRecebido)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Em aberto</span>
+                      <span className="font-semibold text-amber-700">
+                        {formatCurrency(service.valorEmAberto)}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
           )}
         </section>
