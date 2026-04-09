@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import { ActionsMenu } from "../components/actions-menu";
 import { SearchableSelect } from "../components/searchable-select";
+import {
+  getStatusClassName,
+  normalizeStatusText,
+} from "../components/status-utils";
 import {
   formatSimpleDate,
   getDateInputValue,
@@ -55,24 +59,6 @@ function normalizeText(value: string | null) {
   );
 }
 
-function getStatusClassName(status: string | null) {
-  const normalizedStatus = normalizeText(status);
-
-  if (normalizedStatus === "pendente") {
-    return "bg-amber-50 text-amber-700";
-  }
-
-  if (normalizedStatus === "em andamento") {
-    return "bg-sky-50 text-sky-700";
-  }
-
-  if (normalizedStatus === "concluida" || normalizedStatus === "concluido") {
-    return "bg-emerald-50 text-emerald-700";
-  }
-
-  return "bg-slate-100 text-slate-700";
-}
-
 function getPriorityClassName(priority: string | null) {
   const normalizedPriority = normalizeText(priority);
 
@@ -96,7 +82,7 @@ function isOverdueTask(task: Tarefa) {
     return false;
   }
 
-  const normalizedStatus = normalizeText(task.status);
+  const normalizedStatus = normalizeStatusText(task.status);
 
   if (normalizedStatus === "concluida" || normalizedStatus === "concluido") {
     return false;
@@ -110,7 +96,7 @@ function isUpcomingTask(task: Tarefa) {
     return false;
   }
 
-  const normalizedStatus = normalizeText(task.status);
+  const normalizedStatus = normalizeStatusText(task.status);
 
   if (normalizedStatus === "concluida" || normalizedStatus === "concluido") {
     return false;
@@ -136,6 +122,7 @@ function getServiceOptionLabel(service: ServicoOption) {
 
 export function TarefasView({ tasks, services }: TarefasViewProps) {
   const router = useRouter();
+  const [taskList, setTaskList] = useState(tasks);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("create");
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
@@ -145,6 +132,12 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
   const [successMessage, setSuccessMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null);
+  const [updatingTaskId, setUpdatingTaskId] = useState<number | null>(null);
+
+  useEffect(() => {
+    setTaskList(tasks);
+  }, [tasks]);
+
   const serviceNameById = new Map(
     services.map((service) => [
       String(service.id),
@@ -160,7 +153,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
   }
 
   const normalizedSearchTerm = normalizeText(searchTerm);
-  const filteredTasks = tasks.filter((task) => {
+  const filteredTasks = taskList.filter((task) => {
     if (!normalizedSearchTerm) {
       return true;
     }
@@ -177,8 +170,8 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       normalizeText(field).includes(normalizedSearchTerm)
     );
   });
-  const overdueTasks = tasks.filter(isOverdueTask);
-  const upcomingTasks = tasks.filter(isUpcomingTask);
+  const overdueTasks = taskList.filter(isOverdueTask);
+  const upcomingTasks = taskList.filter(isUpcomingTask);
   const summaryCards = [
     {
       title: "Tarefas atrasadas",
@@ -192,7 +185,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     },
     {
       title: "Total de tarefas",
-      value: String(tasks.length),
+      value: String(taskList.length),
       detail: "Atividades cadastradas no módulo",
     },
   ];
@@ -340,6 +333,49 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     }
 
     setSuccessMessage("Tarefa excluída com sucesso.");
+    router.refresh();
+  }
+
+  async function updateTaskStatus(task: Tarefa, nextStatus: string) {
+    const trimmedStatus = nextStatus.trim();
+
+    if (!trimmedStatus || trimmedStatus === task.status) {
+      return;
+    }
+
+    setUpdatingTaskId(task.id);
+    setErrorMessage("");
+    setSuccessMessage("");
+    setTaskList((currentTasks) =>
+      currentTasks.map((currentTask) =>
+        currentTask.id === task.id
+          ? { ...currentTask, status: trimmedStatus }
+          : currentTask
+      )
+    );
+
+    const { error } = await supabase
+      .from("tarefas")
+      .update({ status: trimmedStatus })
+      .eq("id", task.id);
+
+    setUpdatingTaskId(null);
+
+    if (error) {
+      setTaskList((currentTasks) =>
+        currentTasks.map((currentTask) =>
+          currentTask.id === task.id
+            ? { ...currentTask, status: task.status }
+            : currentTask
+        )
+      );
+      setErrorMessage(
+        "Não foi possível atualizar o status da tarefa agora. Tente novamente."
+      );
+      return;
+    }
+
+    setSuccessMessage("Status da tarefa atualizado com sucesso.");
     router.refresh();
   }
 
@@ -492,7 +528,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-          {tasks.length === 0 ? (
+          {taskList.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">
                 Nenhuma tarefa cadastrada
@@ -550,7 +586,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                         <div className="flex flex-wrap items-center gap-2">
                           <span>{task.titulo ?? "-"}</span>
                           {isOverdueTask(task) ? (
-                            <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700">
+                            <span className="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700">
                               Atrasada
                             </span>
                           ) : null}
@@ -581,13 +617,51 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
-                            task.status
-                          )}`}
-                        >
-                          {task.status ?? "Sem status"}
-                        </span>
+                        <div className="flex min-w-[220px] items-center gap-3">
+                          <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
+                            <input
+                              type="checkbox"
+                              checked={
+                                normalizeStatusText(task.status) === "concluido"
+                              }
+                              disabled={updatingTaskId === task.id}
+                              onChange={(event) =>
+                                updateTaskStatus(
+                                  task,
+                                  event.target.checked
+                                    ? "Concluído"
+                                    : TASK_STATUS_OPTIONS[0]
+                                )
+                              }
+                              className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-200"
+                              aria-label={`Marcar tarefa ${task.titulo ?? task.id} como concluída`}
+                            />
+                            Concluir
+                          </label>
+
+                          <select
+                            value={task.status ?? ""}
+                            disabled={updatingTaskId === task.id}
+                            onChange={(event) =>
+                              updateTaskStatus(task, event.target.value)
+                            }
+                            className={`min-h-10 flex-1 rounded-xl px-3 py-2 text-sm font-medium outline-none transition focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70 ${getStatusClassName(
+                              task.status
+                            )}`}
+                            aria-label={`Alterar status da tarefa ${task.titulo ?? task.id}`}
+                          >
+                            {TASK_STATUS_OPTIONS.map((statusOption) => (
+                              <option key={statusOption} value={statusOption}>
+                                {statusOption}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {updatingTaskId === task.id ? (
+                          <p className="mt-1 text-xs text-slate-400">
+                            Salvando alteração...
+                          </p>
+                        ) : null}
                       </td>
                       <td className="px-6 py-4 text-right text-sm">
                         <ActionsMenu

@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import { ActionsMenu } from "../components/actions-menu";
 import { SearchableSelect } from "../components/searchable-select";
+import {
+  getStatusClassName,
+  normalizeStatusText,
+} from "../components/status-utils";
 import {
   formatSimpleDate,
   getDateInputValue,
@@ -43,32 +47,6 @@ const initialFormData: FormData = {
   status: SERVICE_STATUS_OPTIONS[0],
 };
 
-function getStatusClassName(status: string | null) {
-  const normalizedStatus = status?.toLowerCase();
-
-  if (normalizedStatus === "concluído" || normalizedStatus === "concluido") {
-    return "bg-emerald-50 text-emerald-700";
-  }
-
-  if (normalizedStatus === "proposta") {
-    return "bg-amber-50 text-amber-700";
-  }
-
-  if (normalizedStatus === "protocolado") {
-    return "bg-violet-50 text-violet-700";
-  }
-
-  if (normalizedStatus === "entregue") {
-    return "bg-teal-50 text-teal-700";
-  }
-
-  if (normalizedStatus === "cancelado") {
-    return "bg-rose-50 text-rose-700";
-  }
-
-  return "bg-sky-50 text-sky-700";
-}
-
 function formatCurrency(value: number | string | null) {
   if (value === null || value === undefined || value === "") {
     return "-";
@@ -104,7 +82,7 @@ function isPastDue(service: Servico) {
     return false;
   }
 
-  const normalizedStatus = normalizeText(service.status);
+  const normalizedStatus = normalizeStatusText(service.status);
   const isClosedStatus =
     normalizedStatus === "entregue" ||
     normalizedStatus === "concluído" ||
@@ -150,6 +128,7 @@ export function ServicosView({
   financialEntries,
 }: ServicosViewProps) {
   const router = useRouter();
+  const [serviceList, setServiceList] = useState(services);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFinanceService, setSelectedFinanceService] =
     useState<Servico | null>(null);
@@ -163,8 +142,16 @@ export function ServicosView({
   const [deletingServiceId, setDeletingServiceId] = useState<number | null>(
     null
   );
+  const [updatingServiceId, setUpdatingServiceId] = useState<number | null>(
+    null
+  );
+
+  useEffect(() => {
+    setServiceList(services);
+  }, [services]);
+
   const normalizedSearchTerm = normalizeText(searchTerm);
-  const filteredServices = services.filter((service) => {
+  const filteredServices = serviceList.filter((service) => {
     const matchesStatus = !statusFilter || service.status === statusFilter;
 
     if (!matchesStatus) {
@@ -208,7 +195,7 @@ export function ServicosView({
       );
     });
 
-  const serviceBalances = services.map((service) => {
+  const serviceBalances = serviceList.map((service) => {
     const valorContratado = formatCurrencyValue(service.valor);
     const totalRecebido = receivedByServiceId.get(String(service.id)) ?? 0;
 
@@ -444,6 +431,50 @@ export function ServicosView({
     router.refresh();
   }
 
+  async function updateServiceStatus(service: Servico, nextStatus: string) {
+    const trimmedStatus = nextStatus.trim();
+
+    if (!trimmedStatus || trimmedStatus === service.status) {
+      return;
+    }
+
+    setUpdatingServiceId(service.id);
+    setErrorMessage("");
+    setServiceList((currentServices) =>
+      currentServices.map((currentService) =>
+        currentService.id === service.id
+          ? { ...currentService, status: trimmedStatus }
+          : currentService
+      )
+    );
+
+    const { error } = await supabase
+      .from("servicos")
+      .update({
+        status: trimmedStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", service.id);
+
+    setUpdatingServiceId(null);
+
+    if (error) {
+      setServiceList((currentServices) =>
+        currentServices.map((currentService) =>
+          currentService.id === service.id
+            ? { ...currentService, status: service.status }
+            : currentService
+        )
+      );
+      setErrorMessage(
+        "Não foi possível atualizar o status do serviço agora. Tente novamente."
+      );
+      return;
+    }
+
+    router.refresh();
+  }
+
   return (
     <>
       <AppShell
@@ -588,7 +619,7 @@ export function ServicosView({
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-          {services.length === 0 ? (
+          {serviceList.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">
                 Nenhum serviço cadastrado
@@ -681,13 +712,34 @@ export function ServicosView({
                           {formatSimpleDate(service.prazo_final)}
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(
-                              service.status
-                            )}`}
+                          <div
+                            onClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => event.stopPropagation()}
+                            className="min-w-[180px]"
                           >
-                            {service.status ?? "Sem status"}
-                          </span>
+                            <select
+                              value={service.status ?? ""}
+                              disabled={updatingServiceId === service.id}
+                              onChange={(event) =>
+                                updateServiceStatus(service, event.target.value)
+                              }
+                              className={`min-h-10 w-full rounded-xl px-3 py-2 text-sm font-medium outline-none transition focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70 ${getStatusClassName(
+                                service.status
+                              )}`}
+                              aria-label={`Alterar status do serviço ${service.nome_servico ?? service.id}`}
+                            >
+                              {SERVICE_STATUS_OPTIONS.map((statusOption) => (
+                                <option key={statusOption} value={statusOption}>
+                                  {statusOption}
+                                </option>
+                              ))}
+                            </select>
+                            {updatingServiceId === service.id ? (
+                              <p className="mt-1 text-xs text-slate-400">
+                                Salvando alteração...
+                              </p>
+                            ) : null}
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-right text-sm">
                           <ActionsMenu
