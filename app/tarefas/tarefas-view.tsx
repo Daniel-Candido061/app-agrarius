@@ -441,7 +441,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
 
         <section className="mb-6">
           <SummaryCardsGrid className="xl:grid-cols-3 2xl:grid-cols-3">
-            {summaryCards.map((card, index) => (
+            {summaryCards.map((card) => (
               <button
                 key={card.title}
                 type="button"
@@ -458,7 +458,11 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                   value={card.value}
                   detail={card.detail}
                   tone={
-                    index === 0 ? "danger" : index === 1 ? "warning" : "neutral"
+                    card.filter === "overdue"
+                      ? "danger"
+                      : card.filter === "upcoming"
+                        ? "warning"
+                        : "neutral"
                   }
                   className={
                     taskFilter === card.filter
@@ -774,3 +778,5 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     </>
   );
 }
+
+
