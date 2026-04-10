@@ -168,6 +168,7 @@ export function ServicosView({
       service.nome_servico,
       service.cidade,
       service.status,
+      formatSimpleDate(service.created_at),
     ];
 
     return searchableFields.some((field) =>
@@ -651,14 +652,17 @@ export function ServicosView({
                         <td className="px-6 py-4 text-sm font-medium text-slate-700">
                           {getClientName(service)}
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
-                          <Link
-                            href={detailsPath}
-                            className="font-medium text-[#17352b] transition hover:text-[#204638]"
-                          >
-                            {service.nome_servico ?? "-"}
-                          </Link>
-                        </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        <Link
+                          href={detailsPath}
+                          className="font-medium text-[#17352b] transition hover:text-[#204638]"
+                        >
+                          {service.nome_servico ?? "-"}
+                        </Link>
+                        <span className="mt-1 block text-xs text-slate-400">
+                          Criado em: {formatSimpleDate(service.created_at)}
+                        </span>
+                      </td>
                         <td className="px-6 py-4 text-sm text-slate-500">
                           {service.cidade ?? "-"}
                         </td>

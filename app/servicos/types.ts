@@ -1,6 +1,7 @@
 export type Servico = {
   id: number;
   cliente_id: number | string | null;
+  created_at: string | null;
   nome_servico: string | null;
   cidade: string | null;
   valor: number | string | null;

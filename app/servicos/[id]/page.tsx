@@ -3,7 +3,10 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { AppShell } from "../../components/app-shell";
 import { SummaryCard, SummaryCardsGrid } from "../../components/summary-card";
-import { formatSimpleDate } from "../../../lib/date-utils";
+import {
+  formatSimpleDate,
+  getElapsedDaysFromDateTime,
+} from "../../../lib/date-utils";
 import { requireAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 import type { Servico, ServicoFinanceiro } from "../types";
@@ -143,7 +146,7 @@ async function getServico(id: number) {
   const { data, error } = await supabase
     .from("servicos")
     .select(
-      "id, cliente_id, nome_servico, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
+      "id, cliente_id, created_at, nome_servico, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
     )
     .eq("id", id)
     .maybeSingle();
@@ -232,6 +235,7 @@ export default async function ServicoDetalhesPage({
   const lucroLiquidoRealizado = totalRecebido - totalDespesasPagas;
   const lucroLiquidoPrevisto = valorContratado - totalDespesasVinculadas;
   const totalLancamentos = financialEntries.length;
+  const tempoDecorridoEmDias = getElapsedDaysFromDateTime(service.created_at);
 
   return (
     <AppShell
@@ -297,6 +301,15 @@ export default async function ServicoDetalhesPage({
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Criado em
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {formatSimpleDate(service.created_at)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Prazo
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
@@ -310,6 +323,19 @@ export default async function ServicoDetalhesPage({
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
                   {formatSimpleDate(service.prazo_final)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Tempo decorrido
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {tempoDecorridoEmDias === null
+                    ? "-"
+                    : `${tempoDecorridoEmDias} dia${
+                        tempoDecorridoEmDias === 1 ? "" : "s"
+                      }`}
                 </p>
               </div>
 

@@ -91,6 +91,33 @@ export function formatSimpleDateTime(value: string | null) {
   }).format(date);
 }
 
+export function getElapsedDaysFromDateTime(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const createdAtParts = getSaoPauloDateParts(date);
+  const createdAtDate = new Date(
+    Number(createdAtParts.year),
+    Number(createdAtParts.month) - 1,
+    Number(createdAtParts.day),
+    12
+  );
+  const today = getTodayWithoutTime();
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+
+  return Math.max(
+    0,
+    Math.round((today.getTime() - createdAtDate.getTime()) / millisecondsPerDay)
+  );
+}
+
 export function getDateInputValue(value: string | null) {
   const parts = getSimpleDateParts(value);
 
