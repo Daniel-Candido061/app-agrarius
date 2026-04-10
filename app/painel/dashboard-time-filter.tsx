@@ -58,19 +58,19 @@ export function DashboardTimeFilter({
   return (
     <details
       open={isOpen}
-      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.32)]"
+      className="group overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.22)]"
     >
       <summary
         onClick={(event) => {
           event.preventDefault();
           setIsOpen((currentValue) => !currentValue);
         }}
-        className="flex cursor-pointer list-none flex-col gap-3 px-4 py-3 transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+        className="flex cursor-pointer list-none flex-col gap-3 px-5 py-4 transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-6"
       >
         <span className="inline-flex items-center gap-3">
           <span
             aria-hidden="true"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-[#17352b]"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[#17352b]"
           >
             <svg
               viewBox="0 0 24 24"
@@ -87,16 +87,16 @@ export function DashboardTimeFilter({
             </svg>
           </span>
           <span className="min-w-0">
-            <span className="block text-xs font-medium text-slate-500">
+            <span className="block text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
               Filtro de tempo
             </span>
-            <span className="block text-sm font-semibold text-[#17352b]">
+            <span className="mt-1 block text-sm font-semibold text-[#17352b] sm:text-[0.95rem]">
               {selectedLabel}
             </span>
           </span>
         </span>
 
-        <span className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500">
+        <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
           Ajustar filtro
           <svg
             aria-hidden="true"
@@ -111,13 +111,23 @@ export function DashboardTimeFilter({
         </span>
       </summary>
 
-      <div className="border-t border-slate-100 px-4 py-4">
-        <div className="grid gap-5 xl:grid-cols-[minmax(280px,0.82fr)_minmax(0,1.85fr)] xl:items-start">
+      <div className="border-t border-slate-100 px-5 py-5 sm:px-6 sm:py-6">
+        <div className="space-y-6">
           <form
-            className="rounded-xl border border-slate-200 bg-slate-50/70 p-4"
+            className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.75),rgba(255,255,255,0.95))] p-4 sm:p-5"
             onSubmit={handleSubmit}
           >
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end xl:grid-cols-1">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[#17352b]">
+                  Ajustar periodo do painel
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Escolha um recorte rapido ou defina um intervalo personalizado.
+                </p>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:min-w-[720px] xl:grid-cols-[minmax(180px,0.9fr)_minmax(220px,1fr)_auto]">
               <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
                 Modo
                 <select
@@ -127,7 +137,7 @@ export function DashboardTimeFilter({
                     onModeChange(event.target.value as TimeFilterMode)
                   }
                   disabled={isPending}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="min-h-11 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   <option value="rapido">Periodo rapido</option>
                   <option value="personalizado">Intervalo personalizado</option>
@@ -144,7 +154,7 @@ export function DashboardTimeFilter({
                       onQuickPeriodChange(event.target.value as QuickPeriodValue)
                     }
                     disabled={isPending}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="min-h-11 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {quickPeriodOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -154,7 +164,7 @@ export function DashboardTimeFilter({
                   </select>
                 </label>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                <div className="grid gap-3 sm:grid-cols-2 md:col-span-2 xl:grid-cols-2">
                   <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
                     Data inicial
                     <input
@@ -163,7 +173,7 @@ export function DashboardTimeFilter({
                       value={startDate}
                       onChange={(event) => onStartDateChange(event.target.value)}
                       disabled={isPending}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="min-h-11 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
                     />
                   </label>
 
@@ -175,7 +185,7 @@ export function DashboardTimeFilter({
                       value={endDate}
                       onChange={(event) => onEndDateChange(event.target.value)}
                       disabled={isPending}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="min-h-11 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
                     />
                   </label>
                 </div>
@@ -184,10 +194,11 @@ export function DashboardTimeFilter({
               <button
                 type="submit"
                 disabled={isPending}
-                className="inline-flex items-center justify-center rounded-lg bg-[#17352b] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638] disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#17352b] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isPending ? "Atualizando..." : "Aplicar"}
               </button>
+              </div>
             </div>
 
             {errorMessage ? (
@@ -197,11 +208,11 @@ export function DashboardTimeFilter({
 
           {children ? (
             <div>
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-[#17352b]">
+              <div className="mb-4 sm:mb-5">
+                <h2 className="text-xl font-semibold text-[#17352b]">
                   Resumo do periodo
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-500">
                   Indicadores calculados para o recorte selecionado.
                 </p>
               </div>
