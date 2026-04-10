@@ -290,7 +290,7 @@ export default async function ClienteDetalhesPage({
       }
     >
       <div className="space-y-6">
-        <section className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+        <section className="space-y-5">
           <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -309,7 +309,7 @@ export default async function ClienteDetalhesPage({
               </span>
             </div>
 
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Telefone
@@ -346,7 +346,7 @@ export default async function ClienteDetalhesPage({
             </div>
           </article>
 
-          <SummaryCardsGrid className="grid-cols-1 xl:grid-cols-1 2xl:grid-cols-1">
+          <SummaryCardsGrid className="md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3">
             {summaryCards.map((card, index) => (
               <SummaryCard
                 key={card.title}
@@ -361,7 +361,7 @@ export default async function ClienteDetalhesPage({
         </section>
 
         <section>
-          <SummaryCardsGrid className="2xl:grid-cols-3">
+          <SummaryCardsGrid className="md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3">
           {financialSummaryCards.map((card) => (
             <SummaryCard
               key={card.title}
