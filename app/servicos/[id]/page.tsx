@@ -233,7 +233,6 @@ export default async function ServicoDetalhesPage({
     .reduce((total, entry) => total + getNumericValue(entry.valor), 0);
 
   const lucroLiquidoRealizado = totalRecebido - totalDespesasPagas;
-  const lucroLiquidoPrevisto = valorContratado - totalDespesasVinculadas;
   const totalLancamentos = financialEntries.length;
   const tempoDecorridoEmDias = getElapsedDaysFromDateTime(service.created_at);
 
@@ -260,13 +259,6 @@ export default async function ServicoDetalhesPage({
       valueClassName: valorAReceber >= 0 ? "text-[#163728]" : "text-rose-700",
     },
     {
-      title: "Despesas pagas",
-      value: formatCurrency(totalDespesasPagas),
-      detail: "Despesas pagas vinculadas ao servico.",
-      tone: "warning" as const,
-      valueClassName: "text-[#163728]",
-    },
-    {
       title: "Despesas vinculadas",
       value: formatCurrency(totalDespesasVinculadas),
       detail: "Todas as despesas vinculadas ao servico.",
@@ -283,15 +275,6 @@ export default async function ServicoDetalhesPage({
           : ("danger" as const),
       valueClassName:
         lucroLiquidoRealizado >= 0 ? "text-[#163728]" : "text-rose-700",
-    },
-    {
-      title: "Lucro liquido previsto",
-      value: formatCurrency(lucroLiquidoPrevisto),
-      detail: "Valor contratado menos despesas vinculadas.",
-      tone:
-        lucroLiquidoPrevisto >= 0 ? ("info" as const) : ("danger" as const),
-      valueClassName:
-        lucroLiquidoPrevisto >= 0 ? "text-[#163728]" : "text-rose-700",
     },
   ];
 
@@ -412,7 +395,7 @@ export default async function ServicoDetalhesPage({
             </div>
           </article>
 
-          <SummaryCardsGrid className="md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <SummaryCardsGrid className="md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3">
             {financialSummaryCards.map((card) => (
               <SummaryCard
                 key={card.title}
