@@ -24,6 +24,7 @@ type TarefasViewProps = {
 };
 
 type ModalMode = "create" | "edit";
+type TaskFilter = "all" | "overdue" | "upcoming";
 
 type FormData = {
   titulo: string;
@@ -138,6 +139,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [searchTerm, setSearchTerm] = useState("");
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -154,6 +156,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       getServiceOptionLabel(service),
     ])
   );
+
   function getTaskServiceName(task: Tarefa) {
     if (task.servico_id === null || task.servico_id === undefined) {
       return noLinkedServiceLabel;
@@ -163,7 +166,17 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
   }
 
   const normalizedSearchTerm = normalizeText(searchTerm);
+  const overdueTasks = taskList.filter(isOverdueTask);
+  const upcomingTasks = taskList.filter(isUpcomingTask);
   const filteredTasks = taskList.filter((task) => {
+    if (taskFilter === "overdue" && !isOverdueTask(task)) {
+      return false;
+    }
+
+    if (taskFilter === "upcoming" && !isUpcomingTask(task)) {
+      return false;
+    }
+
     if (!normalizedSearchTerm) {
       return true;
     }
@@ -180,23 +193,25 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       normalizeText(field).includes(normalizedSearchTerm)
     );
   });
-  const overdueTasks = taskList.filter(isOverdueTask);
-  const upcomingTasks = taskList.filter(isUpcomingTask);
+
   const summaryCards = [
     {
       title: "Tarefas atrasadas",
       value: String(overdueTasks.length),
       detail: 'Prazo vencido e status diferente de "Concluído"',
+      filter: "overdue" as TaskFilter,
     },
     {
       title: "Tarefas próximas",
       value: String(upcomingTasks.length),
       detail: "Vencem entre hoje e os próximos 7 dias",
+      filter: "upcoming" as TaskFilter,
     },
     {
       title: "Total de tarefas",
       value: String(taskList.length),
       detail: "Atividades cadastradas no módulo",
+      filter: "all" as TaskFilter,
     },
   ];
 
@@ -426,114 +441,34 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
 
         <section className="mb-6">
           <SummaryCardsGrid className="xl:grid-cols-3 2xl:grid-cols-3">
-          {summaryCards.map((card, index) => (
-            <SummaryCard
-              key={card.title}
-              title={card.title}
-              value={card.value}
-              detail={card.detail}
-              tone={
-                index === 0 ? "danger" : index === 1 ? "warning" : "neutral"
-              }
-            />
-          ))}
+            {summaryCards.map((card, index) => (
+              <button
+                key={card.title}
+                type="button"
+                onClick={() => setTaskFilter(card.filter)}
+                aria-pressed={taskFilter === card.filter}
+                className={`text-left ${
+                  taskFilter === card.filter
+                    ? "rounded-[28px] ring-2 ring-[#1e6b41]/18"
+                    : ""
+                }`}
+              >
+                <SummaryCard
+                  title={card.title}
+                  value={card.value}
+                  detail={card.detail}
+                  tone={
+                    index === 0 ? "danger" : index === 1 ? "warning" : "neutral"
+                  }
+                  className={
+                    taskFilter === card.filter
+                      ? "border-[#1e6b41]/20 bg-emerald-50/40"
+                      : ""
+                  }
+                />
+              </button>
+            ))}
           </SummaryCardsGrid>
-        </section>
-
-        <section className="mb-6 grid gap-5 lg:grid-cols-2">
-          <article className="overflow-hidden rounded-2xl border border-rose-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-            <div className="border-b border-rose-100 px-6 py-5">
-              <h2 className="text-lg font-semibold text-rose-900">
-                Tarefas atrasadas
-              </h2>
-              <p className="text-sm text-rose-700/80">
-                Atividades com prazo vencido e ainda não concluídas.
-              </p>
-            </div>
-
-            {overdueTasks.length === 0 ? (
-              <div className="px-6 py-10 text-center">
-                <p className="text-sm font-medium text-emerald-700">
-                  Nenhuma tarefa atrasada
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  As atividades vencidas aparecerão aqui.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {overdueTasks.map((task) => (
-                  <div key={task.id} className="px-6 py-4">
-                    <p className="text-sm font-medium text-slate-700">
-                      {task.titulo ?? "-"}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {getTaskServiceName(task)}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
-                      <span className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-rose-700">
-                        {formatSimpleDate(task.data_limite)}
-                      </span>
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 ${getPriorityClassName(
-                          task.prioridade
-                        )}`}
-                      >
-                        {task.prioridade ?? "Sem prioridade"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </article>
-
-          <article className="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-            <div className="border-b border-amber-100 px-6 py-5">
-              <h2 className="text-lg font-semibold text-amber-900">
-                Próximas tarefas
-              </h2>
-              <p className="text-sm text-amber-700/80">
-                Atividades que vencem nos próximos 7 dias.
-              </p>
-            </div>
-
-            {upcomingTasks.length === 0 ? (
-              <div className="px-6 py-10 text-center">
-                <p className="text-sm font-medium text-emerald-700">
-                  Nenhuma tarefa próxima
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  As atividades com prazo próximo aparecerão aqui.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {upcomingTasks.map((task) => (
-                  <div key={task.id} className="px-6 py-4">
-                    <p className="text-sm font-medium text-slate-700">
-                      {task.titulo ?? "-"}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {getTaskServiceName(task)}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
-                      <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-amber-700">
-                        {formatSimpleDate(task.data_limite)}
-                      </span>
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 ${getStatusClassName(
-                          getTaskStatusLabel(task)
-                        )}`}
-                      >
-                        {getTaskStatusLabel(task)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </article>
         </section>
 
         <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
