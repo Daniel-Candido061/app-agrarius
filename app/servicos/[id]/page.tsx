@@ -329,12 +329,14 @@ export default async function ServicoDetalhesPage({
               title="Valor contratado"
               value={formatCurrency(valorContratado)}
               detail="Valor definido no cadastro do servico."
+              compact
             />
             <SummaryCard
               title="Total recebido"
               value={formatCurrency(totalRecebido)}
               detail="Receitas recebidas vinculadas ao servico."
               tone="success"
+              compact
             />
             <SummaryCard
               title="Valor a receber"
@@ -342,18 +344,21 @@ export default async function ServicoDetalhesPage({
               detail="Valor contratado menos o total recebido."
               tone={valorAReceber >= 0 ? "warning" : "danger"}
               valueClassName={valorAReceber >= 0 ? "text-[#163728]" : "text-rose-700"}
+              compact
             />
             <SummaryCard
               title="Despesas pagas"
               value={formatCurrency(totalDespesasPagas)}
               detail="Despesas pagas vinculadas ao servico."
               tone="warning"
+              compact
             />
             <SummaryCard
               title="Despesas vinculadas"
               value={formatCurrency(totalDespesasVinculadas)}
               detail="Todas as despesas vinculadas ao servico."
               tone="warning"
+              compact
             />
             <SummaryCard
               title="Lucro liquido realizado"
@@ -363,6 +368,7 @@ export default async function ServicoDetalhesPage({
               valueClassName={
                 lucroLiquidoRealizado >= 0 ? "text-[#163728]" : "text-rose-700"
               }
+              compact
             />
             <SummaryCard
               title="Lucro liquido previsto"
@@ -372,6 +378,7 @@ export default async function ServicoDetalhesPage({
               valueClassName={
                 lucroLiquidoPrevisto >= 0 ? "text-[#163728]" : "text-rose-700"
               }
+              compact
             />
           </SummaryCardsGrid>
         </section>

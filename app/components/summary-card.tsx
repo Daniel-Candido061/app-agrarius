@@ -14,6 +14,7 @@ type SummaryCardProps = {
   tone?: SummaryCardTone;
   valueClassName?: string;
   className?: string;
+  compact?: boolean;
 };
 
 type SummaryCardsGridProps = {
@@ -90,23 +91,26 @@ export function SummaryCard({
   tone = "neutral",
   valueClassName = "text-[#163728]",
   className = "",
+  compact = false,
 }: SummaryCardProps) {
   const styles = toneStyles[tone];
 
   return (
     <article
-      className={`group relative overflow-hidden rounded-[28px] border border-[rgba(21,55,40,0.10)] bg-white p-6 shadow-[0_14px_35px_-26px_rgba(16,24,40,0.35)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-28px_rgba(16,24,40,0.42)] sm:p-7 ${className}`}
+      className={`group relative flex min-h-[188px] flex-col overflow-hidden rounded-[26px] border border-[rgba(21,55,40,0.09)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,252,246,0.96))] p-5 shadow-[0_12px_30px_-24px_rgba(16,24,40,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-26px_rgba(16,24,40,0.34)] sm:p-6 ${
+        compact ? "min-h-[168px]" : "sm:min-h-[196px]"
+      } ${className}`}
     >
-      <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#0f5f3d_0%,#67b88a_100%)] opacity-70" />
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-[linear-gradient(90deg,#0f5f3d_0%,#67b88a_100%)] opacity-65" />
 
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p
-            className={`text-[0.7rem] font-semibold uppercase tracking-[0.18em] ${styles.eyebrowColor}`}
+            className={`text-[0.63rem] font-semibold uppercase tracking-[0.16em] ${styles.eyebrowColor}`}
           >
             Resumo
           </p>
-          <p className="mt-3 text-sm font-medium leading-6 text-slate-500">
+          <p className="mt-2.5 max-w-[24ch] text-sm font-medium leading-5 text-slate-600 sm:text-[0.95rem]">
             {title}
           </p>
         </div>
@@ -115,12 +119,12 @@ export function SummaryCard({
       </div>
 
       <strong
-        className={`mt-8 block text-[2rem] leading-none font-semibold tracking-[-0.04em] sm:text-[2.35rem] ${valueClassName}`}
+        className={`mt-6 block text-[1.85rem] leading-[0.95] font-semibold tracking-[-0.045em] sm:text-[2.15rem] ${valueClassName}`}
       >
         {value}
       </strong>
 
-      <p className="mt-4 max-w-[34ch] text-sm leading-6 text-slate-500">
+      <p className="mt-3 max-w-[34ch] text-[0.9rem] leading-5 text-slate-500 sm:mt-3.5">
         {detail}
       </p>
     </article>
@@ -133,7 +137,7 @@ export function SummaryCardsGrid({
 }: SummaryCardsGridProps) {
   return (
     <div
-      className={`grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 ${className}`}
+      className={`grid gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 ${className}`}
     >
       {children}
     </div>

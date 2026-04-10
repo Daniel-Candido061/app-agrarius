@@ -437,7 +437,7 @@ export function ClientesView({
           </div>
         ) : null}
 
-        <div className="mb-5">
+        <div className="mb-6">
           <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
             Busca
             <input
@@ -486,7 +486,7 @@ export function ClientesView({
           </SummaryCardsGrid>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+        <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
           {clients.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">

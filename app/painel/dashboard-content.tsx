@@ -494,7 +494,7 @@ export function DashboardContent({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <DashboardTimeFilter
         mode={mode}
         quickPeriod={quickPeriod}

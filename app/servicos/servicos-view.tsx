@@ -532,7 +532,7 @@ export function ServicosView({
           </button>
         }
       >
-        <div className="mb-5">
+        <div className="mb-6">
           <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
             Busca
             <input
@@ -559,7 +559,7 @@ export function ServicosView({
           </SummaryCardsGrid>
         </section>
 
-        <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.35)]">
+        <section className="mb-6 rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.28)] sm:p-5">
           <div className="grid min-w-0 gap-3 md:grid-cols-3">
             <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
               Status
@@ -581,7 +581,7 @@ export function ServicosView({
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+        <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
           {serviceList.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">
@@ -740,7 +740,7 @@ export function ServicosView({
           )}
         </section>
 
-        <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+        <section className="mt-6 overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
           <div className="border-b border-slate-200 px-6 py-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>

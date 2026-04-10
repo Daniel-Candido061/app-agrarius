@@ -354,6 +354,7 @@ export default async function ClienteDetalhesPage({
                 value={card.value}
                 detail={card.detail}
                 tone={index === 1 ? "success" : index === 2 ? "info" : "neutral"}
+                compact
               />
             ))}
           </SummaryCardsGrid>
@@ -375,6 +376,7 @@ export default async function ClienteDetalhesPage({
                     : "neutral"
               }
               valueClassName="text-[#163728] text-[1.9rem] sm:text-[2.1rem]"
+              compact
             />
           ))}
           </SummaryCardsGrid>

@@ -153,14 +153,14 @@ export function AppShell({
     <main className="min-h-screen bg-transparent text-slate-800">
       <div className="flex min-h-screen flex-col lg:flex-row">
         <aside className="w-full border-b border-white/10 bg-[linear-gradient(180deg,#082715_0%,#0d3520_48%,#133f27_100%)] text-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-[248px] lg:border-b-0 lg:border-r lg:border-r-white/8">
-          <div className="flex h-full flex-col px-5 py-5 lg:px-4 lg:py-6">
-            <div className="border-b border-white/8 pb-5">
-              <div className="flex items-center gap-3 rounded-[24px] border border-white/8 bg-white/3 px-3 py-3">
+          <div className="flex h-full flex-col px-4 py-4 sm:px-5 sm:py-5 lg:px-4 lg:py-6">
+            <div className="border-b border-white/8 pb-4 lg:pb-5">
+              <div className="flex items-center gap-3 rounded-[22px] border border-white/8 bg-white/3 px-3 py-3">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#159452] shadow-[0_10px_25px_-14px_rgba(0,0,0,0.6)] ring-1 ring-white/18">
                   <AgrariusLogo className="h-10 w-10" />
                 </span>
                 <div>
-                  <span className="block text-[1.35rem] font-semibold tracking-[-0.03em]">
+                  <span className="block text-[1.22rem] font-semibold tracking-[-0.03em] sm:text-[1.3rem]">
                     Agrarius
                   </span>
                   <span className="mt-1 block text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-100/70">
@@ -170,7 +170,7 @@ export function AppShell({
               </div>
             </div>
 
-            <nav className="mt-6 flex flex-col gap-1.5">
+            <nav className="mt-5 flex flex-col gap-1.5">
               {navigationItems.map((item) => {
                 const isActive = item.href === currentPath;
                 const Icon = item.icon;
@@ -179,7 +179,7 @@ export function AppShell({
                   <Link
                     key={`${item.label}-${item.href}`}
                     href={item.href}
-                    className={`group flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-medium transition ${
+                    className={`group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-[0.95rem] font-medium transition ${
                       isActive
                         ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
                         : "text-emerald-50/78 hover:bg-white/6 hover:text-white"
@@ -203,8 +203,8 @@ export function AppShell({
               })}
             </nav>
 
-            <div className="mt-auto pt-8">
-              <div className="rounded-[24px] border border-white/8 bg-white/4 p-3">
+            <div className="mt-auto pt-6">
+              <div className="rounded-[22px] border border-white/8 bg-white/4 p-3">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
                     AG
@@ -232,13 +232,13 @@ export function AppShell({
           </div>
         </aside>
 
-        <section className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:ml-[248px] lg:px-7 lg:py-7">
-          <div className="mx-auto flex max-w-[1640px] flex-col gap-6">
-            <div className="overflow-hidden rounded-[32px] border border-[rgba(21,55,40,0.08)] bg-[var(--panel-background)] shadow-[0_30px_80px_-55px_rgba(15,23,42,0.45)]">
-              <header className="border-b border-[rgba(21,55,40,0.08)] px-5 py-5 sm:px-7 sm:py-6 lg:px-9">
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <section className="flex-1 px-3 py-3 sm:px-5 sm:py-5 lg:ml-[248px] lg:px-6 lg:py-6">
+          <div className="mx-auto flex max-w-[1600px] flex-col gap-5">
+            <div className="overflow-hidden rounded-[30px] border border-[rgba(21,55,40,0.08)] bg-[var(--panel-background)] shadow-[0_28px_70px_-52px_rgba(15,23,42,0.4)]">
+              <header className="border-b border-[rgba(21,55,40,0.08)] px-5 py-5 sm:px-7 sm:py-6 lg:px-8 lg:py-7">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-400">
+                    <div className="flex flex-wrap items-center gap-2 text-[0.82rem] font-medium text-slate-400 sm:text-sm">
                       <Link href="/painel" className="transition hover:text-[#163728]">
                         Painel
                       </Link>
@@ -252,10 +252,10 @@ export function AppShell({
                       ) : null}
                     </div>
 
-                    <h1 className="mt-4 text-[2rem] font-semibold tracking-[-0.05em] text-[#163728] sm:text-[2.4rem]">
+                    <h1 className="mt-3 text-[1.85rem] font-semibold tracking-[-0.05em] text-[#163728] sm:text-[2.15rem] lg:text-[2.3rem]">
                       {title}
                     </h1>
-                    <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-500 sm:text-[15px]">
+                    <p className="mt-2.5 max-w-3xl text-[0.92rem] leading-6 text-slate-500 sm:text-[0.97rem] sm:leading-7">
                       {description}
                     </p>
                   </div>
@@ -266,7 +266,7 @@ export function AppShell({
                 </div>
               </header>
 
-              <div className="px-5 py-5 sm:px-7 sm:py-6 lg:px-9 lg:py-8">
+              <div className="px-5 py-5 sm:px-7 sm:py-6 lg:px-8 lg:py-7">
                 {children}
               </div>
             </div>

@@ -620,7 +620,7 @@ export function FinanceiroView({
           </button>
         }
       >
-        <div className="space-y-6">
+        <div className="space-y-7">
           <p className="text-sm text-slate-500">
             Período aplicado:{" "}
             <span className="font-medium text-slate-700">
@@ -628,7 +628,7 @@ export function FinanceiroView({
             </span>
           </p>
 
-          <details className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+          <details className="group overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50">
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-[#17352b]">
@@ -822,7 +822,7 @@ export function FinanceiroView({
             </label>
           </div>
 
-          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+          <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
             {entries.length === 0 ? (
               <div className="px-6 py-16 text-center">
                 <h2 className="text-lg font-semibold text-[#17352b]">
