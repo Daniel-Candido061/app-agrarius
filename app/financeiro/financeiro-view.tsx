@@ -165,10 +165,8 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
       normalizeText(entry.tipo) === "despesa" &&
       normalizeText(entry.status) === "pago"
   );
-  const receitasPendentesEntries = entries.filter(
-    (entry) =>
-      normalizeText(entry.tipo) === "receita" &&
-      normalizeText(entry.status) !== "recebido"
+  const lancamentosVencidosEntries = entries.filter(
+    (entry) => normalizeText(entry.status) === "vencido"
   );
   const receitasRecebidas = receitasRecebidasEntries.reduce(
     (total, entry) => total + getNumericValue(entry.valor),
@@ -179,16 +177,6 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
     0
   );
   const lucroDoPeriodo = receitasRecebidas - despesasPagas;
-  const totalAReceber = receitasPendentesEntries.reduce(
-    (total, entry) => total + getNumericValue(entry.valor),
-    0
-  );
-  const servicosNaoQuitados = new Set(
-    receitasPendentesEntries
-      .map((entry) => entry.servico_id)
-      .filter((serviceId) => serviceId !== null && serviceId !== undefined)
-      .map(String)
-  ).size;
 
   return [
     {
@@ -223,20 +211,26 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
         lucroDoPeriodo >= 0 ? "text-emerald-700/80" : "text-orange-700/80",
     },
     {
-      title: "Total a receber",
-      value: formatCurrency(totalAReceber),
-      detail: `${receitasPendentesEntries.length} receitas pendentes ou vencidas`,
-      valueClassName: "text-[#17352b]",
-      cardClassName: "border-slate-200 bg-white",
-      detailClassName: "text-slate-500",
+      title: "Lançamentos vencidos no período",
+      value: String(lancamentosVencidosEntries.length),
+      detail: 'Lançamentos com status "Vencido" dentro do filtro aplicado',
+      valueClassName:
+        lancamentosVencidosEntries.length > 0
+          ? "text-rose-700"
+          : "text-[#17352b]",
+      cardClassName:
+        lancamentosVencidosEntries.length > 0
+          ? "border-rose-200 bg-rose-50/30"
+          : "border-slate-200 bg-white",
+      detailClassName:
+        lancamentosVencidosEntries.length > 0
+          ? "text-rose-700/80"
+          : "text-slate-500",
     },
     {
-      title: "Serviços não quitados",
-      value: String(servicosNaoQuitados),
-      detail:
-        servicosNaoQuitados > 0
-          ? "Serviços com receitas pendentes no resultado atual"
-          : "Nenhum serviço pendente no resultado atual",
+      title: "Lançamentos no período",
+      value: String(entries.length),
+      detail: "Quantidade de lançamentos no resultado atual",
       valueClassName: "text-[#17352b]",
       cardClassName: "border-slate-200 bg-white",
       detailClassName: "text-slate-500",
