@@ -351,15 +351,6 @@ export default async function ServicoDetalhesPage({
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Prazo
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  {formatSimpleDate(service.prazo)}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Prazo final
                 </p>
                 <p className="mt-2 text-sm text-slate-600">

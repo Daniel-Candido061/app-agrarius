@@ -10,8 +10,8 @@ async function getServicos() {
     .select(
       "id, cliente_id, created_at, nome_servico, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
     )
-    .order("prazo_final", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
 
   if (error) {
     console.error("Erro ao buscar serviços no Supabase:", error.message);
