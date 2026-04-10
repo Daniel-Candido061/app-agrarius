@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import { ActionsMenu } from "../components/actions-menu";
 import { SearchableSelect } from "../components/searchable-select";
+import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
 import { formatSimpleDate, getDateInputValue } from "../../lib/date-utils";
 import {
   defaultPeriodValue,
@@ -782,25 +783,30 @@ export function FinanceiroView({
             </div>
           </details>
 
-          <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-            {summaryCards.map((card) => (
-              <article
-                key={card.title}
-                className={`rounded-2xl border p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)] ${card.cardClassName}`}
-              >
-                <p className="text-sm font-medium text-slate-500">
-                  {card.title}
-                </p>
-                <strong
-                  className={`mt-4 block text-3xl font-semibold ${card.valueClassName}`}
-                >
-                  {card.value}
-                </strong>
-                <p className={`mt-3 text-sm ${card.detailClassName}`}>
-                  {card.detail}
-                </p>
-              </article>
-            ))}
+          <section>
+            <SummaryCardsGrid>
+              {summaryCards.map((card, index) => (
+                <SummaryCard
+                  key={card.title}
+                  title={card.title}
+                  value={card.value}
+                  detail={card.detail}
+                  tone={
+                    index === 0
+                      ? "success"
+                      : index === 1
+                        ? "warning"
+                        : index === 2
+                          ? "info"
+                          : index === 3
+                            ? "danger"
+                            : "neutral"
+                  }
+                  valueClassName={card.valueClassName}
+                  className={card.cardClassName}
+                />
+              ))}
+            </SummaryCardsGrid>
           </section>
 
           <div>

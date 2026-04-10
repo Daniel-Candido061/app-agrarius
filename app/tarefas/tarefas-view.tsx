@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import { ActionsMenu } from "../components/actions-menu";
 import { SearchableSelect } from "../components/searchable-select";
+import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
 import { getStatusClassName, normalizeStatusText } from "../components/status-utils";
 import {
   formatSimpleDate,
@@ -423,21 +424,20 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
           </label>
         </div>
 
-        <section className="mb-5 grid gap-5 md:grid-cols-3">
-          {summaryCards.map((card) => (
-            <article
+        <section className="mb-6">
+          <SummaryCardsGrid className="xl:grid-cols-3 2xl:grid-cols-3">
+          {summaryCards.map((card, index) => (
+            <SummaryCard
               key={card.title}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
-            >
-              <p className="text-sm font-medium text-slate-500">
-                {card.title}
-              </p>
-              <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
-                {card.value}
-              </strong>
-              <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
-            </article>
+              title={card.title}
+              value={card.value}
+              detail={card.detail}
+              tone={
+                index === 0 ? "danger" : index === 1 ? "warning" : "neutral"
+              }
+            />
           ))}
+          </SummaryCardsGrid>
         </section>
 
         <section className="mb-5 grid gap-5 lg:grid-cols-2">

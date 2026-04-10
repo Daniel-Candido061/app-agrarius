@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import { ActionsMenu } from "../components/actions-menu";
+import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
 import { supabase } from "../../lib/supabase";
 import { CLIENT_STATUS_OPTIONS } from "./status-options";
 import type {
@@ -449,30 +450,40 @@ export function ClientesView({
           </label>
         </div>
 
-        <section className="mb-5 grid gap-4 md:grid-cols-3">
+        <section className="mb-6">
+          <SummaryCardsGrid className="xl:grid-cols-3 2xl:grid-cols-3">
           {portfolioCards.map((card) => (
             <button
               key={card.title}
               type="button"
               onClick={() => applyPortfolioFilter(card.filter)}
               aria-pressed={portfolioFilter === card.filter}
-              className={`rounded-2xl border p-5 text-left shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:border-[#17352b]/40 hover:shadow-[0_18px_36px_-24px_rgba(15,23,42,0.5)] ${
+              className={`text-left ${
                 portfolioFilter === card.filter
-                  ? "border-[#17352b] bg-emerald-50/70"
-                  : "border-slate-200 bg-white"
+                  ? "rounded-[28px] ring-2 ring-[#1e6b41]/18"
+                  : ""
               }`}
             >
-              <p className="text-sm font-medium text-slate-500">
-                {card.title}
-              </p>
-              <p className="mt-3 text-2xl font-semibold text-[#17352b]">
-                {card.value}
-              </p>
-              <p className="mt-2 text-xs leading-5 text-slate-400">
-                {card.detail}
-              </p>
+              <SummaryCard
+                title={card.title}
+                value={card.value}
+                detail={card.detail}
+                tone={
+                  card.filter === "openBalance"
+                    ? "warning"
+                    : card.filter === "inProgress"
+                      ? "success"
+                      : "neutral"
+                }
+                className={
+                  portfolioFilter === card.filter
+                    ? "border-[#1e6b41]/20 bg-emerald-50/40"
+                    : ""
+                }
+              />
             </button>
           ))}
+          </SummaryCardsGrid>
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">

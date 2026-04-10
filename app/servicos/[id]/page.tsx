@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { AppShell } from "../../components/app-shell";
+import { SummaryCard, SummaryCardsGrid } from "../../components/summary-card";
 import { formatSimpleDate } from "../../../lib/date-utils";
 import { requireAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
@@ -323,89 +324,56 @@ export default async function ServicoDetalhesPage({
             </div>
           </article>
 
-          <div className="grid gap-5">
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-              <p className="text-sm font-medium text-slate-500">Valor contratado</p>
-              <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
-                {formatCurrency(valorContratado)}
-              </strong>
-              <p className="mt-3 text-sm text-slate-500">
-                Valor definido no cadastro do serviço.
-              </p>
-            </article>
-
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-              <p className="text-sm font-medium text-slate-500">Total recebido</p>
-              <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
-                {formatCurrency(totalRecebido)}
-              </strong>
-              <p className="mt-3 text-sm text-slate-500">
-                Receitas recebidas vinculadas ao serviço.
-              </p>
-            </article>
-
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-              <p className="text-sm font-medium text-slate-500">Valor a receber</p>
-              <strong
-                className={`mt-4 block text-3xl font-semibold ${
-                  valorAReceber >= 0 ? "text-[#17352b]" : "text-rose-700"
-                }`}
-              >
-                {formatCurrency(valorAReceber)}
-              </strong>
-              <p className="mt-3 text-sm text-slate-500">
-                Valor contratado menos o total recebido.
-              </p>
-            </article>
-
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-              <p className="text-sm font-medium text-slate-500">Despesas pagas</p>
-              <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
-                {formatCurrency(totalDespesasPagas)}
-              </strong>
-              <p className="mt-3 text-sm text-slate-500">
-                Despesas pagas vinculadas ao serviço.
-              </p>
-            </article>
-
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-              <p className="text-sm font-medium text-slate-500">Despesas vinculadas</p>
-              <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
-                {formatCurrency(totalDespesasVinculadas)}
-              </strong>
-              <p className="mt-3 text-sm text-slate-500">
-                Todas as despesas vinculadas ao serviço.
-              </p>
-            </article>
-
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-              <p className="text-sm font-medium text-slate-500">Lucro líquido realizado</p>
-              <strong
-                className={`mt-4 block text-3xl font-semibold ${
-                  lucroLiquidoRealizado >= 0 ? "text-[#17352b]" : "text-rose-700"
-                }`}
-              >
-                {formatCurrency(lucroLiquidoRealizado)}
-              </strong>
-              <p className="mt-3 text-sm text-slate-500">
-                Total recebido menos despesas pagas.
-              </p>
-            </article>
-
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-              <p className="text-sm font-medium text-slate-500">Lucro líquido previsto</p>
-              <strong
-                className={`mt-4 block text-3xl font-semibold ${
-                  lucroLiquidoPrevisto >= 0 ? "text-[#17352b]" : "text-rose-700"
-                }`}
-              >
-                {formatCurrency(lucroLiquidoPrevisto)}
-              </strong>
-              <p className="mt-3 text-sm text-slate-500">
-                Valor contratado menos despesas vinculadas.
-              </p>
-            </article>
-          </div>
+          <SummaryCardsGrid className="grid-cols-1 xl:grid-cols-1 2xl:grid-cols-1">
+            <SummaryCard
+              title="Valor contratado"
+              value={formatCurrency(valorContratado)}
+              detail="Valor definido no cadastro do servico."
+            />
+            <SummaryCard
+              title="Total recebido"
+              value={formatCurrency(totalRecebido)}
+              detail="Receitas recebidas vinculadas ao servico."
+              tone="success"
+            />
+            <SummaryCard
+              title="Valor a receber"
+              value={formatCurrency(valorAReceber)}
+              detail="Valor contratado menos o total recebido."
+              tone={valorAReceber >= 0 ? "warning" : "danger"}
+              valueClassName={valorAReceber >= 0 ? "text-[#163728]" : "text-rose-700"}
+            />
+            <SummaryCard
+              title="Despesas pagas"
+              value={formatCurrency(totalDespesasPagas)}
+              detail="Despesas pagas vinculadas ao servico."
+              tone="warning"
+            />
+            <SummaryCard
+              title="Despesas vinculadas"
+              value={formatCurrency(totalDespesasVinculadas)}
+              detail="Todas as despesas vinculadas ao servico."
+              tone="warning"
+            />
+            <SummaryCard
+              title="Lucro liquido realizado"
+              value={formatCurrency(lucroLiquidoRealizado)}
+              detail="Total recebido menos despesas pagas."
+              tone={lucroLiquidoRealizado >= 0 ? "success" : "danger"}
+              valueClassName={
+                lucroLiquidoRealizado >= 0 ? "text-[#163728]" : "text-rose-700"
+              }
+            />
+            <SummaryCard
+              title="Lucro liquido previsto"
+              value={formatCurrency(lucroLiquidoPrevisto)}
+              detail="Valor contratado menos despesas vinculadas."
+              tone={lucroLiquidoPrevisto >= 0 ? "info" : "danger"}
+              valueClassName={
+                lucroLiquidoPrevisto >= 0 ? "text-[#163728]" : "text-rose-700"
+              }
+            />
+          </SummaryCardsGrid>
         </section>
 
         <ServiceTasksSection serviceId={serviceId} tasks={tasks} />

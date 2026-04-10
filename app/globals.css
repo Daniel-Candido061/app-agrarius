@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f7f5;
-  --foreground: #1f2937;
+  --background: #f5f1e8;
+  --foreground: #21312a;
+  --page-background: #f7f3eb;
+  --panel-background: #fffdf8;
+  --panel-border: rgba(21, 55, 40, 0.1);
+  --brand-900: #082715;
+  --brand-800: #0d3520;
+  --brand-700: #13492b;
+  --brand-600: #1e6b41;
+  --brand-500: #2f8b56;
+  --brand-100: #dceede;
 }
 
 @theme inline {
@@ -19,9 +28,36 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--background);
+  background:
+    radial-gradient(circle at top left, rgba(190, 214, 189, 0.35), transparent 30%),
+    linear-gradient(180deg, #faf7f0 0%, var(--page-background) 100%);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family:
+    "Aptos",
+    "Segoe UI",
+    "Trebuchet MS",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(47, 139, 86, 0.18);
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 @media (max-width: 768px) {

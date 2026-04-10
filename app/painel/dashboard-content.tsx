@@ -13,6 +13,7 @@ import {
   type PeriodValue,
   type QuickPeriodValue,
 } from "../../lib/period-utils";
+import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
 import { DashboardTimeFilter } from "./dashboard-time-filter";
 
 type TimeFilterMode = "rapido" | "personalizado";
@@ -153,26 +154,18 @@ function DashboardSummary({
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-5">
+    <SummaryCardsGrid>
       {periodCards.map((card) => (
-        <article
+        <SummaryCard
           key={card.title}
-          className="flex min-h-[168px] flex-col justify-between rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.92))] p-5 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.28)]"
-        >
-          <div className="pr-2">
-            <p className="text-sm font-semibold leading-5 text-slate-600">
-              {card.title}
-            </p>
-          </div>
-          <strong className="mt-6 block text-3xl leading-none font-semibold tracking-[-0.03em] text-[#17352b] sm:text-[2rem]">
-            {card.value}
-          </strong>
-          <p className="mt-4 text-xs leading-5 text-slate-500">
-            {card.detail}
-          </p>
-        </article>
+          title={card.title}
+          value={card.value}
+          detail={card.detail}
+          tone="info"
+          className="min-h-[220px]"
+        />
       ))}
-    </div>
+    </SummaryCardsGrid>
   );
 }
 
@@ -201,20 +194,23 @@ function SummaryCards({ dashboardData }: { dashboardData: DashboardData }) {
   ];
 
   return (
-    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+    <SummaryCardsGrid className="2xl:grid-cols-4">
       {summaryCards.map((card) => (
-        <article
+        <SummaryCard
           key={card.title}
-          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
-        >
-          <p className="text-sm font-medium text-slate-500">{card.title}</p>
-          <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
-            {card.value}
-          </strong>
-          <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
-        </article>
+          title={card.title}
+          value={card.value}
+          detail={card.detail}
+          tone={
+            card.title === "Servicos atrasados"
+              ? "danger"
+              : card.title === "Tarefas atrasadas"
+                ? "warning"
+                : "success"
+          }
+        />
       ))}
-    </div>
+    </SummaryCardsGrid>
   );
 }
 

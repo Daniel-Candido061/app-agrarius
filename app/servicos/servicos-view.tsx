@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import { ActionsMenu } from "../components/actions-menu";
 import { SearchableSelect } from "../components/searchable-select";
+import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
 import {
   getStatusClassName,
   normalizeStatusText,
@@ -209,6 +210,46 @@ export function ServicosView({
   const unPaidServiceBalances = serviceBalances.filter(
     (summary) => summary.totalRecebido < summary.valorContratado
   );
+  const completedServicesCount = serviceList.filter((service) => {
+    const normalizedStatus = normalizeStatusText(service.status);
+
+    return normalizedStatus === "concluido" || normalizedStatus === "entregue";
+  }).length;
+  const summaryCards = [
+    {
+      title: "Total de servicos",
+      value: String(serviceList.length),
+      detail: "Servicos cadastrados na operacao.",
+      tone: "neutral" as const,
+    },
+    {
+      title: "Em andamento",
+      value: String(
+        serviceList.filter(
+          (service) => normalizeStatusText(service.status) === "em andamento"
+        ).length
+      ),
+      detail: "Servicos ativos no momento.",
+      tone: "success" as const,
+    },
+    {
+      title: "Concluidos",
+      value: String(completedServicesCount),
+      detail: "Servicos finalizados ou entregues.",
+      tone: "info" as const,
+    },
+    {
+      title: "Valor total",
+      value: formatCurrency(
+        serviceBalances.reduce(
+          (total, summary) => total + summary.valorContratado,
+          0
+        )
+      ),
+      detail: "Soma dos valores contratados.",
+      tone: "warning" as const,
+    },
+  ];
   const selectedServiceEntries = selectedFinanceService
     ? financialEntries.filter(
         (entry) => String(entry.servico_id) === String(selectedFinanceService.id)
@@ -503,6 +544,20 @@ export function ServicosView({
             />
           </label>
         </div>
+
+        <section className="mb-6">
+          <SummaryCardsGrid className="2xl:grid-cols-4">
+            {summaryCards.map((card) => (
+              <SummaryCard
+                key={card.title}
+                title={card.title}
+                value={card.value}
+                detail={card.detail}
+                tone={card.tone}
+              />
+            ))}
+          </SummaryCardsGrid>
+        </section>
 
         <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.35)]">
           <div className="grid min-w-0 gap-3 md:grid-cols-3">

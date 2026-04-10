@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { AppShell } from "../../components/app-shell";
+import { SummaryCard, SummaryCardsGrid } from "../../components/summary-card";
 import { formatSimpleDate } from "../../../lib/date-utils";
 import { requireAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
@@ -345,39 +346,38 @@ export default async function ClienteDetalhesPage({
             </div>
           </article>
 
-          <div className="grid gap-5">
-            {summaryCards.map((card) => (
-              <article
+          <SummaryCardsGrid className="grid-cols-1 xl:grid-cols-1 2xl:grid-cols-1">
+            {summaryCards.map((card, index) => (
+              <SummaryCard
                 key={card.title}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
-              >
-                <p className="text-sm font-medium text-slate-500">
-                  {card.title}
-                </p>
-                <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
-                  {card.value}
-                </strong>
-                <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
-              </article>
+                title={card.title}
+                value={card.value}
+                detail={card.detail}
+                tone={index === 1 ? "success" : index === 2 ? "info" : "neutral"}
+              />
             ))}
-          </div>
+          </SummaryCardsGrid>
         </section>
 
-        <section className="grid gap-5 md:grid-cols-3">
+        <section>
+          <SummaryCardsGrid className="2xl:grid-cols-3">
           {financialSummaryCards.map((card) => (
-            <article
+            <SummaryCard
               key={card.title}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
-            >
-              <p className="text-sm font-medium text-slate-500">
-                {card.title}
-              </p>
-              <strong className="mt-4 block text-2xl font-semibold text-[#17352b]">
-                {card.value}
-              </strong>
-              <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
-            </article>
+              title={card.title}
+              value={card.value}
+              detail={card.detail}
+              tone={
+                card.title === "Total recebido"
+                  ? "success"
+                  : card.title === "Valor em aberto"
+                    ? "warning"
+                    : "neutral"
+              }
+              valueClassName="text-[#163728] text-[1.9rem] sm:text-[2.1rem]"
+            />
           ))}
+          </SummaryCardsGrid>
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
