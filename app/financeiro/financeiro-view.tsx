@@ -165,8 +165,10 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
       normalizeText(entry.tipo) === "despesa" &&
       normalizeText(entry.status) === "pago"
   );
-  const contasVencidasEntries = entries.filter(
-    (entry) => normalizeText(entry.status) === "vencido"
+  const receitasPendentesEntries = entries.filter(
+    (entry) =>
+      normalizeText(entry.tipo) === "receita" &&
+      normalizeText(entry.status) !== "recebido"
   );
   const receitasRecebidas = receitasRecebidasEntries.reduce(
     (total, entry) => total + getNumericValue(entry.valor),
@@ -176,33 +178,68 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
     (total, entry) => total + getNumericValue(entry.valor),
     0
   );
-  const saldoDoPeriodo = receitasRecebidas - despesasPagas;
+  const lucroDoPeriodo = receitasRecebidas - despesasPagas;
+  const totalAReceber = receitasPendentesEntries.reduce(
+    (total, entry) => total + getNumericValue(entry.valor),
+    0
+  );
+  const servicosNaoQuitados = new Set(
+    receitasPendentesEntries
+      .map((entry) => entry.servico_id)
+      .filter((serviceId) => serviceId !== null && serviceId !== undefined)
+      .map(String)
+  ).size;
 
   return [
     {
-      title: "Total recebido",
-      value: formatCurrency(receitasRecebidas),
+      title: "Receitas no período",
+      value: `+${formatCurrency(receitasRecebidas)}`,
       detail: `${receitasRecebidasEntries.length} lançamentos recebidos`,
+      valueClassName: "text-emerald-700",
+      cardClassName: "border-emerald-200 bg-emerald-50/40",
+      detailClassName: "text-emerald-700/80",
     },
     {
-      title: "Despesas pagas",
-      value: formatCurrency(despesasPagas),
+      title: "Despesas no período",
+      value: `-${formatCurrency(despesasPagas)}`,
       detail: `${despesasPagasEntries.length} lançamentos pagos`,
+      valueClassName: "text-orange-700",
+      cardClassName: "border-orange-200 bg-orange-50/40",
+      detailClassName: "text-orange-700/80",
     },
     {
-      title: "Saldo do período",
-      value: formatCurrency(saldoDoPeriodo),
-      detail: "Receitas recebidas menos despesas pagas",
+      title: "Lucro no período",
+      value: `${lucroDoPeriodo >= 0 ? "+" : "-"}${formatCurrency(
+        Math.abs(lucroDoPeriodo)
+      )}`,
+      detail: "Receitas no período menos despesas no período",
+      valueClassName:
+        lucroDoPeriodo >= 0 ? "text-emerald-700" : "text-orange-700",
+      cardClassName:
+        lucroDoPeriodo >= 0
+          ? "border-emerald-200 bg-emerald-50/30"
+          : "border-orange-200 bg-orange-50/30",
+      detailClassName:
+        lucroDoPeriodo >= 0 ? "text-emerald-700/80" : "text-orange-700/80",
     },
     {
-      title: "Vencidos",
-      value: String(contasVencidasEntries.length),
-      detail: 'Lançamentos com status "Vencido"',
+      title: "Total a receber",
+      value: formatCurrency(totalAReceber),
+      detail: `${receitasPendentesEntries.length} receitas pendentes ou vencidas`,
+      valueClassName: "text-[#17352b]",
+      cardClassName: "border-slate-200 bg-white",
+      detailClassName: "text-slate-500",
     },
     {
-      title: "Total filtrado",
-      value: String(entries.length),
-      detail: "Lançamentos no resultado atual",
+      title: "Serviços não quitados",
+      value: String(servicosNaoQuitados),
+      detail:
+        servicosNaoQuitados > 0
+          ? "Serviços com receitas pendentes no resultado atual"
+          : "Nenhum serviço pendente no resultado atual",
+      valueClassName: "text-[#17352b]",
+      cardClassName: "border-slate-200 bg-white",
+      detailClassName: "text-slate-500",
     },
   ];
 }
@@ -223,6 +260,53 @@ function getStatusClassName(status: string | null) {
   }
 
   return "bg-slate-100 text-slate-700";
+}
+
+function getEntryTypeMeta(type: string | null | undefined) {
+  const normalizedType = normalizeText(type);
+
+  if (normalizedType === "receita") {
+    return {
+      label: "Receita",
+      badgeClassName:
+        "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
+      valueClassName: "text-emerald-700",
+    };
+  }
+
+  if (normalizedType === "despesa") {
+    return {
+      label: "Despesa",
+      badgeClassName:
+        "bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200",
+      valueClassName: "text-orange-700",
+    };
+  }
+
+  return {
+    label: type ?? "-",
+    badgeClassName: "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200",
+    valueClassName: "text-slate-700",
+  };
+}
+
+function formatSignedCurrency(
+  value: number | string | null,
+  type: string | null | undefined
+) {
+  const numericValue = getNumericValue(value);
+  const formattedValue = formatCurrency(numericValue);
+  const normalizedType = normalizeText(type);
+
+  if (normalizedType === "receita") {
+    return `+${formattedValue}`;
+  }
+
+  if (normalizedType === "despesa") {
+    return `-${formattedValue}`;
+  }
+
+  return formattedValue;
 }
 
 export function FinanceiroView({
@@ -704,19 +788,23 @@ export function FinanceiroView({
             </div>
           </details>
 
-          <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
             {summaryCards.map((card) => (
               <article
                 key={card.title}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
+                className={`rounded-2xl border p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)] ${card.cardClassName}`}
               >
                 <p className="text-sm font-medium text-slate-500">
                   {card.title}
                 </p>
-                <strong className="mt-4 block text-3xl font-semibold text-[#17352b]">
+                <strong
+                  className={`mt-4 block text-3xl font-semibold ${card.valueClassName}`}
+                >
                   {card.value}
                 </strong>
-                <p className="mt-3 text-sm text-slate-500">{card.detail}</p>
+                <p className={`mt-3 text-sm ${card.detailClassName}`}>
+                  {card.detail}
+                </p>
               </article>
             ))}
           </section>
@@ -793,11 +881,16 @@ export function FinanceiroView({
                       const serviceDetails = serviceDetailsById.get(
                         String(entry.servico_id)
                       );
+                      const entryTypeMeta = getEntryTypeMeta(entry.tipo);
 
                       return (
                         <tr key={entry.id} className="hover:bg-slate-50/80">
                           <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                            {entry.tipo ?? "-"}
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${entryTypeMeta.badgeClassName}`}
+                            >
+                              {entryTypeMeta.label}
+                            </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-500">
                             {entry.descricao ?? "-"}
@@ -811,8 +904,10 @@ export function FinanceiroView({
                           <td className="px-6 py-4 text-sm text-slate-500">
                             {entry.categoria ?? "-"}
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-500">
-                            {formatCurrency(entry.valor)}
+                          <td
+                            className={`px-6 py-4 text-sm font-semibold ${entryTypeMeta.valueClassName}`}
+                          >
+                            {formatSignedCurrency(entry.valor, entry.tipo)}
                           </td>
                           <td className="px-6 py-4 text-sm">
                             <span
@@ -1018,3 +1113,4 @@ export function FinanceiroView({
     </>
   );
 }
+
