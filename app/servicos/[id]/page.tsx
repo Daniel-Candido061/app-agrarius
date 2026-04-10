@@ -136,10 +136,10 @@ function getEntryTypeClassName(type: string | null) {
 
 function getClientName(service: Servico) {
   if (Array.isArray(service.cliente)) {
-    return service.cliente[0]?.nome ?? "Cliente não encontrado";
+    return service.cliente[0]?.nome ?? "Cliente nao encontrado";
   }
 
-  return service.cliente?.nome ?? "Cliente não encontrado";
+  return service.cliente?.nome ?? "Cliente nao encontrado";
 }
 
 async function getServico(id: number) {
@@ -152,7 +152,7 @@ async function getServico(id: number) {
     .maybeSingle();
 
   if (error) {
-    console.error("Erro ao buscar serviço:", error.message);
+    console.error("Erro ao buscar servico:", error.message);
     return null;
   }
 
@@ -168,7 +168,7 @@ async function getLancamentosDoServico(id: number) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar financeiro do serviço:", error.message);
+    console.error("Erro ao buscar financeiro do servico:", error.message);
     return [];
   }
 
@@ -184,7 +184,7 @@ async function getTarefasDoServico(id: number) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar tarefas do serviço:", error.message);
+    console.error("Erro ao buscar tarefas do servico:", error.message);
     return [];
   }
 
@@ -237,10 +237,68 @@ export default async function ServicoDetalhesPage({
   const totalLancamentos = financialEntries.length;
   const tempoDecorridoEmDias = getElapsedDaysFromDateTime(service.created_at);
 
+  const financialSummaryCards = [
+    {
+      title: "Valor contratado",
+      value: formatCurrency(valorContratado),
+      detail: "Valor definido no cadastro do servico.",
+      tone: "neutral" as const,
+      valueClassName: "text-[#163728]",
+    },
+    {
+      title: "Total recebido",
+      value: formatCurrency(totalRecebido),
+      detail: "Receitas recebidas vinculadas ao servico.",
+      tone: "success" as const,
+      valueClassName: "text-[#163728]",
+    },
+    {
+      title: "Valor a receber",
+      value: formatCurrency(valorAReceber),
+      detail: "Valor contratado menos o total recebido.",
+      tone: valorAReceber >= 0 ? ("warning" as const) : ("danger" as const),
+      valueClassName: valorAReceber >= 0 ? "text-[#163728]" : "text-rose-700",
+    },
+    {
+      title: "Despesas pagas",
+      value: formatCurrency(totalDespesasPagas),
+      detail: "Despesas pagas vinculadas ao servico.",
+      tone: "warning" as const,
+      valueClassName: "text-[#163728]",
+    },
+    {
+      title: "Despesas vinculadas",
+      value: formatCurrency(totalDespesasVinculadas),
+      detail: "Todas as despesas vinculadas ao servico.",
+      tone: "warning" as const,
+      valueClassName: "text-[#163728]",
+    },
+    {
+      title: "Lucro liquido realizado",
+      value: formatCurrency(lucroLiquidoRealizado),
+      detail: "Total recebido menos despesas pagas.",
+      tone:
+        lucroLiquidoRealizado >= 0
+          ? ("success" as const)
+          : ("danger" as const),
+      valueClassName:
+        lucroLiquidoRealizado >= 0 ? "text-[#163728]" : "text-rose-700",
+    },
+    {
+      title: "Lucro liquido previsto",
+      value: formatCurrency(lucroLiquidoPrevisto),
+      detail: "Valor contratado menos despesas vinculadas.",
+      tone:
+        lucroLiquidoPrevisto >= 0 ? ("info" as const) : ("danger" as const),
+      valueClassName:
+        lucroLiquidoPrevisto >= 0 ? "text-[#163728]" : "text-rose-700",
+    },
+  ];
+
   return (
     <AppShell
-      title="Detalhes do serviço"
-      description="Resumo do serviço, do cliente vinculado e do financeiro relacionado."
+      title="Detalhes do servico"
+      description="Resumo do servico, do cliente vinculado e do financeiro relacionado."
       currentPath="/servicos"
       action={
         <Link
@@ -252,11 +310,11 @@ export default async function ServicoDetalhesPage({
       }
     >
       <div className="space-y-6">
-        <section className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+        <section className="space-y-5">
           <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-500">Serviço</p>
+                <p className="text-sm font-medium text-slate-500">Servico</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#17352b]">
                   {service.nome_servico ?? "-"}
                 </h2>
@@ -271,7 +329,7 @@ export default async function ServicoDetalhesPage({
               </span>
             </div>
 
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Cliente
@@ -326,86 +384,46 @@ export default async function ServicoDetalhesPage({
                 </p>
               </div>
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Tempo decorrido
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  {tempoDecorridoEmDias === null
-                    ? "-"
-                    : `${tempoDecorridoEmDias} dia${
-                        tempoDecorridoEmDias === 1 ? "" : "s"
-                      }`}
-                </p>
+              <div className="sm:col-span-2 xl:col-span-3">
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Tempo decorrido
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {tempoDecorridoEmDias === null
+                        ? "-"
+                        : `${tempoDecorridoEmDias} dia${
+                            tempoDecorridoEmDias === 1 ? "" : "s"
+                          }`}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="sm:col-span-2">
+              <div className="sm:col-span-2 xl:col-span-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Observação
+                  Observacao
                 </p>
                 <p className="mt-2 whitespace-pre-line rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                  {service.observacoes?.trim() || "Sem observações"}
+                  {service.observacoes?.trim() || "Sem observacoes"}
                 </p>
               </div>
             </div>
           </article>
 
-          <SummaryCardsGrid className="grid-cols-1 xl:grid-cols-1 2xl:grid-cols-1">
-            <SummaryCard
-              title="Valor contratado"
-              value={formatCurrency(valorContratado)}
-              detail="Valor definido no cadastro do servico."
-              compact
-            />
-            <SummaryCard
-              title="Total recebido"
-              value={formatCurrency(totalRecebido)}
-              detail="Receitas recebidas vinculadas ao servico."
-              tone="success"
-              compact
-            />
-            <SummaryCard
-              title="Valor a receber"
-              value={formatCurrency(valorAReceber)}
-              detail="Valor contratado menos o total recebido."
-              tone={valorAReceber >= 0 ? "warning" : "danger"}
-              valueClassName={valorAReceber >= 0 ? "text-[#163728]" : "text-rose-700"}
-              compact
-            />
-            <SummaryCard
-              title="Despesas pagas"
-              value={formatCurrency(totalDespesasPagas)}
-              detail="Despesas pagas vinculadas ao servico."
-              tone="warning"
-              compact
-            />
-            <SummaryCard
-              title="Despesas vinculadas"
-              value={formatCurrency(totalDespesasVinculadas)}
-              detail="Todas as despesas vinculadas ao servico."
-              tone="warning"
-              compact
-            />
-            <SummaryCard
-              title="Lucro liquido realizado"
-              value={formatCurrency(lucroLiquidoRealizado)}
-              detail="Total recebido menos despesas pagas."
-              tone={lucroLiquidoRealizado >= 0 ? "success" : "danger"}
-              valueClassName={
-                lucroLiquidoRealizado >= 0 ? "text-[#163728]" : "text-rose-700"
-              }
-              compact
-            />
-            <SummaryCard
-              title="Lucro liquido previsto"
-              value={formatCurrency(lucroLiquidoPrevisto)}
-              detail="Valor contratado menos despesas vinculadas."
-              tone={lucroLiquidoPrevisto >= 0 ? "info" : "danger"}
-              valueClassName={
-                lucroLiquidoPrevisto >= 0 ? "text-[#163728]" : "text-rose-700"
-              }
-              compact
-            />
+          <SummaryCardsGrid className="md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {financialSummaryCards.map((card) => (
+              <SummaryCard
+                key={card.title}
+                title={card.title}
+                value={card.value}
+                detail={card.detail}
+                tone={card.tone}
+                valueClassName={card.valueClassName}
+                compact
+              />
+            ))}
           </SummaryCardsGrid>
         </section>
 
@@ -416,10 +434,10 @@ export default async function ServicoDetalhesPage({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-[#17352b]">
-                  Histórico financeiro
+                  Historico financeiro
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Todos os lançamentos financeiros vinculados a este serviço.
+                  Todos os lancamentos financeiros vinculados a este servico.
                 </p>
               </div>
 
@@ -431,7 +449,7 @@ export default async function ServicoDetalhesPage({
                   Despesas
                 </span>
                 <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-slate-700">
-                  {totalLancamentos} lançamentos
+                  {totalLancamentos} lancamentos
                 </span>
               </div>
             </div>
@@ -440,10 +458,10 @@ export default async function ServicoDetalhesPage({
           {financialEntries.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">
-                Nenhum lançamento vinculado
+                Nenhum lancamento vinculado
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                Este serviço ainda não possui receitas ou despesas cadastradas.
+                Este servico ainda nao possui receitas ou despesas cadastradas.
               </p>
             </div>
           ) : (
@@ -458,7 +476,7 @@ export default async function ServicoDetalhesPage({
                       Categoria
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Descrição
+                      Descricao
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Valor
