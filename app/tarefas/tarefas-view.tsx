@@ -11,7 +11,6 @@ import {
   formatSimpleDate,
   getDateInputValue,
   isBeforeTodayDateOnly,
-  isBetweenTodayAndFutureDays,
 } from "../../lib/date-utils";
 import { supabase } from "../../lib/supabase";
 import { TASK_PRIORITY_OPTIONS } from "./priority-options";
@@ -24,7 +23,7 @@ type TarefasViewProps = {
 };
 
 type ModalMode = "create" | "edit";
-type TaskFilter = "all" | "overdue" | "upcoming";
+type TaskFilter = "all" | "todo" | "overdue";
 
 type FormData = {
   titulo: string;
@@ -102,18 +101,10 @@ function isOverdueTask(task: Tarefa) {
   return isBeforeTodayDateOnly(task.data_limite);
 }
 
-function isUpcomingTask(task: Tarefa) {
-  if (!task.data_limite) {
-    return false;
-  }
-
+function isTodoTask(task: Tarefa) {
   const normalizedStatus = normalizeStatusText(task.status);
 
-  if (normalizedStatus === "concluida" || normalizedStatus === "concluido") {
-    return false;
-  }
-
-  return isBetweenTodayAndFutureDays(task.data_limite, 7);
+  return normalizedStatus !== "concluida" && normalizedStatus !== "concluido";
 }
 
 function getServiceClientName(service: ServicoOption) {
@@ -167,13 +158,13 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
 
   const normalizedSearchTerm = normalizeText(searchTerm);
   const overdueTasks = taskList.filter(isOverdueTask);
-  const upcomingTasks = taskList.filter(isUpcomingTask);
+  const todoTasks = taskList.filter(isTodoTask);
   const filteredTasks = taskList.filter((task) => {
     if (taskFilter === "overdue" && !isOverdueTask(task)) {
       return false;
     }
 
-    if (taskFilter === "upcoming" && !isUpcomingTask(task)) {
+    if (taskFilter === "todo" && !isTodoTask(task)) {
       return false;
     }
 
@@ -196,22 +187,22 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
 
   const summaryCards = [
     {
-      title: "Tarefas atrasadas",
-      value: String(overdueTasks.length),
-      detail: 'Prazo vencido e status diferente de "Concluído"',
-      filter: "overdue" as TaskFilter,
-    },
-    {
-      title: "Tarefas próximas",
-      value: String(upcomingTasks.length),
-      detail: "Vencem entre hoje e os próximos 7 dias",
-      filter: "upcoming" as TaskFilter,
-    },
-    {
       title: "Total de tarefas",
       value: String(taskList.length),
       detail: "Atividades cadastradas no módulo",
       filter: "all" as TaskFilter,
+    },
+    {
+      title: "A fazer",
+      value: String(todoTasks.length),
+      detail: 'Tarefas com status diferente de "Concluído"',
+      filter: "todo" as TaskFilter,
+    },
+    {
+      title: "Tarefas atrasadas",
+      value: String(overdueTasks.length),
+      detail: 'Prazo vencido e status diferente de "Concluído"',
+      filter: "overdue" as TaskFilter,
     },
   ];
 
@@ -460,7 +451,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                   tone={
                     card.filter === "overdue"
                       ? "danger"
-                      : card.filter === "upcoming"
+                      : card.filter === "todo"
                         ? "warning"
                         : "neutral"
                   }
@@ -778,5 +769,6 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     </>
   );
 }
+
 
 
