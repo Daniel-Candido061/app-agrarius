@@ -6,6 +6,6 @@ export const alt = "Agrarius Gestao";
 export const size = SHARE_IMAGE_SIZE;
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+export default function TwitterImage() {
   return new ImageResponse(<BrandShareArtwork />, size);
 }

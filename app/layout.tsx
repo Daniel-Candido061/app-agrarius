@@ -4,15 +4,25 @@ import "./globals.css";
 const siteTitle = "Agrarius Gestao";
 const siteDescription =
   "Plataforma interna da Agrarius para gestao de clientes, servicos, tarefas, prazos e financeiro em um unico ambiente organizado.";
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  applicationName: siteTitle,
   title: {
     default: siteTitle,
     template: `%s | ${siteTitle}`,
   },
   description: siteDescription,
+  icons: {
+    icon: [
+      { url: "/icon", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
+  },
   openGraph: {
     title: "Agrarius Gestao - Sistema interno de gestao operacional e financeira",
     description: siteDescription,
@@ -33,7 +43,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Agrarius Gestao - Sistema interno de gestao operacional e financeira",
     description: siteDescription,
-    images: ["/opengraph-image"],
+    images: ["/twitter-image"],
   },
 };
 
