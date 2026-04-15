@@ -1,4 +1,4 @@
-import {
+﻿import {
   isDateInPeriod,
   type PeriodValue,
 } from "./period-utils";
@@ -86,6 +86,7 @@ export type DashboardData = {
   >;
   carteiraPorResponsavel: DashboardResponsibleMetric[];
   gargalosOperacionais: DashboardOperationalQueueMetric[];
+  prioridadesImediatas: DashboardPriorityMetric[];
   pendenciasAltasAbertas: number;
   metricasServicosPorTipo: DashboardServiceTypeMetric[];
   conversaoComercialPorTipo: DashboardCommercialConversionMetric[];
@@ -106,6 +107,14 @@ export type DashboardOperationalQueueMetric = {
   label: string;
   total: number;
   detalhe: string;
+};
+
+export type DashboardPriorityMetric = {
+  chave: string;
+  label: string;
+  total: number;
+  detalhe: string;
+  tone: "neutral" | "info" | "success" | "warning" | "danger";
 };
 
 export type DashboardServiceTypeMetric = {
@@ -174,9 +183,9 @@ function getSituacaoOperacionalLabel(value: string | null) {
     case "aguardando_cliente":
       return "Aguardando cliente";
     case "aguardando_orgao":
-      return "Aguardando orgao";
+      return "Aguardando órgão";
     case "aguardando_cartorio":
-      return "Aguardando cartorio";
+      return "Aguardando cartório";
     case "aguardando_equipe":
       return "Aguardando equipe";
     case "pronto_para_protocolar":
@@ -184,7 +193,7 @@ function getSituacaoOperacionalLabel(value: string | null) {
     case "pronto_para_entregar":
       return "Pronto para entregar";
     case "em_execucao_ativa":
-      return "Em execucao ativa";
+      return "Em execução ativa";
     default:
       return "Nao definida";
   }
@@ -579,6 +588,50 @@ export async function getDashboardData(
     detalhe: situacao.detalhe,
   }));
 
+  const prioridadesImediatas: DashboardPriorityMetric[] = [
+    {
+      chave: "servicos_atrasados",
+      label: "Serviços vencidos",
+      total: servicosAtrasados,
+      detalhe: "Carteira com prazo final já ultrapassado.",
+      tone: "danger",
+    },
+    {
+      chave: "pendencias_altas",
+      label: "Pendências altas",
+      total: pendenciasAltasAbertas,
+      detalhe: "Bloqueios operacionais que pedem ação imediata.",
+      tone: "danger",
+    },
+    {
+      chave: "tarefas_atrasadas",
+      label: "Tarefas vencidas",
+      total: tarefasAtrasadas,
+      detalhe: "Atividades que já passaram do prazo.",
+      tone: "warning",
+    },
+    {
+      chave: "pronto_para_protocolar",
+      label: "Prontos para protocolar",
+      total:
+        gargalosOperacionais.find(
+          (item) => item.chave === "pronto_para_protocolar"
+        )?.total ?? 0,
+      detalhe: "Serviços já aptos para protocolo.",
+      tone: "info",
+    },
+    {
+      chave: "pronto_para_entregar",
+      label: "Prontos para entregar",
+      total:
+        gargalosOperacionais.find(
+          (item) => item.chave === "pronto_para_entregar"
+        )?.total ?? 0,
+      detalhe: "Serviços que já podem virar entrega final.",
+      tone: "success",
+    },
+  ];
+
   return {
     clientesNovos,
     servicosCriados,
@@ -611,6 +664,7 @@ export async function getDashboardData(
     proximosPrazos,
     carteiraPorResponsavel,
     gargalosOperacionais,
+    prioridadesImediatas,
     pendenciasAltasAbertas,
     metricasServicosPorTipo: serviceTypeMetrics,
     conversaoComercialPorTipo: commercialConversionMetrics.filter(
@@ -621,3 +675,5 @@ export async function getDashboardData(
     ),
   };
 }
+
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   getDaysUntilSimpleDate,
   getElapsedDaysFromDateTime,
   isBeforeTodayDateOnly,
@@ -33,9 +33,9 @@ export function getSituacaoOperacionalLabel(value: string | null | undefined) {
     case "aguardando_cliente":
       return "Aguardando cliente";
     case "aguardando_orgao":
-      return "Aguardando orgao";
+      return "Aguardando órgão";
     case "aguardando_cartorio":
-      return "Aguardando cartorio";
+      return "Aguardando cartório";
     case "aguardando_equipe":
       return "Aguardando equipe";
     case "pronto_para_protocolar":
@@ -43,7 +43,7 @@ export function getSituacaoOperacionalLabel(value: string | null | undefined) {
     case "pronto_para_entregar":
       return "Pronto para entregar";
     case "em_execucao_ativa":
-      return "Em execucao ativa";
+      return "Em execução ativa";
     default:
       return "Não definida";
   }
@@ -77,11 +77,11 @@ export function getPendingPriorityLabel(value: string | null | undefined) {
     case "alta":
       return "Alta";
     case "media":
-      return "Media";
+      return "Média";
     case "baixa":
       return "Baixa";
     default:
-      return "Media";
+      return "Média";
   }
 }
 
@@ -395,3 +395,5 @@ export function isPendingStale(
 
   return staleDays !== null && staleDays >= staleDaysThreshold;
 }
+
+

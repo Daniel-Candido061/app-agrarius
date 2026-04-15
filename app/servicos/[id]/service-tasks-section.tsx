@@ -156,8 +156,7 @@ export function ServiceTasksSection({
       formData.responsavel_id.trim() || defaultResponsibleId || null;
     const responsavel =
       (responsavelId ? userLabelById.get(responsavelId) : null) ??
-      formData.responsavel.trim() ||
-      null;
+      (formData.responsavel.trim() || null);
     const dataLimite = formData.data_limite.trim();
     const prioridade = formData.prioridade.trim();
     const status = formData.status.trim();

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { AppShell } from "../../components/app-shell";
@@ -46,6 +46,14 @@ import { ServicePendingsSection } from "./service-pendings-section";
 import { ServiceStagesSection } from "./service-stages-section";
 import { ServiceTasksSection } from "./service-tasks-section";
 import { ServiceTimelineSection } from "./service-timeline-section";
+
+type ServiceSummaryCard = {
+  title: string;
+  value: string;
+  detail: string;
+  tone: "neutral" | "info" | "success" | "warning" | "danger";
+  valueClassName?: string;
+};
 
 function formatCurrency(value: number | string | null) {
   if (value === null || value === undefined || value === "") {
@@ -484,6 +492,61 @@ export default async function ServicoDetalhesPage({
     : service.prazo_final
       ? `Entrega prevista em ${formatSimpleDate(service.prazo_final)}`
       : "Prazo de entrega não informado";
+  const attentionItems = [
+    highPriorityOpenPendings.length > 0
+      ? {
+          key: "pending-high",
+          label: "Bloqueio crítico",
+          value: `${highPriorityOpenPendings.length} pendência(s) alta(s)`,
+          detail: "Resolva a pendência crítica antes de empurrar o fluxo.",
+          tone: "danger" as const,
+        }
+      : null,
+    deadlineAlert
+      ? {
+          key: "deadline",
+          label: "Prazo do serviço",
+          value: deadlineAlert.label,
+          detail:
+            deadlineAlert.tone === "danger"
+              ? "O prazo final já estourou e pede ação imediata."
+              : "O prazo final está perto e precisa ser acompanhado de perto.",
+          tone:
+            deadlineAlert.tone === "danger"
+              ? ("danger" as const)
+              : ("warning" as const),
+        }
+      : null,
+    overdueTasks.length > 0
+      ? {
+          key: "tasks-overdue",
+          label: "Execução atrasada",
+          value: `${overdueTasks.length} tarefa(s) vencida(s)`,
+          detail: "Existem tarefas operacionais atrasadas dentro deste serviço.",
+          tone: "warning" as const,
+        }
+      : null,
+    staleOpenPendings.length > 0
+      ? {
+          key: "stale-pendings",
+          label: "Pendência parada",
+          value: `${staleOpenPendings.length} sem atualização`,
+          detail: "Há pendência aberta há mais de 10 dias sem movimento.",
+          tone: "warning" as const,
+        }
+      : null,
+    nextStage
+      ? {
+          key: "next-stage",
+          label: "Próxima virada",
+          value: nextStage.titulo ?? "Etapa em aberto",
+          detail: nextStage.opcional
+            ? "Etapa opcional disponível para destravar o fluxo."
+            : "Próxima etapa obrigatória do fluxo técnico.",
+          tone: "info" as const,
+        }
+      : null,
+  ].filter((item) => item !== null).slice(0, 4);
 
   const financialSummaryCards = [
     {
@@ -520,7 +583,7 @@ export default async function ServicoDetalhesPage({
     },
   ];
 
-  const operationalSummaryCards = [
+  const operationalSummaryCards: ServiceSummaryCard[] = [
     {
       title: "Etapas concluidas",
       value: `${resolvedStagesCount}/${stages.length || 0}`,
@@ -530,7 +593,7 @@ export default async function ServicoDetalhesPage({
       tone: "info" as const,
     },
     {
-      title: "Pendencias abertas",
+      title: "Pendências abertas",
       value: String(openPendings.length),
       detail:
         highPriorityOpenPendings.length > 0
@@ -658,7 +721,7 @@ export default async function ServicoDetalhesPage({
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Proxima acao recomendada
+                      Próxima ação recomendada
                     </p>
                     <p className="mt-2 text-base font-semibold text-[#17352b]">
                       {nextActionSummary}
@@ -668,7 +731,7 @@ export default async function ServicoDetalhesPage({
                         ? "A fila atual indica que a pendencia aberta mais relevante deve ser tratada primeiro."
                         : nextStage
                           ? "A proxima etapa do fluxo tecnico ja esta identificada."
-                          : "Defina a proxima acao manualmente para manter o servico orientado."}
+                          : "Defina a proxima acao manualmente para manter o serviço orientado."}
                     </p>
                   </div>
                 </div>
@@ -812,6 +875,24 @@ export default async function ServicoDetalhesPage({
             </div>
           </article>
 
+          {attentionItems.length > 0 ? (
+            <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {attentionItems.map((item) => (
+                <article
+                  key={item.key}
+                  className={`rounded-2xl border px-4 py-4 ${getFocusToneClassName(item.tone)}`}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] opacity-80">
+                    Radar de atenção
+                  </p>
+                  <p className="mt-2 text-sm font-semibold">{item.label}</p>
+                  <p className="mt-3 text-lg font-semibold">{item.value}</p>
+                  <p className="mt-2 text-sm opacity-90">{item.detail}</p>
+                </article>
+              ))}
+            </section>
+          ) : null}
+
           <SummaryCardsGrid className="md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4">
             {financialSummaryCards.map((card) => (
               <SummaryCard
@@ -938,6 +1019,22 @@ export default async function ServicoDetalhesPage({
               </div>
             </div>
           </article>
+
+          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {attentionItems.map((item) => (
+              <article
+                key={item.key}
+                className={`rounded-2xl border px-4 py-4 ${getFocusToneClassName(item.tone)}`}
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] opacity-80">
+                  Radar de atenção
+                </p>
+                <p className="mt-2 text-sm font-semibold">{item.label}</p>
+                <p className="mt-3 text-lg font-semibold">{item.value}</p>
+                <p className="mt-2 text-sm opacity-90">{item.detail}</p>
+              </article>
+            ))}
+          </section>
 
           <SummaryCardsGrid className="md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4">
             {operationalSummaryCards.map((card) => (
@@ -1112,3 +1209,7 @@ export default async function ServicoDetalhesPage({
     </AppShell>
   );
 }
+
+
+
+
