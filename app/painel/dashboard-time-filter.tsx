@@ -42,9 +42,9 @@ export function DashboardTimeFilter({
 }: DashboardTimeFilterProps) {
   const selectedLabel =
     mode === "rapido"
-      ? `Periodo: ${getPeriodLabel(quickPeriod)}`
+      ? `Período: ${getPeriodLabel(quickPeriod)}`
       : startDate || endDate
-        ? `${startDate || "Inicio"} ate ${endDate || "Fim"}`
+        ? `${startDate || "Início"} até ${endDate || "Fim"}`
         : "Intervalo personalizado";
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -86,7 +86,7 @@ export function DashboardTimeFilter({
               {selectedLabel}
             </p>
             <p className="mt-1 text-sm text-slate-500">
-              Ajuste o recorte do painel sem abrir outra area.
+              Ajuste o recorte do painel sem abrir outra área.
             </p>
           </div>
         </div>
@@ -103,14 +103,14 @@ export function DashboardTimeFilter({
               disabled={isPending}
               className={`${fieldSelectClassName} disabled:cursor-not-allowed disabled:opacity-70`}
             >
-              <option value="rapido">Periodo rapido</option>
+              <option value="rapido">Período rápido</option>
               <option value="personalizado">Intervalo personalizado</option>
             </select>
           </label>
 
           {mode === "rapido" ? (
             <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-              Periodo
+              Período
               <select
                 name="periodo"
                 value={quickPeriod}

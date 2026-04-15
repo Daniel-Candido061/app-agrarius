@@ -1,4 +1,5 @@
 import Link from "next/link";
+
 import { AgrariusLogo } from "../components/app-shell";
 
 const features = [
@@ -18,8 +19,7 @@ const features = [
   },
   {
     title: "Organização de tarefas",
-    description:
-      "Controle de atividades importantes e prazos operacionais.",
+    description: "Controle de atividades importantes e prazos operacionais.",
   },
 ];
 

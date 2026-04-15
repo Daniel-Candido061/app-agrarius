@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
 import { AgrariusLogo } from "../components/app-shell";
 import { getAuthenticatedUser } from "../../lib/auth";
 
@@ -11,11 +12,11 @@ type LoginPageProps = {
 
 function getErrorMessage(error?: string) {
   if (error === "missing") {
-    return "Informe email e senha para entrar.";
+    return "Informe e-mail e senha para entrar.";
   }
 
   if (error === "invalid") {
-    return "Email ou senha inválidos.";
+    return "E-mail ou senha inválidos.";
   }
 
   return "";
@@ -43,13 +44,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               Entrar no Agrarius Gestão
             </h1>
             <p className="mt-2 text-sm text-slate-500">
-              Acesse sua área de gestão com email e senha.
+              Acesse sua área de gestão com e-mail e senha.
             </p>
           </div>
 
           <form action="/auth/login" method="post" className="mt-8 space-y-5">
             <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-              Email
+              E-mail
               <input
                 type="email"
                 name="email"

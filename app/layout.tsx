@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const siteTitle = "Agrarius Gestao";
+const siteTitle = "Agrarius Gestão";
 const siteDescription =
-  "Plataforma interna da Agrarius para gestao de clientes, servicos, tarefas, prazos e financeiro em um unico ambiente organizado.";
+  "Plataforma interna da Agrarius para gestão de clientes, serviços, tarefas, prazos e financeiro em um único ambiente organizado.";
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
   },
   openGraph: {
-    title: "Agrarius Gestao - Sistema interno de gestao operacional e financeira",
+    title: "Agrarius Gestão - Sistema interno de gestão operacional e financeira",
     description: siteDescription,
     url: "/",
     siteName: siteTitle,
@@ -35,13 +35,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Agrarius Gestao",
+        alt: "Agrarius Gestão",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Agrarius Gestao - Sistema interno de gestao operacional e financeira",
+    title: "Agrarius Gestão - Sistema interno de gestão operacional e financeira",
     description: siteDescription,
     images: ["/twitter-image"],
   },

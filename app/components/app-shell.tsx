@@ -5,7 +5,7 @@ const navigationItems = [
   { label: "Painel", href: "/painel", icon: DashboardIcon },
   { label: "Comercial", href: "/comercial", icon: BriefcaseIcon },
   { label: "Clientes", href: "/clientes", icon: UserIcon },
-  { label: "Servicos", href: "/servicos", icon: ClipboardIcon },
+  { label: "Serviços", href: "/servicos", icon: ClipboardIcon },
   { label: "Tarefas", href: "/tarefas", icon: CheckIcon },
   { label: "Financeiro", href: "/financeiro", icon: ChartIcon },
 ];
@@ -166,8 +166,8 @@ export function AppShell({
   currentPath,
   action,
   children,
-  currentUserName = "Sessao ativa",
-  currentUserDetail = "Agrarius Gestao",
+  currentUserName = "Sessão ativa",
+  currentUserDetail = "Agrarius Gestão",
   currentUserInitials = "AG",
 }: AppShellProps) {
   return (
@@ -240,8 +240,8 @@ export function AppShell({
                   </div>
                   <Link
                     href="/conta"
-                    aria-label="Abrir configuracoes da conta"
-                    title="Configuracoes da conta"
+                    aria-label="Abrir configurações da conta"
+                    title="Configurações da conta"
                     className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/5 text-emerald-50/80 transition hover:bg-white/10 hover:text-white"
                   >
                     <svg

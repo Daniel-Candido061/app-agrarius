@@ -51,6 +51,7 @@ export type ServiceDashboardEntry = {
 export type DashboardData = {
   clientesNovos: number;
   servicosCriados: number;
+  servicosAtivos: number;
   totalRecebidoPeriodo: number;
   despesasPagasPeriodo: number;
   lucroRealizadoPeriodo: number;
@@ -308,6 +309,9 @@ export async function getDashboardData(
       customEndDate
     )
   ).length;
+  const servicosAtivos = services.filter(
+    (service) => !isClosedServiceStatus(service.status)
+  ).length;
 
   const totalRecebidoPeriodo = periodFinancialEntries
     .filter((entry) => isRevenue(entry) && isReceived(entry))
@@ -376,6 +380,7 @@ export async function getDashboardData(
   return {
     clientesNovos,
     servicosCriados,
+    servicosAtivos,
     totalRecebidoPeriodo,
     despesasPagasPeriodo,
     lucroRealizadoPeriodo,

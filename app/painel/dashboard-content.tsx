@@ -69,7 +69,7 @@ function getDeadlineLabel(value: string | null) {
   }
 
   if (daysUntilDeadline === 1) {
-    return "Vence amanha";
+    return "Vence amanhã";
   }
 
   return `Faltam ${daysUntilDeadline} dias`;
@@ -125,7 +125,7 @@ async function loadDashboardData(
   });
 
   if (!response.ok) {
-    throw new Error("Nao foi possivel atualizar os dados do painel.");
+    throw new Error("Não foi possível atualizar os dados do painel.");
   }
 
   return (await response.json()) as DashboardApiResponse;
@@ -140,27 +140,27 @@ function DashboardSummary({
 }) {
   const periodCards = [
     {
-      title: "Entradas de servico",
+      title: "Entradas de serviço",
       value: String(dashboardData.servicosCriados),
-      detail: `Servicos com data de entrada no periodo: ${selectedPeriodLabel.toLowerCase()}`,
+      detail: `Serviços com data de entrada no período: ${selectedPeriodLabel.toLowerCase()}`,
       tone: "neutral" as const,
     },
     {
       title: "Clientes novos",
       value: String(dashboardData.clientesNovos),
-      detail: `Clientes cadastrados dentro do periodo: ${selectedPeriodLabel.toLowerCase()}`,
+      detail: `Clientes cadastrados dentro do período: ${selectedPeriodLabel.toLowerCase()}`,
       tone: "neutral" as const,
     },
     {
       title: "Total recebido",
       value: formatCurrency(dashboardData.totalRecebidoPeriodo),
-      detail: "Receitas recebidas no periodo",
+      detail: "Receitas recebidas no período",
       tone: "success" as const,
     },
     {
       title: "Despesas pagas",
       value: formatCurrency(dashboardData.despesasPagasPeriodo),
-      detail: "Despesas pagas no periodo",
+      detail: "Despesas pagas no período",
       tone: "warning" as const,
     },
   ];
@@ -190,21 +190,21 @@ function SummaryCards({ dashboardData }: { dashboardData: DashboardData }) {
       tone: "info" as const,
     },
     {
-      title: "Clientes com servicos em andamento",
+      title: "Clientes com serviços em andamento",
       value: String(dashboardData.clientesComServicosEmAndamento),
-      detail: "Situacao atual, sem filtro de periodo",
+      detail: "Situação atual, sem filtro de período",
       tone: "success" as const,
     },
     {
-      title: "Lucro realizado",
-      value: formatCurrency(dashboardData.lucroRealizadoPeriodo),
-      detail: "Resultado do periodo ja descontando as despesas pagas",
-      tone: "success" as const,
+      title: "Serviços ativos",
+      value: String(dashboardData.servicosAtivos ?? 0),
+      detail: "Carteira operacional ainda aberta no momento",
+      tone: "info" as const,
     },
     {
       title: "Tarefas atrasadas",
       value: String(dashboardData.tarefasAtrasadas),
-      detail: 'Tarefas com prazo vencido e status diferente de "Concluido"',
+      detail: 'Tarefas com prazo vencido e status diferente de "Concluído"',
       tone: "warning" as const,
     },
   ];
@@ -231,10 +231,10 @@ function UrgentServices({ services }: { services: ServiceDashboardEntry[] }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-rose-900">
-              Servicos urgentes
+              Serviços urgentes
             </h2>
             <p className="text-sm text-rose-700/80">
-              Servicos com prazo vencido que precisam de atencao imediata.
+              Serviços com prazo vencido que precisam de atenção imediata.
             </p>
           </div>
 
@@ -248,10 +248,10 @@ function UrgentServices({ services }: { services: ServiceDashboardEntry[] }) {
           <div className="flex flex-1 items-center justify-center px-5 py-12">
             <div className="w-full max-w-sm rounded-2xl border border-dashed border-rose-200 bg-white/80 px-5 py-10 text-center shadow-sm">
               <p className="text-sm font-medium text-rose-700">
-                Nenhum servico vencido no momento
+                Nenhum serviço vencido no momento
               </p>
               <p className="mt-2 text-sm text-slate-500">
-                Quando houver servicos com prazo vencido, eles aparecerao aqui.
+                Quando houver serviços com prazo vencido, eles aparecerão aqui.
               </p>
           </div>
         </div>
@@ -306,10 +306,10 @@ function UpcomingDeadlines({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-[#17352b]">
-            Proximos prazos de servicos
+            Próximos prazos de serviços
           </h2>
           <p className="text-sm text-slate-500">
-            Servicos abertos com vencimento mais proximo.
+            Serviços abertos com vencimento mais próximo.
           </p>
         </div>
       </div>
@@ -319,10 +319,10 @@ function UpcomingDeadlines({
         <div className="flex flex-1 items-center justify-center px-5 py-12 text-center">
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10">
             <p className="text-sm font-medium text-slate-600">
-              Nenhum prazo proximo cadastrado
+              Nenhum prazo próximo cadastrado
             </p>
             <p className="mt-2 text-sm text-slate-500">
-              Quando houver servicos em aberto com prazo final, eles aparecerao aqui.
+              Quando houver serviços em aberto com prazo final, eles aparecerão aqui.
             </p>
           </div>
         </div>
@@ -384,10 +384,10 @@ function OpenServices({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-[#17352b]">
-              Servicos nao quitados
+              Serviços não quitados
             </h2>
             <p className="text-sm text-slate-500">
-              Servicos com total recebido menor que o valor contratado.
+              Serviços com total recebido menor que o valor contratado.
             </p>
           </div>
 
@@ -400,10 +400,10 @@ function OpenServices({
       {services.length === 0 ? (
         <div className="flex flex-1 items-center justify-center px-5 py-12 text-center">
           <p className="text-sm font-medium text-emerald-700">
-            Nenhum servico em aberto no momento
+            Nenhum serviço em aberto no momento
           </p>
           <p className="mt-2 text-sm text-slate-500">
-            Todos os servicos cadastrados estao quitados.
+            Todos os serviços cadastrados estão quitados.
           </p>
         </div>
       ) : (
@@ -588,10 +588,10 @@ function ManagementIntelligence({
     <section className="space-y-5">
       <div>
         <h2 className="text-xl font-semibold text-[#17352b]">
-          Inteligencia de gestao
+          Inteligência de gestão
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Leituras historicas para orientar precificacao, foco comercial e tomada de decisao sem transformar o sistema em BI.
+          Leituras históricas para orientar precificação, foco comercial e tomada de decisão sem transformar o sistema em BI.
         </p>
       </div>
 
@@ -699,16 +699,14 @@ export function DashboardContent({
       <section>
         <div className="mb-4 sm:mb-5">
           <h2 className="text-xl font-semibold text-[#17352b]">
-            Operacao atual
+            Operação atual
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Indicadores complementares da carteira ativa, sem repetir os blocos operacionais logo abaixo.
+            Leitura executiva da carteira ativa antes das listas de atenção operacional.
           </p>
         </div>
         <SummaryCards dashboardData={dashboardData} />
       </section>
-
-      <ManagementIntelligence dashboardData={dashboardData} />
 
       <section className="grid gap-5 xl:grid-cols-3">
         <UrgentServices services={dashboardData.servicosUrgentes} />
@@ -718,6 +716,8 @@ export function DashboardContent({
           total={dashboardData.servicosNaoQuitados}
         />
       </section>
+
+      <ManagementIntelligence dashboardData={dashboardData} />
     </div>
   );
 }

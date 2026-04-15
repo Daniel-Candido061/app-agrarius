@@ -121,10 +121,10 @@ function getStatusOptionsByType(type: string) {
 
 function getServiceClientName(service: ServicoOption) {
   if (Array.isArray(service.cliente)) {
-    return service.cliente[0]?.nome ?? "Cliente nÃ£o encontrado";
+  return service.cliente[0]?.nome ?? "Cliente não encontrado";
   }
 
-  return service.cliente?.nome ?? "Cliente nÃ£o encontrado";
+  return service.cliente?.nome ?? "Cliente não encontrado";
 }
 
 function entryMatchesSearch(
@@ -159,7 +159,7 @@ function entryMatchesSearch(
 
 function getCustomPeriodLabel(startDate: string, endDate: string) {
   if (startDate && endDate) {
-    return `${formatSimpleDate(startDate)} atÃ© ${formatSimpleDate(endDate)}`;
+    return `${formatSimpleDate(startDate)} até ${formatSimpleDate(endDate)}`;
   }
 
   if (startDate) {
@@ -167,7 +167,7 @@ function getCustomPeriodLabel(startDate: string, endDate: string) {
   }
 
   if (endDate) {
-    return `atÃ© ${formatSimpleDate(endDate)}`;
+    return `até ${formatSimpleDate(endDate)}`;
   }
 
   return "Intervalo personalizado";
@@ -338,7 +338,7 @@ export function FinanceiroView({
       String(service.id),
       {
         clientName: getServiceClientName(service),
-        serviceName: service.nome_servico ?? `ServiÃ§o ${service.id}`,
+        serviceName: service.nome_servico ?? `Serviço ${service.id}`,
       },
     ])
   );
@@ -450,7 +450,7 @@ export function FinanceiroView({
   const summaryCards = buildSummaryCards(tableEntries);
   const selectedTimeLabel =
     timeFilterMode === "rapido"
-      ? `PerÃ­odo: ${getAppliedQuickPeriodLabel(periodFilter)}`
+      ? `Período: ${getAppliedQuickPeriodLabel(periodFilter)}`
       : getCustomPeriodLabel(customStartDate, customEndDate);
   const appliedPeriodLabel =
     timeFilterMode === "rapido"
@@ -537,37 +537,37 @@ export function FinanceiroView({
     const status = formData.status.trim();
 
     if (!tipo) {
-      setErrorMessage("Selecione o tipo do lanÃ§amento.");
+      setErrorMessage("Selecione o tipo do lançamento.");
       return;
     }
 
     if (!descricao) {
-      setErrorMessage("Informe a descriÃ§Ã£o do lanÃ§amento.");
+      setErrorMessage("Informe a descrição do lançamento.");
       return;
     }
 
     if (!categoria) {
-      setErrorMessage("Selecione a categoria do lanÃ§amento.");
+      setErrorMessage("Selecione a categoria do lançamento.");
       return;
     }
 
     if (!valor) {
-      setErrorMessage("Informe o valor do lanÃ§amento.");
+      setErrorMessage("Informe o valor do lançamento.");
       return;
     }
 
     if (!data) {
-      setErrorMessage("Informe a data do lanÃ§amento.");
+      setErrorMessage("Informe a data do lançamento.");
       return;
     }
 
     if (!status) {
-      setErrorMessage("Selecione o status do lanÃ§amento.");
+      setErrorMessage("Selecione o status do lançamento.");
       return;
     }
 
     if (!getStatusOptionsByType(tipo).includes(status)) {
-      setErrorMessage("Selecione um status compatÃ­vel com o tipo do lanÃ§amento.");
+      setErrorMessage("Selecione um status compatível com o tipo do lançamento.");
       return;
     }
 
@@ -584,7 +584,7 @@ export function FinanceiroView({
     }
 
     if (servicoId && Number.isNaN(parsedServiceId)) {
-      setErrorMessage("ServiÃ§o invÃ¡lido.");
+      setErrorMessage("Serviço inválido.");
       return;
     }
 
@@ -633,14 +633,14 @@ export function FinanceiroView({
     if (response.error) {
       setErrorMessage(
         isEditing
-          ? "NÃ£o foi possÃ­vel atualizar o lanÃ§amento agora. Tente novamente."
-          : "NÃ£o foi possÃ­vel salvar o lanÃ§amento agora. Tente novamente."
+          ? "Não foi possível atualizar o lançamento agora. Tente novamente."
+          : "Não foi possível salvar o lançamento agora. Tente novamente."
       );
       return;
     }
 
     if (isEditing && !response.data?.id) {
-      setErrorMessage("NÃ£o foi possÃ­vel identificar o lanÃ§amento atualizado.");
+      setErrorMessage("Não foi possível identificar o lançamento atualizado.");
       return;
     }
 
@@ -687,7 +687,7 @@ export function FinanceiroView({
 
     if (deleteError || eventError) {
       setErrorMessage(
-        "NÃ£o foi possÃ­vel excluir o lanÃ§amento agora. Tente novamente."
+        "Não foi possível excluir o lançamento agora. Tente novamente."
       );
       return;
     }
@@ -699,7 +699,7 @@ export function FinanceiroView({
     <>
       <AppShell
         title="Financeiro"
-        description="LanÃ§amentos reais sincronizados com a tabela financeiro do Supabase."
+        description="Lançamentos reais sincronizados com a tabela financeiro do Supabase."
         currentPath="/financeiro"
         currentUserName={currentUserName}
         currentUserDetail={currentUserDetail}
@@ -710,28 +710,63 @@ export function FinanceiroView({
             onClick={openModal}
             className={primaryButtonClassName}
           >
-            Novo lanÃ§amento
+            Novo lançamento
           </button>
         }
       >
         <div className="space-y-7">
           <p className="text-sm text-slate-500">
-            PerÃ­odo aplicado:{" "}
+            Período aplicado:{" "}
             <span className="font-medium text-slate-700">
               {appliedPeriodLabel}
             </span>
           </p>
 
-          <details className="group overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-50">
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-[#17352b]">
-                  Filtros
-                </span>
-                <span className="block truncate text-xs text-slate-500">
-                  Tipo, status, serviÃ§o e {selectedTimeLabel.toLowerCase()}
-                </span>
-              </span>
+          <details
+            open
+            className="group overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.22)]"
+          >
+            <summary className="list-none px-4 py-4 sm:px-5 sm:py-5">
+              <div className="flex cursor-pointer flex-col gap-4 xl:flex-row xl:items-end">
+                <div className="flex min-w-0 items-start gap-3 xl:w-[280px] xl:shrink-0">
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[#17352b]"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    >
+                      <path d="M7 3v3M17 3v3M4.5 9h15" strokeLinecap="round" />
+                      <path
+                        d="M6.5 5h11A2.5 2.5 0 0 1 20 7.5v10A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5v-10A2.5 2.5 0 0 1 6.5 5Z"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
+                      Filtro do financeiro
+                    </p>
+                    <p className="mt-1 text-base font-semibold text-[#17352b]">
+                      {selectedTimeLabel}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Ajuste o período e refine a listagem no mesmo contexto.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="ml-auto hidden xl:block">
+                  <span className="inline-flex min-h-9 items-center rounded-full bg-slate-100 px-3 text-xs font-semibold text-slate-600">
+                    Período aplicado
+                  </span>
+                </div>
+              </div>
               <svg
                 aria-hidden="true"
                 viewBox="0 0 20 20"
@@ -748,10 +783,13 @@ export function FinanceiroView({
               </svg>
             </summary>
 
-            <div className="grid min-w-0 gap-4 border-t border-slate-100 p-4 xl:grid-cols-[minmax(260px,0.85fr)_minmax(0,1.7fr)]">
-              <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+            <div className="grid min-w-0 gap-4 border-t border-slate-100 px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-4 xl:grid-cols-[minmax(260px,0.85fr)_minmax(0,1.7fr)]">
+              <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
                 <p className="text-sm font-semibold text-[#17352b]">
-                  Filtro temporal
+                  Período aplicado
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Escolha um recorte rápido ou um intervalo personalizado.
                 </p>
 
                 <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">
@@ -762,9 +800,9 @@ export function FinanceiroView({
                       onChange={(event) =>
                         setTimeFilterMode(event.target.value as TimeFilterMode)
                       }
-                      className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                      className={toolbarSelectClassName}
                     >
-                      <option value="rapido">PerÃ­odo rÃ¡pido</option>
+                      <option value="rapido">Período rápido</option>
                       <option value="personalizado">
                         Intervalo personalizado
                       </option>
@@ -773,13 +811,13 @@ export function FinanceiroView({
 
                   {timeFilterMode === "rapido" ? (
                     <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                      PerÃ­odo rÃ¡pido
+                      Período
                       <select
                         value={periodFilter}
                         onChange={(event) =>
                           setPeriodFilter(event.target.value as QuickPeriodValue)
                         }
-                        className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                        className={toolbarSelectClassName}
                       >
                         {quickPeriodOptions.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -798,7 +836,7 @@ export function FinanceiroView({
                           onChange={(event) =>
                             setCustomStartDate(event.target.value)
                           }
-                          className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                          className={fieldInputClassName}
                         />
                       </label>
 
@@ -810,7 +848,7 @@ export function FinanceiroView({
                           onChange={(event) =>
                             setCustomEndDate(event.target.value)
                           }
-                          className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                          className={fieldInputClassName}
                         />
                       </label>
                     </div>
@@ -818,19 +856,22 @@ export function FinanceiroView({
                 </div>
               </div>
 
-              <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+              <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
                 <p className="text-sm font-semibold text-[#17352b]">
                   Filtros da listagem
                 </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Refine os lançamentos por tipo, status, serviço e responsável.
+                </p>
 
                 <div className="mt-3 space-y-3">
-                  <div className="grid min-w-0 gap-3 lg:grid-cols-3">
+                  <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
                       Tipo
                       <select
                         value={typeFilter}
                         onChange={(event) => setTypeFilter(event.target.value)}
-                        className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                        className={toolbarSelectClassName}
                       >
                         <option value="">Todos os tipos</option>
                         <option value="Receita">Receita</option>
@@ -843,7 +884,7 @@ export function FinanceiroView({
                       <select
                         value={statusFilter}
                         onChange={(event) => setStatusFilter(event.target.value)}
-                        className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                        className={toolbarSelectClassName}
                       >
                         <option value="">Todos os status</option>
                         {allStatusOptions.map((statusOption) => (
@@ -855,17 +896,17 @@ export function FinanceiroView({
                     </label>
 
                     <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                      ServiÃ§o
+                      Serviço
                       <select
                         value={serviceFilter}
                         onChange={(event) => setServiceFilter(event.target.value)}
-                        className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                        className={toolbarSelectClassName}
                       >
-                        <option value="">Todos os serviÃ§os</option>
+                        <option value="">Todos os serviços</option>
                         <option value="general">{serviceFallbackLabel}</option>
                         {services.map((service) => (
                           <option key={service.id} value={String(service.id)}>
-                            {service.nome_servico ?? `ServiÃ§o ${service.id}`} -{" "}
+                            {service.nome_servico ?? `Serviço ${service.id}`} -{" "}
                             {getServiceClientName(service)}
                           </option>
                         ))}
@@ -873,7 +914,7 @@ export function FinanceiroView({
                     </label>
 
                     <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                      Responsavel
+                      Responsável
                       <select
                         value={responsavelFilter}
                         onChange={(event) =>
@@ -881,7 +922,7 @@ export function FinanceiroView({
                         }
                         className={toolbarSelectClassName}
                       >
-                        <option value="">Todos os responsaveis</option>
+                        <option value="">Todos os responsáveis</option>
                         {responsibleOptions.map((option) => (
                           <option key={option} value={option}>
                             {option}
@@ -941,7 +982,7 @@ export function FinanceiroView({
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Digite cliente, serviÃ§o, descriÃ§Ã£o, categoria ou valor"
+                placeholder="Digite cliente, serviço, descrição, categoria ou valor"
                 className={toolbarSearchInputClassName}
               />
             </label>
@@ -951,10 +992,10 @@ export function FinanceiroView({
             {entries.length === 0 ? (
               <div className="px-6 py-16 text-center">
                 <h2 className="text-lg font-semibold text-[#17352b]">
-                  Nenhum lanÃ§amento cadastrado
+                  Nenhum lançamento cadastrado
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">
-                  Quando houver registros na tabela financeiro, eles aparecerÃ£o
+                  Quando houver registros na tabela financeiro, eles aparecerão
                   aqui.
                 </p>
               </div>
@@ -964,7 +1005,7 @@ export function FinanceiroView({
                   Nenhum resultado encontrado
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">
-                  Tente buscar por outro termo para filtrar os lanÃ§amentos.
+                  Tente buscar por outro termo para filtrar os lançamentos.
                 </p>
               </div>
             ) : (
@@ -976,13 +1017,13 @@ export function FinanceiroView({
                         Tipo
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        DescriÃ§Ã£o
+                        Descrição
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Cliente
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        ServiÃ§o
+                        Serviço
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Categoria
@@ -997,7 +1038,7 @@ export function FinanceiroView({
                         {financialDateLabel}
                       </th>
                       <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        AÃ§Ãµes
+                        Ações
                       </th>
                     </tr>
                   </thead>
@@ -1095,12 +1136,12 @@ export function FinanceiroView({
           <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="shrink-0 border-b border-slate-200 px-6 py-5">
               <h2 className="text-xl font-semibold text-[#17352b]">
-                {modalMode === "edit" ? "Editar lanÃ§amento" : "Novo lanÃ§amento"}
+                {modalMode === "edit" ? "Editar lançamento" : "Novo lançamento"}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 {modalMode === "edit"
-                  ? "Atualize os dados do lanÃ§amento selecionado."
-                  : "Preencha os campos abaixo para cadastrar um novo lanÃ§amento."}
+                  ? "Atualize os dados do lançamento selecionado."
+                  : "Preencha os campos abaixo para cadastrar um novo lançamento."}
               </p>
             </div>
 
@@ -1123,12 +1164,12 @@ export function FinanceiroView({
                 </label>
 
                 <SearchableSelect
-                  label="ServiÃ§o"
+                  label="Serviço"
                   value={formData.servico_id}
                   onChange={(value) => updateField("servico_id", value)}
                   options={services.map((service) => {
                     const serviceName =
-                      service.nome_servico ?? `ServiÃ§o ${service.id}`;
+                      service.nome_servico ?? `Serviço ${service.id}`;
                     const clientName = getServiceClientName(service);
 
                     return {
@@ -1138,13 +1179,13 @@ export function FinanceiroView({
                     };
                   })}
                   emptyOptionLabel={serviceFallbackLabel}
-                  searchPlaceholder="Digite para buscar serviÃ§o ou cliente"
+                  searchPlaceholder="Digite para buscar serviço ou cliente"
                   helperText={
                     selectedService
                       ? `Cliente relacionado: ${getServiceClientName(
                           selectedService
                         )}`
-                      : "Use esta opÃ§Ã£o para despesas sem serviÃ§o vinculado."
+                      : "Use esta opção para despesas sem serviço vinculado."
                   }
                 />
 
@@ -1166,14 +1207,14 @@ export function FinanceiroView({
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                  DescriÃ§Ã£o
+                  Descrição
                   <input
                     type="text"
                     value={formData.descricao}
                     onChange={(event) =>
                       updateField("descricao", event.target.value)
                     }
-                    placeholder="Digite a descriÃ§Ã£o do lanÃ§amento"
+                    placeholder="Digite a descrição do lançamento"
                     className={fieldInputClassName}
                   />
                 </label>
@@ -1199,7 +1240,7 @@ export function FinanceiroView({
                     className={fieldInputClassName}
                   />
                   <span className="text-xs font-normal text-slate-500">
-                    Para parcelas, cadastre cada data como um lanÃ§amento separado.
+                    Para parcelas, cadastre cada data como um lançamento separado.
                   </span>
                 </label>
 
