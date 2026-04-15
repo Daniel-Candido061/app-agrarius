@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatSimpleDate } from "../../lib/date-utils";
 import {
   getClientName,
@@ -451,6 +451,152 @@ function OpenServices({
   );
 }
 
+function ResponsibleWorkload({
+  metrics,
+  highPriorityPendings,
+}: {
+  metrics: DashboardData["carteiraPorResponsavel"];
+  highPriorityPendings: number;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)] sm:rounded-2xl">
+      <div className="border-b border-slate-200 px-4 py-4 sm:px-5 sm:py-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-[#17352b]">
+              Carteira por responsavel
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Distribuicao da carga ativa com atrasos e pendencias
+              bloqueadoras por pessoa.
+            </p>
+          </div>
+
+          <span className="inline-flex w-fit rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+            {highPriorityPendings} pendencias altas abertas
+          </span>
+        </div>
+      </div>
+
+      {metrics.length === 0 ? (
+        <div className="px-4 py-8 text-center sm:px-5 sm:py-10">
+          <p className="text-sm font-medium text-slate-600">
+            Ainda nao ha distribuicao suficiente para leitura por responsavel.
+          </p>
+          <p className="mt-2 text-sm text-slate-500">
+            Quando houver atribuicoes nos registros ativos, a carteira aparecera
+            consolidada aqui.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-3 p-4 sm:p-5">
+          {metrics.map((metric) => (
+            <article
+              key={metric.responsavel_id ?? metric.responsavel_label}
+              className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-semibold text-[#17352b]">
+                    {metric.responsavel_label}
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Servicos abertos, atrasos e pontos de bloqueio da carteira
+                    atual.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    {metric.servicos_ativos} ativos
+                  </span>
+                  <span className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                    {metric.servicos_atrasados} atrasados
+                  </span>
+                  <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                    {metric.tarefas_atrasadas} tarefas vencidas
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl bg-white px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    Servicos ativos
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-[#17352b]">
+                    {metric.servicos_ativos}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-white px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    Tarefas vencidas
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-amber-700">
+                    {metric.tarefas_atrasadas}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-white px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    Pendencias altas
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-rose-700">
+                    {metric.pendencias_altas}
+                  </p>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function OperationalQueues({
+  metrics,
+}: {
+  metrics: DashboardData["gargalosOperacionais"];
+}) {
+  return (
+    <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)] sm:rounded-2xl">
+      <div className="border-b border-slate-200 px-4 py-4 sm:px-5 sm:py-5">
+        <h2 className="text-lg font-semibold text-[#17352b]">
+          Gargalos operacionais
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Visao rapida da carteira parada, aguardando retorno ou pronta para a
+          proxima virada.
+        </p>
+      </div>
+
+      <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
+        {metrics.map((metric) => (
+          <article
+            key={metric.chave}
+            className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-[#17352b]">
+                  {metric.label}
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">{metric.detalhe}</p>
+              </div>
+
+              <span className="shrink-0 rounded-full bg-[#17352b] px-3 py-1 text-xs font-semibold text-white">
+                {metric.total}
+              </span>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ServiceTypeMetrics({
   metrics,
 }: {
@@ -633,37 +779,62 @@ export function DashboardContent({
     useState<PeriodValue>(initialSelectedPeriod);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const hasInitializedAutoFilter = useRef(false);
 
   const selectedPeriodLabel =
     mode === "personalizado"
       ? "personalizado"
       : getPeriodLabel(selectedPeriod);
 
-  async function handleApply() {
-    setIsLoading(true);
-    setErrorMessage("");
-
-    try {
-      const response = await loadDashboardData(
-        mode,
-        quickPeriod,
-        startDate,
-        endDate
-      );
-
-      setDashboardData(response.data);
-      setMode(response.timeFilterMode);
-      setQuickPeriod(response.selectedQuickPeriod);
-      setStartDate(response.customStartDate);
-      setEndDate(response.customEndDate);
-      setSelectedPeriod(response.selectedPeriod);
-    } catch (error) {
-      console.error(error);
-      setErrorMessage("Nao foi possivel atualizar os dados do painel.");
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (!hasInitializedAutoFilter.current) {
+      hasInitializedAutoFilter.current = true;
+      return;
     }
-  }
+
+    let isActive = true;
+
+    const timeoutId = window.setTimeout(async () => {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const response = await loadDashboardData(
+          mode,
+          quickPeriod,
+          startDate,
+          endDate
+        );
+
+        if (!isActive) {
+          return;
+        }
+
+        setDashboardData(response.data);
+        setMode(response.timeFilterMode);
+        setQuickPeriod(response.selectedQuickPeriod);
+        setStartDate(response.customStartDate);
+        setEndDate(response.customEndDate);
+        setSelectedPeriod(response.selectedPeriod);
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        console.error(error);
+        setErrorMessage("Nao foi possivel atualizar os dados do painel.");
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }, 160);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [mode, quickPeriod, startDate, endDate]);
 
   return (
     <div className="space-y-6 sm:space-y-7">
@@ -678,7 +849,6 @@ export function DashboardContent({
         onQuickPeriodChange={setQuickPeriod}
         onStartDateChange={setStartDate}
         onEndDateChange={setEndDate}
-        onApply={handleApply}
       />
 
       <section>
@@ -706,6 +876,14 @@ export function DashboardContent({
           </p>
         </div>
         <SummaryCards dashboardData={dashboardData} />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[1.2fr_0.9fr]">
+        <ResponsibleWorkload
+          metrics={dashboardData.carteiraPorResponsavel}
+          highPriorityPendings={dashboardData.pendenciasAltasAbertas}
+        />
+        <OperationalQueues metrics={dashboardData.gargalosOperacionais} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-3">

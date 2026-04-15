@@ -53,6 +53,7 @@ export function KanbanBoard<TItem>({
 }: KanbanBoardProps<TItem>) {
   const [draggedItemKey, setDraggedItemKey] = useState<string | null>(null);
   const [targetColumnId, setTargetColumnId] = useState<string | null>(null);
+  const [mobileMenuItemKey, setMobileMenuItemKey] = useState<string | null>(null);
 
   function handleDragStart(itemKey: string) {
     setDraggedItemKey(itemKey);
@@ -61,6 +62,17 @@ export function KanbanBoard<TItem>({
   function handleDragEnd() {
     setDraggedItemKey(null);
     setTargetColumnId(null);
+  }
+
+  function handleMoveItem(itemKey: string, columnId: string) {
+    if (!onMoveItem) {
+      return;
+    }
+
+    onMoveItem(itemKey, columnId);
+    setDraggedItemKey(null);
+    setTargetColumnId(null);
+    setMobileMenuItemKey(null);
   }
 
   function handleDragOver(event: DragEvent<HTMLElement>, columnId: string) {
@@ -81,9 +93,7 @@ export function KanbanBoard<TItem>({
     }
 
     event.preventDefault();
-    onMoveItem(draggedItemKey, columnId);
-    setDraggedItemKey(null);
-    setTargetColumnId(null);
+    handleMoveItem(draggedItemKey, columnId);
   }
 
   return (
@@ -139,20 +149,63 @@ export function KanbanBoard<TItem>({
                   </div>
                 ) : (
                   column.items.map((item) => (
-                    <div
-                      key={getItemKey(item)}
-                      draggable={Boolean(onMoveItem)}
-                      onDragStart={() => handleDragStart(getItemKey(item))}
-                      onDragEnd={handleDragEnd}
-                      className={`${
-                        draggedItemKey === getItemKey(item)
-                          ? "cursor-grabbing opacity-60"
-                          : onMoveItem
-                            ? "cursor-grab"
-                            : ""
-                      }`}
-                    >
-                      {renderCard(item)}
+                    <div key={getItemKey(item)} className="space-y-2">
+                      <div
+                        draggable={Boolean(onMoveItem)}
+                        onDragStart={() => handleDragStart(getItemKey(item))}
+                        onDragEnd={handleDragEnd}
+                        className={`${
+                          draggedItemKey === getItemKey(item)
+                            ? "cursor-grabbing opacity-60"
+                            : onMoveItem
+                              ? "cursor-grab"
+                              : ""
+                        }`}
+                      >
+                        {renderCard(item)}
+                      </div>
+
+                      {onMoveItem ? (
+                        <div className="sm:hidden">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setMobileMenuItemKey((currentItemKey) =>
+                                currentItemKey === getItemKey(item)
+                                  ? null
+                                  : getItemKey(item)
+                              )
+                            }
+                            className="inline-flex min-h-10 items-center rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                          >
+                            {mobileMenuItemKey === getItemKey(item)
+                              ? "Cancelar movimento"
+                              : "Mover card"}
+                          </button>
+
+                          {mobileMenuItemKey === getItemKey(item) ? (
+                            <div className="mt-2 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white/85 p-2.5">
+                              {columns
+                                .filter((candidateColumn) => candidateColumn.id !== column.id)
+                                .map((candidateColumn) => (
+                                  <button
+                                    key={candidateColumn.id}
+                                    type="button"
+                                    onClick={() =>
+                                      handleMoveItem(
+                                        getItemKey(item),
+                                        candidateColumn.id
+                                      )
+                                    }
+                                    className="inline-flex min-h-10 items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                                  >
+                                    {candidateColumn.title}
+                                  </button>
+                                ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   ))
                 )}

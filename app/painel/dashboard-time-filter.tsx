@@ -8,7 +8,6 @@ import {
 import {
   fieldInputClassName,
   fieldSelectClassName,
-  primaryButtonClassName,
 } from "../components/ui-patterns";
 
 type TimeFilterMode = "rapido" | "personalizado";
@@ -24,7 +23,6 @@ type DashboardTimeFilterProps = {
   onQuickPeriodChange: (value: QuickPeriodValue) => void;
   onStartDateChange: (value: string) => void;
   onEndDateChange: (value: string) => void;
-  onApply: () => Promise<void> | void;
 };
 
 export function DashboardTimeFilter({
@@ -38,7 +36,6 @@ export function DashboardTimeFilter({
   onQuickPeriodChange,
   onStartDateChange,
   onEndDateChange,
-  onApply,
 }: DashboardTimeFilterProps) {
   const selectedLabel =
     mode === "rapido"
@@ -47,14 +44,8 @@ export function DashboardTimeFilter({
         ? `${startDate || "Início"} até ${endDate || "Fim"}`
         : "Intervalo personalizado";
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void onApply();
-  }
-
   return (
-    <form
-      onSubmit={handleSubmit}
+    <section
       className="rounded-[24px] border border-slate-200 bg-white p-3.5 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.22)] sm:rounded-[28px] sm:p-5"
     >
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end">
@@ -91,7 +82,7 @@ export function DashboardTimeFilter({
           </div>
         </div>
 
-        <div className="grid flex-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(170px,0.9fr)_minmax(220px,1fr)_auto]">
+        <div className="grid flex-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(170px,0.9fr)_minmax(220px,1fr)]">
           <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
             Modo
             <select
@@ -154,20 +145,12 @@ export function DashboardTimeFilter({
               </label>
             </div>
           )}
-
-          <button
-            type="submit"
-            disabled={isPending}
-            className={`${primaryButtonClassName} w-full self-end px-5 py-2.5 md:w-auto`}
-          >
-            {isPending ? "Atualizando..." : "Aplicar"}
-          </button>
         </div>
       </div>
 
       {errorMessage ? (
         <p className="mt-3 text-sm text-rose-600">{errorMessage}</p>
       ) : null}
-    </form>
+    </section>
   );
 }

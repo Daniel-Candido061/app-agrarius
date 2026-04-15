@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatSimpleDate, isBeforeTodayDateOnly } from "../../../lib/date-utils";
 import { supabase } from "../../../lib/supabase";
-import { getUserLabel, type UserDisplayMap } from "../../../lib/user-profiles";
+import {
+  getUserLabel,
+  type UserDisplayMap,
+  type UserOption,
+} from "../../../lib/user-profiles";
 import { TASK_PRIORITY_OPTIONS } from "../../tarefas/priority-options";
 import { TASK_STATUS_OPTIONS } from "../../tarefas/status-options";
 import type { Tarefa } from "../../tarefas/types";
@@ -14,11 +18,13 @@ type ServiceTasksSectionProps = {
   tasks: Tarefa[];
   currentUserId?: string | null;
   userDisplayNames?: UserDisplayMap;
+  userOptions?: UserOption[];
 };
 
 type FormData = {
   titulo: string;
   responsavel: string;
+  responsavel_id: string;
   data_limite: string;
   prioridade: string;
   status: string;
@@ -28,6 +34,7 @@ type FormData = {
 const initialFormData: FormData = {
   titulo: "",
   responsavel: "",
+  responsavel_id: "",
   data_limite: "",
   prioridade: TASK_PRIORITY_OPTIONS[0],
   status: TASK_STATUS_OPTIONS[0],
@@ -106,15 +113,24 @@ export function ServiceTasksSection({
   tasks,
   currentUserId = null,
   userDisplayNames = {},
+  userOptions = [],
 }: ServiceTasksSectionProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const defaultResponsibleId = currentUserId || userOptions[0]?.id || "";
+  const userLabelById = new Map(
+    userOptions.map((option) => [option.id, option.label])
+  );
 
   function openModal() {
-    setFormData(initialFormData);
+    setFormData({
+      ...initialFormData,
+      responsavel_id: defaultResponsibleId,
+      responsavel: userLabelById.get(defaultResponsibleId) ?? "",
+    });
     setErrorMessage("");
     setIsModalOpen(true);
   }
@@ -136,7 +152,12 @@ export function ServiceTasksSection({
     event.preventDefault();
 
     const titulo = formData.titulo.trim();
-    const responsavel = formData.responsavel.trim();
+    const responsavelId =
+      formData.responsavel_id.trim() || defaultResponsibleId || null;
+    const responsavel =
+      (responsavelId ? userLabelById.get(responsavelId) : null) ??
+      formData.responsavel.trim() ||
+      null;
     const dataLimite = formData.data_limite.trim();
     const prioridade = formData.prioridade.trim();
     const status = formData.status.trim();
@@ -164,14 +185,14 @@ export function ServiceTasksSection({
       supabase.from("tarefas").insert({
         titulo,
         servico_id: serviceId,
-        responsavel: responsavel || null,
+        responsavel,
+        responsavel_id: responsavelId,
         data_limite: dataLimite || null,
         prioridade,
         status,
         observacao: observacao || null,
         criado_por: currentUserId || null,
         atualizado_por: currentUserId || null,
-        responsavel_id: currentUserId || null,
       }),
       supabase.from("servico_eventos").insert({
         servico_id: serviceId,
@@ -336,15 +357,25 @@ export function ServiceTasksSection({
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
                     Responsável
-                    <input
-                      type="text"
-                      value={formData.responsavel}
-                      onChange={(event) =>
-                        updateField("responsavel", event.target.value)
-                      }
-                      placeholder="Nome do responsável"
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
-                    />
+                    <select
+                      value={formData.responsavel_id}
+                      onChange={(event) => {
+                        const nextResponsibleId = event.target.value;
+                        updateField("responsavel_id", nextResponsibleId);
+                        updateField(
+                          "responsavel",
+                          userLabelById.get(nextResponsibleId) ?? ""
+                        );
+                      }}
+                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    >
+                      <option value="">Selecione um responsável</option>
+                      {userOptions.map((userOption) => (
+                        <option key={userOption.id} value={userOption.id}>
+                          {userOption.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">

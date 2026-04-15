@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import {
   getCurrentUserShellProfile,
   getUserDisplayMap,
+  getUserOptions,
 } from "../../lib/user-profiles";
 import { ComercialView } from "./comercial-view";
 import type { PropostaComercial } from "./types";
@@ -48,7 +49,7 @@ export default async function ComercialPage() {
     getPropostasComerciais(),
     getClientes(),
   ]);
-  const [currentUserProfile, userDisplayNames] = await Promise.all([
+  const [currentUserProfile, userDisplayNames, userOptions] = await Promise.all([
     getCurrentUserShellProfile({
       userId: authenticatedUser.id,
       email: authenticatedUser.email,
@@ -60,6 +61,10 @@ export default async function ComercialPage() {
         proposal.atualizado_por,
       ])
     ),
+    getUserOptions({
+      currentUserId: authenticatedUser.id,
+      currentUserEmail: authenticatedUser.email,
+    }),
   ]);
 
   return (
@@ -71,6 +76,7 @@ export default async function ComercialPage() {
       currentUserDetail={currentUserProfile.secondaryLabel}
       currentUserInitials={currentUserProfile.initials}
       userDisplayNames={userDisplayNames}
+      userOptions={userOptions}
     />
   );
 }

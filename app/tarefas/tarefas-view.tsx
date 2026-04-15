@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,7 @@ import { ActionsMenu } from "../components/actions-menu";
 import { KanbanBoard, type KanbanColumn } from "../components/kanban-board";
 import { PageTable } from "../components/page-table";
 import { PageToolbar } from "../components/page-toolbar";
+import { ResponsibleInsights } from "../components/responsible-insights";
 import { SearchableSelect } from "../components/searchable-select";
 import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
 import {
@@ -27,7 +28,11 @@ import {
   isBeforeTodayDateOnly,
 } from "../../lib/date-utils";
 import { supabase } from "../../lib/supabase";
-import { getUserLabel, type UserDisplayMap } from "../../lib/user-profiles";
+import {
+  getUserLabel,
+  type UserDisplayMap,
+  type UserOption,
+} from "../../lib/user-profiles";
 import { TASK_PRIORITY_OPTIONS } from "./priority-options";
 import { TASK_STATUS_OPTIONS } from "./status-options";
 import type { ServicoOption, Tarefa } from "./types";
@@ -37,6 +42,7 @@ type TarefasViewProps = {
   services: ServicoOption[];
   currentUserId?: string | null;
   userDisplayNames?: UserDisplayMap;
+  userOptions?: UserOption[];
   currentUserName?: string;
   currentUserDetail?: string;
   currentUserInitials?: string;
@@ -50,6 +56,7 @@ type FormData = {
   titulo: string;
   servico_id: string;
   responsavel: string;
+  responsavel_id: string;
   data_limite: string;
   prioridade: string;
   status: string;
@@ -60,6 +67,7 @@ const initialFormData: FormData = {
   titulo: "",
   servico_id: "",
   responsavel: "",
+  responsavel_id: "",
   data_limite: "",
   prioridade: TASK_PRIORITY_OPTIONS[0],
   status: TASK_STATUS_OPTIONS[0],
@@ -168,6 +176,7 @@ export function TarefasView({
   services,
   currentUserId = null,
   userDisplayNames = {},
+  userOptions = [],
   currentUserName,
   currentUserDetail,
   currentUserInitials,
@@ -192,6 +201,10 @@ export function TarefasView({
   useEffect(() => {
     setTaskList(tasks);
   }, [tasks]);
+  const defaultResponsibleId = currentUserId || userOptions[0]?.id || "";
+  const userLabelById = new Map(
+    userOptions.map((option) => [option.id, option.label])
+  );
 
   const serviceNameById = new Map(
     services.map((service) => [
@@ -283,6 +296,54 @@ export function TarefasView({
       filter: "done" as TaskFilter,
     },
   ];
+  const responsibleTaskInsights = Array.from(
+    filteredTasks.reduce(
+      (map, task) => {
+        const responsibleLabel = getTaskResponsibleLabel(task);
+        const currentItem = map.get(responsibleLabel) ?? {
+          label: responsibleLabel,
+          pending: 0,
+          overdue: 0,
+        };
+
+        if (!isDoneTask(task)) {
+          currentItem.pending += 1;
+        }
+
+        if (isOverdueTask(task)) {
+          currentItem.overdue += 1;
+        }
+
+        map.set(responsibleLabel, currentItem);
+        return map;
+      },
+      new Map<
+        string,
+        { label: string; pending: number; overdue: number }
+      >()
+    ).values()
+  )
+    .sort((leftItem, rightItem) => {
+      if (rightItem.overdue !== leftItem.overdue) {
+        return rightItem.overdue - leftItem.overdue;
+      }
+
+      if (rightItem.pending !== leftItem.pending) {
+        return rightItem.pending - leftItem.pending;
+      }
+
+      return leftItem.label.localeCompare(rightItem.label, "pt-BR");
+    })
+    .slice(0, 4)
+    .map((item) => ({
+      label: item.label,
+      metric: String(item.pending),
+      detail:
+        item.overdue > 0
+          ? `${item.overdue} tarefa(s) vencidas no resultado atual.`
+          : "Pendências distribuídas sem atraso no recorte filtrado.",
+      tone: item.overdue > 0 ? ("danger" as const) : ("info" as const),
+    }));
   const activeFilterChips = [
     searchTerm
       ? {
@@ -336,7 +397,11 @@ export function TarefasView({
   function openModal() {
     setModalMode("create");
     setEditingTaskId(null);
-    setFormData(initialFormData);
+    setFormData({
+      ...initialFormData,
+      responsavel_id: defaultResponsibleId,
+      responsavel: userLabelById.get(defaultResponsibleId) ?? "",
+    });
     setErrorMessage("");
     setSuccessMessage("");
     setIsModalOpen(true);
@@ -352,6 +417,7 @@ export function TarefasView({
           ? ""
           : String(task.servico_id),
       responsavel: task.responsavel ?? "",
+      responsavel_id: task.responsavel_id ?? defaultResponsibleId,
       data_limite: getDateInputValue(task.data_limite),
       prioridade: task.prioridade ?? TASK_PRIORITY_OPTIONS[0],
       status: task.status ?? TASK_STATUS_OPTIONS[0],
@@ -382,7 +448,11 @@ export function TarefasView({
 
     const titulo = formData.titulo.trim();
     const servicoId = formData.servico_id.trim();
-    const responsavel = formData.responsavel.trim();
+    const responsavelId =
+      formData.responsavel_id.trim() || defaultResponsibleId || null;
+    const responsavel =
+      (responsavelId ? userLabelById.get(responsavelId) : null) ??
+      (formData.responsavel.trim() || null);
     const dataLimite = formData.data_limite.trim();
     const prioridade = formData.prioridade.trim();
     const status = formData.status.trim();
@@ -424,7 +494,8 @@ export function TarefasView({
     const taskPayload = {
       titulo,
       servico_id: parsedServicoId,
-      responsavel: responsavel || null,
+      responsavel,
+      responsavel_id: responsavelId,
       data_limite: dataLimite || null,
       prioridade,
       status,
@@ -437,7 +508,7 @@ export function TarefasView({
         : {
             criado_por: currentUserId || null,
             atualizado_por: currentUserId || null,
-            responsavel_id: currentUserId || null,
+            responsavel_id: responsavelId,
           }),
     };
 
@@ -671,6 +742,15 @@ export function TarefasView({
               </button>
             ))}
           </SummaryCardsGrid>
+        </section>
+
+        <section className="mb-6">
+          <ResponsibleInsights
+            title="Carga por responsável"
+            description="Leitura rápida de quem está com mais tarefas pendentes dentro do resultado atual."
+            emptyMessage="A carga por responsável aparecerá aqui quando houver tarefas no resultado atual."
+            items={responsibleTaskInsights}
+          />
         </section>
 
         <PageTable>
@@ -966,15 +1046,25 @@ export function TarefasView({
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
                     Responsável
-                    <input
-                      type="text"
-                      value={formData.responsavel}
-                      onChange={(event) =>
-                        updateField("responsavel", event.target.value)
-                      }
-                      placeholder="Nome do responsável"
-                      className={fieldInputClassName}
-                    />
+                    <select
+                      value={formData.responsavel_id}
+                      onChange={(event) => {
+                        const nextResponsibleId = event.target.value;
+                        updateField("responsavel_id", nextResponsibleId);
+                        updateField(
+                          "responsavel",
+                          userLabelById.get(nextResponsibleId) ?? ""
+                        );
+                      }}
+                      className={fieldSelectClassName}
+                    >
+                      <option value="">Selecione um responsável</option>
+                      {userOptions.map((userOption) => (
+                        <option key={userOption.id} value={userOption.id}>
+                          {userOption.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
@@ -1068,6 +1158,8 @@ export function TarefasView({
     </>
   );
 }
+
+
 
 
 

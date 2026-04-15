@@ -2,6 +2,7 @@ import {
   isDateInPeriod,
   type PeriodValue,
 } from "./period-utils";
+import { getUserDisplayMap } from "./user-profiles";
 import {
   getDaysUntilSimpleDate,
   getSimpleDateTime,
@@ -22,6 +23,15 @@ export type TaskDashboardEntry = {
   id: number;
   data_limite: string | null;
   status: string | null;
+  responsavel_id: string | null;
+};
+
+export type PendingDashboardEntry = {
+  id: number;
+  servico_id: number | string | null;
+  status: string | null;
+  prioridade: string | null;
+  responsavel_id: string | null;
 };
 
 export type ClientDashboardEntry = {
@@ -38,6 +48,8 @@ export type ServiceDashboardEntry = {
   data_entrada: string | null;
   prazo_final: string | null;
   status: string | null;
+  responsavel_id: string | null;
+  situacao_operacional: string | null;
   cliente:
     | {
         nome: string | null;
@@ -72,9 +84,28 @@ export type DashboardData = {
       valorEmAberto: number;
     }
   >;
+  carteiraPorResponsavel: DashboardResponsibleMetric[];
+  gargalosOperacionais: DashboardOperationalQueueMetric[];
+  pendenciasAltasAbertas: number;
   metricasServicosPorTipo: DashboardServiceTypeMetric[];
   conversaoComercialPorTipo: DashboardCommercialConversionMetric[];
   conversaoComercialPorOrigem: DashboardCommercialConversionMetric[];
+};
+
+export type DashboardResponsibleMetric = {
+  responsavel_id: string | null;
+  responsavel_label: string;
+  servicos_ativos: number;
+  servicos_atrasados: number;
+  tarefas_atrasadas: number;
+  pendencias_altas: number;
+};
+
+export type DashboardOperationalQueueMetric = {
+  chave: string;
+  label: string;
+  total: number;
+  detalhe: string;
 };
 
 export type DashboardServiceTypeMetric = {
@@ -128,6 +159,35 @@ function isClosedServiceStatus(status: string | null) {
     normalizedStatus === "concluido" ||
     normalizedStatus === "cancelado"
   );
+}
+
+function isResolvedPending(entry: PendingDashboardEntry) {
+  return normalizeText(entry.status) === "resolvida";
+}
+
+function isHighPriorityPending(entry: PendingDashboardEntry) {
+  return normalizeText(entry.prioridade) === "alta";
+}
+
+function getSituacaoOperacionalLabel(value: string | null) {
+  switch (normalizeText(value)) {
+    case "aguardando_cliente":
+      return "Aguardando cliente";
+    case "aguardando_orgao":
+      return "Aguardando orgao";
+    case "aguardando_cartorio":
+      return "Aguardando cartorio";
+    case "aguardando_equipe":
+      return "Aguardando equipe";
+    case "pronto_para_protocolar":
+      return "Pronto para protocolar";
+    case "pronto_para_entregar":
+      return "Pronto para entregar";
+    case "em_execucao_ativa":
+      return "Em execucao ativa";
+    default:
+      return "Nao definida";
+  }
 }
 
 function isPastDueService(entry: ServiceDashboardEntry) {
@@ -202,6 +262,7 @@ export async function getDashboardData(
     servicesResult,
     financeiroResult,
     tasksResult,
+    pendingsResult,
     serviceMetricsResult,
     commercialConversionResult,
   ] = await Promise.all([
@@ -209,10 +270,13 @@ export async function getDashboardData(
     supabase
       .from("servicos")
       .select(
-        "id, cliente_id, nome_servico, valor, created_at, data_entrada, prazo_final, status, cliente:clientes(nome)"
+        "id, cliente_id, nome_servico, valor, created_at, data_entrada, prazo_final, status, responsavel_id, situacao_operacional, cliente:clientes(nome)"
       ),
     supabase.from("financeiro").select("tipo, valor, status, data, servico_id"),
-    supabase.from("tarefas").select("id, data_limite, status"),
+    supabase.from("tarefas").select("id, data_limite, status, responsavel_id"),
+    supabase
+      .from("servico_pendencias")
+      .select("id, servico_id, status, prioridade, responsavel_id"),
     supabase
       .from("vw_metricas_servicos_por_tipo")
       .select(
@@ -244,6 +308,13 @@ export async function getDashboardData(
     console.error("Erro ao buscar tarefas do painel:", tasksResult.error.message);
   }
 
+  if (pendingsResult.error) {
+    console.error(
+      "Erro ao buscar pendencias do painel:",
+      pendingsResult.error.message
+    );
+  }
+
   if (serviceMetricsResult.error) {
     console.error(
       "Erro ao buscar metricas de servicos por tipo:",
@@ -262,6 +333,7 @@ export async function getDashboardData(
   const services = (servicesResult.data ?? []) as ServiceDashboardEntry[];
   const financialEntries = (financeiroResult.data ?? []) as FinancialEntry[];
   const tasks = (tasksResult.data ?? []) as TaskDashboardEntry[];
+  const pendings = (pendingsResult.data ?? []) as PendingDashboardEntry[];
   const serviceTypeMetrics =
     (serviceMetricsResult.data ?? []) as DashboardServiceTypeMetric[];
   const commercialConversionMetrics =
@@ -273,6 +345,9 @@ export async function getDashboardData(
 
   const servicosAtrasados = services.filter(isPastDueService).length;
   const tarefasAtrasadas = tasks.filter(isPastDueTask).length;
+  const pendenciasAltasAbertas = pendings.filter(
+    (pending) => !isResolvedPending(pending) && isHighPriorityPending(pending)
+  ).length;
   const clientesComServicosEmAndamento = new Set(
     services
       .filter((service) => normalizeText(service.status) === "em andamento")
@@ -377,6 +452,133 @@ export async function getDashboardData(
     })
     .slice(0, 4);
 
+  const userDisplayMap = await getUserDisplayMap([
+    ...services.map((service) => service.responsavel_id),
+    ...tasks.map((task) => task.responsavel_id),
+    ...pendings.map((pending) => pending.responsavel_id),
+  ]);
+
+  const carteiraPorResponsavelMap = new Map<string, DashboardResponsibleMetric>();
+
+  function ensureResponsibleMetric(responsavelId: string | null | undefined) {
+    const normalizedId = responsavelId?.trim() || null;
+    const mapKey = normalizedId ?? "__sem_responsavel__";
+    const existingMetric = carteiraPorResponsavelMap.get(mapKey);
+
+    if (existingMetric) {
+      return existingMetric;
+    }
+
+    const metric: DashboardResponsibleMetric = {
+      responsavel_id: normalizedId,
+      responsavel_label: normalizedId
+        ? userDisplayMap[normalizedId] ?? "Responsavel nao identificado"
+        : "Sem responsavel",
+      servicos_ativos: 0,
+      servicos_atrasados: 0,
+      tarefas_atrasadas: 0,
+      pendencias_altas: 0,
+    };
+
+    carteiraPorResponsavelMap.set(mapKey, metric);
+    return metric;
+  }
+
+  services
+    .filter((service) => !isClosedServiceStatus(service.status))
+    .forEach((service) => {
+      const metric = ensureResponsibleMetric(service.responsavel_id);
+      metric.servicos_ativos += 1;
+
+      if (isPastDueService(service)) {
+        metric.servicos_atrasados += 1;
+      }
+    });
+
+  tasks.filter(isPastDueTask).forEach((task) => {
+    const metric = ensureResponsibleMetric(task.responsavel_id);
+    metric.tarefas_atrasadas += 1;
+  });
+
+  pendings
+    .filter((pending) => !isResolvedPending(pending) && isHighPriorityPending(pending))
+    .forEach((pending) => {
+      const metric = ensureResponsibleMetric(pending.responsavel_id);
+      metric.pendencias_altas += 1;
+    });
+
+  const carteiraPorResponsavel = Array.from(
+    carteiraPorResponsavelMap.values()
+  )
+    .filter(
+      (metric) =>
+        metric.servicos_ativos > 0 ||
+        metric.servicos_atrasados > 0 ||
+        metric.tarefas_atrasadas > 0 ||
+        metric.pendencias_altas > 0
+    )
+    .sort((leftMetric, rightMetric) => {
+      if (rightMetric.pendencias_altas !== leftMetric.pendencias_altas) {
+        return rightMetric.pendencias_altas - leftMetric.pendencias_altas;
+      }
+
+      if (rightMetric.servicos_atrasados !== leftMetric.servicos_atrasados) {
+        return rightMetric.servicos_atrasados - leftMetric.servicos_atrasados;
+      }
+
+      if (rightMetric.tarefas_atrasadas !== leftMetric.tarefas_atrasadas) {
+        return rightMetric.tarefas_atrasadas - leftMetric.tarefas_atrasadas;
+      }
+
+      if (rightMetric.servicos_ativos !== leftMetric.servicos_ativos) {
+        return rightMetric.servicos_ativos - leftMetric.servicos_ativos;
+      }
+
+      return leftMetric.responsavel_label.localeCompare(
+        rightMetric.responsavel_label,
+        "pt-BR"
+      );
+    })
+    .slice(0, 5);
+
+  const situacoesOperacionais = [
+    {
+      chave: "aguardando_cliente",
+      detalhe: "Dependencias externas ainda com o cliente.",
+    },
+    {
+      chave: "aguardando_orgao",
+      detalhe: "Servicos aguardando retorno de orgao.",
+    },
+    {
+      chave: "aguardando_cartorio",
+      detalhe: "Fila operacional ligada a cartorio.",
+    },
+    {
+      chave: "aguardando_equipe",
+      detalhe: "Demanda aguardando acao interna da equipe.",
+    },
+    {
+      chave: "pronto_para_protocolar",
+      detalhe: "Itens aptos para protocolo.",
+    },
+    {
+      chave: "pronto_para_entregar",
+      detalhe: "Itens aptos para entrega ao cliente.",
+    },
+  ] as const;
+
+  const gargalosOperacionais = situacoesOperacionais.map((situacao) => ({
+    chave: situacao.chave,
+    label: getSituacaoOperacionalLabel(situacao.chave),
+    total: services.filter(
+      (service) =>
+        !isClosedServiceStatus(service.status) &&
+        normalizeText(service.situacao_operacional) === situacao.chave
+    ).length,
+    detalhe: situacao.detalhe,
+  }));
+
   return {
     clientesNovos,
     servicosCriados,
@@ -407,6 +609,9 @@ export async function getDashboardData(
       .slice(0, 3),
     servicosUrgentes,
     proximosPrazos,
+    carteiraPorResponsavel,
+    gargalosOperacionais,
+    pendenciasAltasAbertas,
     metricasServicosPorTipo: serviceTypeMetrics,
     conversaoComercialPorTipo: commercialConversionMetrics.filter(
       (metric) => normalizeText(metric.dimensao) === "tipo_servico"

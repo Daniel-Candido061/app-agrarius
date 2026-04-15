@@ -15,6 +15,7 @@ import {
   getCurrentUserShellProfile,
   getUserDisplayMap,
   getUserLabel,
+  getUserOptions,
 } from "../../../lib/user-profiles";
 import type {
   Servico,
@@ -28,6 +29,7 @@ import {
   getNextUnfinishedStage,
   getMostRelevantOpenPending,
   getPendingPriorityLabel,
+  getServiceOperationalFocus,
   isClosedServiceStatus,
   getServiceDeadlineAlert,
   getServiceNextStepSummary,
@@ -176,6 +178,21 @@ function getClientName(service: Servico) {
 
 function isConcludedServiceStatus(status: string | null | undefined) {
   return normalizeText(status) === "concluido";
+}
+
+function getFocusToneClassName(tone: "danger" | "warning" | "neutral" | "success" | "info") {
+  switch (tone) {
+    case "danger":
+      return "border-rose-200 bg-rose-50 text-rose-800";
+    case "warning":
+      return "border-amber-200 bg-amber-50 text-amber-800";
+    case "success":
+      return "border-emerald-200 bg-emerald-50 text-emerald-800";
+    case "info":
+      return "border-cyan-200 bg-cyan-50 text-cyan-800";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-700";
+  }
 }
 
 function isCompletedTask(status: string | null | undefined) {
@@ -333,10 +350,16 @@ export default async function ServicoDetalhesPage({
 }) {
   await connection();
   const authenticatedUser = await requireAuth();
-  const currentUserProfile = await getCurrentUserShellProfile({
-    userId: authenticatedUser.id,
-    email: authenticatedUser.email,
-  });
+  const [currentUserProfile, userOptions] = await Promise.all([
+    getCurrentUserShellProfile({
+      userId: authenticatedUser.id,
+      email: authenticatedUser.email,
+    }),
+    getUserOptions({
+      currentUserId: authenticatedUser.id,
+      currentUserEmail: authenticatedUser.email,
+    }),
+  ]);
 
   const { id } = await params;
   const serviceId = Number(id);
@@ -425,6 +448,13 @@ export default async function ServicoDetalhesPage({
   );
   const relevantPending = getMostRelevantOpenPending(pendings);
   const nextActionSummary = getServiceNextStepSummary({ pendings, stages });
+  const operationalFocus = getServiceOperationalFocus({
+    situacaoOperacional: service.situacao_operacional,
+    status: service.status,
+    prazoFinal: service.prazo_final,
+    pendings,
+    stages,
+  });
   const deadlineAlert = getServiceDeadlineAlert({
     prazoFinal: service.prazo_final,
     status: service.status,
@@ -441,6 +471,19 @@ export default async function ServicoDetalhesPage({
     serviceEntryDateTime,
     dataConclusao
   );
+  const executionTimeLabel =
+    tempoExecucaoEmDias === null
+      ? tempoEmAndamentoEmDias === null
+        ? "-"
+        : `Em andamento há ${tempoEmAndamentoEmDias} dia${
+            tempoEmAndamentoEmDias === 1 ? "" : "s"
+          }`
+      : `${tempoExecucaoEmDias} dia${tempoExecucaoEmDias === 1 ? "" : "s"}`;
+  const deadlineSummaryLabel = deadlineAlert
+    ? deadlineAlert.label
+    : service.prazo_final
+      ? `Entrega prevista em ${formatSimpleDate(service.prazo_final)}`
+      : "Prazo de entrega não informado";
 
   const financialSummaryCards = [
     {
@@ -542,6 +585,21 @@ export default async function ServicoDetalhesPage({
     },
   ];
 
+  operationalSummaryCards[3] = {
+    title: "Proximo passo",
+    value: operationalFocus.label,
+    detail: operationalFocus.detail,
+    tone:
+      operationalFocus.tone === "danger"
+        ? ("danger" as const)
+        : operationalFocus.tone === "warning"
+          ? ("warning" as const)
+          : operationalFocus.tone === "info"
+            ? ("info" as const)
+            : ("success" as const),
+    valueClassName: "text-[#163728] text-[1.35rem] leading-tight sm:text-[1.5rem]",
+  };
+
   return (
     <AppShell
       title="Detalhes do serviço"
@@ -580,6 +638,42 @@ export default async function ServicoDetalhesPage({
             </div>
 
             <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="sm:col-span-2 xl:col-span-3">
+                <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+                  <div
+                    className={`rounded-2xl border px-4 py-4 ${getFocusToneClassName(
+                      operationalFocus.tone
+                    )}`}
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em]">
+                      Foco operacional
+                    </p>
+                    <p className="mt-2 text-base font-semibold sm:text-lg">
+                      {operationalFocus.label}
+                    </p>
+                    <p className="mt-2 text-sm opacity-90">
+                      {operationalFocus.detail}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Proxima acao recomendada
+                    </p>
+                    <p className="mt-2 text-base font-semibold text-[#17352b]">
+                      {nextActionSummary}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      {relevantPending
+                        ? "A fila atual indica que a pendencia aberta mais relevante deve ser tratada primeiro."
+                        : nextStage
+                          ? "A proxima etapa do fluxo tecnico ja esta identificada."
+                          : "Defina a proxima acao manualmente para manter o servico orientado."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Cliente
@@ -674,15 +768,7 @@ export default async function ServicoDetalhesPage({
                       Tempo de execução
                     </p>
                     <p className="mt-2 text-sm text-slate-600">
-                      {tempoExecucaoEmDias === null
-                        ? tempoEmAndamentoEmDias === null
-                          ? "-"
-                          : `Em andamento ha ${tempoEmAndamentoEmDias} dia${
-                              tempoEmAndamentoEmDias === 1 ? "" : "s"
-                            }`
-                        : `${tempoExecucaoEmDias} dia${
-                            tempoExecucaoEmDias === 1 ? "" : "s"
-                          }`}
+                      {executionTimeLabel}
                     </p>
                   </div>
 
@@ -691,9 +777,7 @@ export default async function ServicoDetalhesPage({
                       Situação do prazo
                     </p>
                     <p className="mt-2 text-sm text-slate-600">
-                      {service.prazo_final
-                        ? `Entrega prevista em ${formatSimpleDate(service.prazo_final)}`
-                        : "Prazo de entrega não informado"}
+                      {deadlineSummaryLabel}
                     </p>
                   </div>
 
@@ -741,6 +825,73 @@ export default async function ServicoDetalhesPage({
               />
             ))}
           </SummaryCardsGrid>
+
+          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-[#17352b]">
+                  Leitura financeira do serviço
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Contratado, recebido, despesas e saldo operacional do serviço em um bloco só.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Situação financeira
+                </p>
+                <p className="mt-2 font-medium text-[#17352b]">
+                  {valorAReceber > 0
+                    ? `${formatCurrency(valorAReceber)} ainda em aberto`
+                    : "Serviço financeiramente quitado"}
+                </p>
+                <p className="mt-2 text-xs text-slate-500">
+                  {totalDespesasPagas > 0
+                    ? `Resultado já realizado: ${formatCurrency(lucroLiquidoRealizado)}`
+                    : "Sem despesas pagas registradas até o momento."}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Contratado
+                </p>
+                <p className="mt-2 text-lg font-semibold text-[#17352b]">
+                  {formatCurrency(valorContratado)}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700/70">
+                  Recebido
+                </p>
+                <p className="mt-2 text-lg font-semibold text-emerald-700">
+                  {formatCurrency(totalRecebido)}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-700/70">
+                  Em aberto
+                </p>
+                <p className="mt-2 text-lg font-semibold text-amber-700">
+                  {formatCurrency(valorAReceber)}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-rose-200 bg-rose-50/60 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-rose-700/70">
+                  Despesas pagas
+                </p>
+                <p className="mt-2 text-lg font-semibold text-rose-700">
+                  {formatCurrency(totalDespesasPagas)}
+                </p>
+              </div>
+            </div>
+          </article>
         </section>
 
         <section className="space-y-5">
@@ -755,7 +906,24 @@ export default async function ServicoDetalhesPage({
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm ${getFocusToneClassName(
+                  operationalFocus.tone
+                )}`}
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.12em]">
+                  Comando do servico
+                </p>
+                <p className="mt-2 font-medium">{operationalFocus.label}</p>
+                <p className="mt-2 text-xs opacity-90">
+                  {operationalFocus.detail}
+                </p>
+                <p className="mt-3 text-xs font-medium text-[#17352b]">
+                  Proxima acao: {nextActionSummary}
+                </p>
+              </div>
+
+              <div className="hidden rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Proximo passo
                 </p>
@@ -805,6 +973,7 @@ export default async function ServicoDetalhesPage({
           pendings={pendings}
           currentUserId={authenticatedUser.id}
           userDisplayNames={userDisplayNames}
+          userOptions={userOptions}
         />
 
         <ServiceTasksSection
@@ -812,6 +981,7 @@ export default async function ServicoDetalhesPage({
           tasks={tasks}
           currentUserId={authenticatedUser.id}
           userDisplayNames={userDisplayNames}
+          userOptions={userOptions}
         />
 
         <ServiceTimelineSection

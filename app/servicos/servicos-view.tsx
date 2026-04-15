@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import { ActionsMenu } from "../components/actions-menu";
 import { KanbanBoard, type KanbanColumn } from "../components/kanban-board";
 import { PageTable } from "../components/page-table";
 import { PageToolbar } from "../components/page-toolbar";
+import { ResponsibleInsights } from "../components/responsible-insights";
 import { SearchableSelect } from "../components/searchable-select";
 import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
 import {
@@ -31,7 +32,11 @@ import {
   isBeforeTodayDateOnly,
 } from "../../lib/date-utils";
 import { supabase } from "../../lib/supabase";
-import { getUserLabel, type UserDisplayMap } from "../../lib/user-profiles";
+import {
+  getUserLabel,
+  type UserDisplayMap,
+  type UserOption,
+} from "../../lib/user-profiles";
 import {
   getSituacaoOperacionalClassName,
   getSituacaoOperacionalLabel,
@@ -52,6 +57,7 @@ type ServicosViewProps = {
   financialEntries: ServicoFinanceiro[];
   currentUserId?: string | null;
   userDisplayNames?: UserDisplayMap;
+  userOptions?: UserOption[];
   currentUserName?: string;
   currentUserDetail?: string;
   currentUserInitials?: string;
@@ -69,6 +75,7 @@ type ServiceQuickFilter =
 type FormData = {
   cliente_id: string;
   nome_servico: string;
+  responsavel_id: string;
   tipo_servico: string;
   situacao_operacional: string;
   data_entrada: string;
@@ -82,6 +89,7 @@ type FormData = {
 const initialFormData: FormData = {
   cliente_id: "",
   nome_servico: "",
+  responsavel_id: "",
   tipo_servico: SERVICE_TYPE_OPTIONS[0],
   situacao_operacional: "em_execucao_ativa",
   data_entrada: "",
@@ -107,7 +115,7 @@ const serviceQuickFilters = [
   },
   {
     key: "openBalance",
-    label: "Nao quitados",
+    label: "Não quitados",
   },
   {
     key: "protocolado",
@@ -232,6 +240,7 @@ export function ServicosView({
   financialEntries,
   currentUserId = null,
   userDisplayNames = {},
+  userOptions = [],
   currentUserName,
   currentUserDetail,
   currentUserInitials,
@@ -261,6 +270,7 @@ export function ServicosView({
   useEffect(() => {
     setServiceList(services);
   }, [services]);
+  const defaultResponsibleId = currentUserId || userOptions[0]?.id || "";
   const receivedByServiceId = new Map<string, number>();
 
   financialEntries
@@ -396,6 +406,55 @@ export function ServicosView({
       tone: "warning" as const,
     },
   ];
+  const responsibleServiceInsights = Array.from(
+    filteredServices.reduce(
+      (map, service) => {
+        const responsibleLabel = getServiceResponsibleLabel(
+          service,
+          userDisplayNames
+        );
+        const currentItem = map.get(responsibleLabel) ?? {
+          label: responsibleLabel,
+          active: 0,
+          overdue: 0,
+        };
+
+        currentItem.active += 1;
+
+        if (isPastDue(service)) {
+          currentItem.overdue += 1;
+        }
+
+        map.set(responsibleLabel, currentItem);
+        return map;
+      },
+      new Map<
+        string,
+        { label: string; active: number; overdue: number }
+      >()
+    ).values()
+  )
+    .sort((leftItem, rightItem) => {
+      if (rightItem.overdue !== leftItem.overdue) {
+        return rightItem.overdue - leftItem.overdue;
+      }
+
+      if (rightItem.active !== leftItem.active) {
+        return rightItem.active - leftItem.active;
+      }
+
+      return leftItem.label.localeCompare(rightItem.label, "pt-BR");
+    })
+    .slice(0, 4)
+    .map((item) => ({
+      label: item.label,
+      metric: String(item.active),
+      detail:
+        item.overdue > 0
+          ? `${item.overdue} serviço(s) com prazo vencido dentro da carteira atual.`
+          : "Carteira ativa sem vencimentos no recorte filtrado.",
+      tone: item.overdue > 0 ? ("warning" as const) : ("info" as const),
+    }));
   const quickFilterCounts = {
     all: serviceList.length,
     inProgress: serviceList.filter(
@@ -482,7 +541,10 @@ export function ServicosView({
   function openModal() {
     setModalMode("create");
     setEditingServiceId(null);
-    setFormData(initialFormData);
+    setFormData({
+      ...initialFormData,
+      responsavel_id: defaultResponsibleId,
+    });
     setErrorMessage("");
     setIsModalOpen(true);
   }
@@ -497,6 +559,7 @@ export function ServicosView({
     setFormData({
       cliente_id: service.cliente_id ? String(service.cliente_id) : "",
       nome_servico: service.nome_servico ?? "",
+      responsavel_id: service.responsavel_id ?? defaultResponsibleId,
       tipo_servico: service.tipo_servico ?? SERVICE_TYPE_OPTIONS[0],
       situacao_operacional:
         service.situacao_operacional ?? "em_execucao_ativa",
@@ -552,6 +615,8 @@ export function ServicosView({
     const clienteId = formData.cliente_id.trim();
     const nomeServico = formData.nome_servico.trim();
     const tipoServico = formData.tipo_servico.trim();
+    const responsavelId =
+      formData.responsavel_id.trim() || defaultResponsibleId || null;
     const situacaoOperacional = formData.situacao_operacional.trim();
     const dataEntrada = formData.data_entrada.trim();
     const cidade = formData.cidade.trim();
@@ -612,6 +677,7 @@ export function ServicosView({
     const servicePayload = {
       cliente_id: parsedClienteId,
       nome_servico: nomeServico,
+      responsavel_id: responsavelId,
       tipo_servico: tipoServico,
       situacao_operacional: situacaoOperacional,
       data_entrada: dataEntrada || null,
@@ -628,7 +694,7 @@ export function ServicosView({
         : {
             criado_por: currentUserId || null,
             atualizado_por: currentUserId || null,
-            responsavel_id: currentUserId || null,
+            responsavel_id: responsavelId,
           }),
     };
 
@@ -943,6 +1009,15 @@ export function ServicosView({
               />
             ))}
           </SummaryCardsGrid>
+        </section>
+
+        <section className="mb-6">
+          <ResponsibleInsights
+            title="Carteira por responsável"
+            description="Quem está concentrando mais serviços dentro do recorte atual."
+            emptyMessage="A distribuição por responsável aparecerá aqui quando houver serviços no resultado atual."
+            items={responsibleServiceInsights}
+          />
         </section>
 
         <PageTable>
@@ -1462,6 +1537,24 @@ export function ServicosView({
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Responsável
+                  <select
+                    value={formData.responsavel_id}
+                    onChange={(event) =>
+                      updateField("responsavel_id", event.target.value)
+                    }
+                    className={fieldSelectClassName}
+                  >
+                    <option value="">Selecione um responsável</option>
+                    {userOptions.map((userOption) => (
+                      <option key={userOption.id} value={userOption.id}>
+                        {userOption.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
                   Data de entrada
                   <input
                     type="date"
@@ -1705,3 +1798,5 @@ export function ServicosView({
     </>
   );
 }
+
+

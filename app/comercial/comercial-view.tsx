@@ -9,6 +9,7 @@ import { ActionsMenu } from "../components/actions-menu";
 import { KanbanBoard, type KanbanColumn } from "../components/kanban-board";
 import { PageTable } from "../components/page-table";
 import { PageToolbar } from "../components/page-toolbar";
+import { ResponsibleInsights } from "../components/responsible-insights";
 import { SearchableSelect } from "../components/searchable-select";
 import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
 import {
@@ -32,10 +33,18 @@ import {
   getPendingTemplateByServiceType,
   getStageTemplateByServiceType,
 } from "../servicos/service-templates";
+import {
+  getSituacaoOperacionalLabel,
+  SERVICE_OPERATIONAL_STATUS_OPTIONS,
+} from "../servicos/operational-utils";
 import { SERVICE_STATUS_OPTIONS } from "../servicos/status-options";
 import { SERVICE_TYPE_OPTIONS } from "../servicos/type-options";
 import type { ClienteOption } from "../servicos/types";
-import { getUserLabel, type UserDisplayMap } from "../../lib/user-profiles";
+import {
+  getUserLabel,
+  type UserDisplayMap,
+  type UserOption,
+} from "../../lib/user-profiles";
 import { COMMERCIAL_STATUS_OPTIONS } from "./status-options";
 import type { PropostaComercial } from "./types";
 
@@ -47,6 +56,7 @@ type ComercialViewProps = {
   currentUserDetail?: string;
   currentUserInitials?: string;
   userDisplayNames?: UserDisplayMap;
+  userOptions?: UserOption[];
 };
 
 type ModalMode = "create" | "edit";
@@ -65,6 +75,7 @@ type FormData = {
   valor_estimado: string;
   proxima_acao_data: string;
   status: string;
+  responsavel_id: string;
   motivo_perda: string;
   observacoes: string;
 };
@@ -84,6 +95,8 @@ type ConversionFormData = {
   serviceValue: string;
   serviceDeadline: string;
   serviceStatus: string;
+  serviceOperationalStatus: string;
+  serviceResponsavelId: string;
   serviceNotes: string;
 };
 
@@ -98,6 +111,7 @@ const initialFormData: FormData = {
   valor_estimado: "",
   proxima_acao_data: "",
   status: COMMERCIAL_STATUS_OPTIONS[0],
+  responsavel_id: "",
   motivo_perda: "",
   observacoes: "",
 };
@@ -117,6 +131,8 @@ const initialConversionFormData: ConversionFormData = {
   serviceValue: "",
   serviceDeadline: "",
   serviceStatus: "Em andamento",
+  serviceOperationalStatus: "em_execucao_ativa",
+  serviceResponsavelId: "",
   serviceNotes: "",
 };
 
@@ -199,6 +215,20 @@ function isFollowUpOverdue(proposal: PropostaComercial) {
   return isBeforeTodayDateOnly(proposal.proxima_acao_data);
 }
 
+function getSuggestedOperationalStatus(serviceStatus: string | null | undefined) {
+  const normalizedStatus = normalizeText(serviceStatus);
+
+  if (normalizedStatus === "protocolado") {
+    return "aguardando_orgao";
+  }
+
+  if (normalizedStatus === "concluido" || normalizedStatus === "entregue") {
+    return "pronto_para_entregar";
+  }
+
+  return "em_execucao_ativa";
+}
+
 function getCommercialTone(status: string | null) {
   const normalizedStatus = normalizeText(status);
 
@@ -270,6 +300,7 @@ export function ComercialView({
   currentUserDetail,
   currentUserInitials,
   userDisplayNames = {},
+  userOptions = [],
 }: ComercialViewProps) {
   const router = useRouter();
   const [proposalList, setProposalList] = useState(proposals);
@@ -303,6 +334,7 @@ export function ComercialView({
   useEffect(() => {
     setProposalList(proposals);
   }, [proposals]);
+  const defaultResponsibleId = currentUserId || userOptions[0]?.id || "";
 
   const normalizedSearchTerm = normalizeText(searchTerm);
   const filteredProposals = proposalList.filter((proposal) => {
@@ -387,6 +419,71 @@ export function ComercialView({
       tone: "warning" as const,
     },
   ];
+  const responsibleProposalInsights = Array.from(
+    filteredProposals.reduce(
+      (map, proposal) => {
+        const responsibleLabel = getProposalResponsibleLabel(
+          proposal,
+          userDisplayNames
+        );
+        const currentItem = map.get(responsibleLabel) ?? {
+          label: responsibleLabel,
+          open: 0,
+          followUp: 0,
+        };
+
+        if (isOpenProposal(proposal)) {
+          currentItem.open += 1;
+        }
+
+        if (isFollowUpOverdue(proposal)) {
+          currentItem.followUp += 1;
+        }
+
+        map.set(responsibleLabel, currentItem);
+        return map;
+      },
+      new Map<
+        string,
+        { label: string; open: number; followUp: number }
+      >()
+    ).values()
+  )
+    .sort((leftItem, rightItem) => {
+      if (rightItem.followUp !== leftItem.followUp) {
+        return rightItem.followUp - leftItem.followUp;
+      }
+
+      if (rightItem.open !== leftItem.open) {
+        return rightItem.open - leftItem.open;
+      }
+
+      return leftItem.label.localeCompare(rightItem.label, "pt-BR");
+    })
+    .slice(0, 4)
+    .map((item) => ({
+      label: item.label,
+      metric: String(item.open),
+      detail:
+        item.followUp > 0
+          ? `${item.followUp} proposta(s) pedindo próximo contato.`
+          : "Carteira comercial em acompanhamento no recorte atual.",
+      tone: item.followUp > 0 ? ("warning" as const) : ("info" as const),
+    }));
+  const conversionStagePreview = getStageTemplateByServiceType(
+    conversionFormData.serviceType
+  );
+  const conversionPendingPreview = getPendingTemplateByServiceType(
+    conversionFormData.serviceType
+  );
+  const conversionResponsibleLabel =
+    userOptions.find(
+      (userOption) => userOption.id === conversionFormData.serviceResponsavelId
+    )?.label ?? "Responsável não definido";
+  const selectedExistingClientName =
+    clients.find(
+      (client) => String(client.id) === conversionFormData.existingClientId
+    )?.nome ?? "Cliente não selecionado";
 
   const activeFilterChips = [
     searchTerm
@@ -451,7 +548,10 @@ export function ComercialView({
   function openModal() {
     setModalMode("create");
     setEditingProposalId(null);
-    setFormData(initialFormData);
+    setFormData({
+      ...initialFormData,
+      responsavel_id: defaultResponsibleId,
+    });
     setErrorMessage("");
     setSuccessMessage("");
     setIsModalOpen(true);
@@ -474,6 +574,7 @@ export function ComercialView({
           : String(proposal.valor_estimado),
       proxima_acao_data: getDateInputValue(proposal.proxima_acao_data),
       status: proposal.status ?? COMMERCIAL_STATUS_OPTIONS[0],
+      responsavel_id: proposal.responsavel_id ?? defaultResponsibleId,
       motivo_perda: proposal.motivo_perda ?? "",
       observacoes: proposal.observacoes ?? "",
     });
@@ -514,6 +615,8 @@ export function ComercialView({
           : String(proposal.valor_estimado),
       serviceDeadline: getDateInputValue(proposal.proxima_acao_data),
       serviceStatus: "Em andamento",
+      serviceOperationalStatus: getSuggestedOperationalStatus("Em andamento"),
+      serviceResponsavelId: proposal.responsavel_id ?? defaultResponsibleId,
       serviceNotes: proposal.observacoes ?? "",
     });
     setConversionErrorMessage("");
@@ -538,10 +641,20 @@ export function ComercialView({
     field: keyof ConversionFormData,
     value: string
   ) {
-    setConversionFormData((currentData) => ({
-      ...currentData,
-      [field]: value,
-    }));
+    setConversionFormData((currentData) => {
+      if (field === "serviceStatus") {
+        return {
+          ...currentData,
+          serviceStatus: value,
+          serviceOperationalStatus: getSuggestedOperationalStatus(value),
+        };
+      }
+
+      return {
+        ...currentData,
+        [field]: value,
+      };
+    });
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -557,6 +670,8 @@ export function ComercialView({
     const valorEstimado = formData.valor_estimado.trim();
     const proximaAcaoData = formData.proxima_acao_data.trim();
     const status = formData.status.trim();
+    const responsavelId =
+      formData.responsavel_id.trim() || defaultResponsibleId || null;
     const motivoPerda = formData.motivo_perda.trim();
     const observacoes = formData.observacoes.trim();
 
@@ -598,6 +713,7 @@ export function ComercialView({
       valor_estimado: parsedValue,
       proxima_acao_data: proximaAcaoData || null,
       status,
+      responsavel_id: responsavelId,
       motivo_perda: status === "Perdido" ? motivoPerda || null : null,
       observacoes: observacoes || null,
       ...(isEditing
@@ -691,6 +807,8 @@ export function ComercialView({
       serviceValue,
       serviceDeadline,
       serviceStatus,
+      serviceOperationalStatus,
+      serviceResponsavelId,
       serviceNotes,
     } = conversionFormData;
 
@@ -698,6 +816,7 @@ export function ComercialView({
     const trimmedServiceName = serviceName.trim();
     const trimmedServiceType = serviceType.trim();
     const trimmedServiceStatus = serviceStatus.trim();
+    const trimmedServiceOperationalStatus = serviceOperationalStatus.trim();
     const trimmedClientStatus = clientStatus.trim();
 
     if (clientMode === "existing" && !existingClientId) {
@@ -722,6 +841,13 @@ export function ComercialView({
 
     if (!trimmedServiceStatus) {
       setConversionErrorMessage("Selecione o status inicial do serviço.");
+      return;
+    }
+
+    if (!trimmedServiceOperationalStatus) {
+      setConversionErrorMessage(
+        "Selecione a situação operacional inicial do serviço."
+      );
       return;
     }
 
@@ -787,9 +913,10 @@ export function ComercialView({
       prazo_final: serviceDeadline.trim() || null,
       observacoes: serviceNotes.trim() || null,
       status: trimmedServiceStatus,
+      situacao_operacional: trimmedServiceOperationalStatus,
       criado_por: currentUserId || null,
       atualizado_por: currentUserId || null,
-      responsavel_id: currentUserId || null,
+      responsavel_id: serviceResponsavelId.trim() || currentUserId || null,
     };
 
     const serviceResponse = await supabase
@@ -829,7 +956,8 @@ export function ComercialView({
           status: "Aberta",
           criado_por: currentUserId || null,
           atualizado_por: currentUserId || null,
-          responsavel_id: currentUserId || null,
+          responsavel_id:
+            serviceResponsavelId.trim() || currentUserId || null,
         }))
       );
     }
@@ -1085,6 +1213,15 @@ export function ComercialView({
               />
             ))}
           </SummaryCardsGrid>
+        </section>
+
+        <section className="mb-6">
+          <ResponsibleInsights
+            title="Funil por responsável"
+            description="Quem está concentrando mais oportunidades abertas dentro do resultado atual."
+            emptyMessage="A distribuição comercial por responsável aparecerá aqui quando houver propostas no resultado atual."
+            items={responsibleProposalInsights}
+          />
         </section>
 
         <PageTable>
@@ -1520,6 +1657,24 @@ export function ComercialView({
                     </select>
                   </label>
 
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    Responsável
+                    <select
+                      value={formData.responsavel_id}
+                      onChange={(event) =>
+                        updateField("responsavel_id", event.target.value)
+                      }
+                      className={fieldSelectClassName}
+                    >
+                      <option value="">Selecione um responsável</option>
+                      {userOptions.map((userOption) => (
+                        <option key={userOption.id} value={userOption.id}>
+                          {userOption.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
                     Motivo de perda
                     <input
@@ -1820,6 +1975,47 @@ export function ComercialView({
                       </label>
 
                       <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                        Situação operacional inicial
+                        <select
+                          value={conversionFormData.serviceOperationalStatus}
+                          onChange={(event) =>
+                            updateConversionField(
+                              "serviceOperationalStatus",
+                              event.target.value
+                            )
+                          }
+                          className={fieldSelectClassName}
+                        >
+                          {SERVICE_OPERATIONAL_STATUS_OPTIONS.map((statusOption) => (
+                            <option key={statusOption} value={statusOption}>
+                              {getSituacaoOperacionalLabel(statusOption)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                        Responsável inicial
+                        <select
+                          value={conversionFormData.serviceResponsavelId}
+                          onChange={(event) =>
+                            updateConversionField(
+                              "serviceResponsavelId",
+                              event.target.value
+                            )
+                          }
+                          className={fieldSelectClassName}
+                        >
+                          <option value="">Selecione um responsável</option>
+                          {userOptions.map((userOption) => (
+                            <option key={userOption.id} value={userOption.id}>
+                              {userOption.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
                         Data de entrada
                         <input
                           type="date"
@@ -1882,6 +2078,55 @@ export function ComercialView({
                           className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                         />
                       </label>
+
+                      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:col-span-2">
+                        <h4 className="text-sm font-semibold text-[#17352b]">
+                          Resumo da conversão
+                        </h4>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-xl bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                              Cliente de destino
+                            </p>
+                            <p className="mt-2 text-sm font-medium text-slate-700">
+                              {conversionFormData.clientMode === "existing"
+                                ? selectedExistingClientName
+                                : conversionFormData.clientName.trim() || "Novo cliente a criar"}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                              Responsável inicial
+                            </p>
+                            <p className="mt-2 text-sm font-medium text-slate-700">
+                              {conversionResponsibleLabel}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                              Etapas geradas
+                            </p>
+                            <p className="mt-2 text-sm font-medium text-slate-700">
+                              {conversionStagePreview.length} etapa(s) padrão para {conversionFormData.serviceType}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                              Pendências sugeridas
+                            </p>
+                            <p className="mt-2 text-sm font-medium text-slate-700">
+                              {conversionPendingPreview.length} pendência(s) inicial(is) para abertura do fluxo
+                            </p>
+                          </div>
+                        </div>
+
+                        <p className="mt-3 text-xs text-slate-500">
+                          A conversão mantém a proposta vinculada ao cliente e ao serviço gerado, além de registrar o histórico inicial na timeline.
+                        </p>
+                      </div>
                     </div>
                   </section>
                 </div>
@@ -1889,6 +2134,12 @@ export function ComercialView({
                 {conversionErrorMessage ? (
                   <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                     {conversionErrorMessage}
+                  </div>
+                ) : null}
+
+                {convertingProposal && hasConversionHistory(convertingProposal) ? (
+                  <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    Esta proposta já possui histórico de conversão anterior. Revise cliente, serviço e responsável antes de gerar uma nova abertura operacional.
                   </div>
                 ) : null}
               </div>

@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import {
   getCurrentUserShellProfile,
   getUserDisplayMap,
+  getUserOptions,
 } from "../../lib/user-profiles";
 import { TarefasView } from "./tarefas-view";
 import type { ServicoOption, Tarefa } from "./types";
@@ -44,17 +45,23 @@ export default async function TarefasPage() {
   const authenticatedUser = await requireAuth();
 
   const [tasks, services] = await Promise.all([getTarefas(), getServicos()]);
-  const userDisplayNames = await getUserDisplayMap(
-    tasks.flatMap((task) => [
-      task.responsavel_id,
-      task.criado_por,
-      task.atualizado_por,
-    ])
-  );
-  const currentUserProfile = await getCurrentUserShellProfile({
-    userId: authenticatedUser.id,
-    email: authenticatedUser.email,
-  });
+  const [userDisplayNames, currentUserProfile, userOptions] = await Promise.all([
+    getUserDisplayMap(
+      tasks.flatMap((task) => [
+        task.responsavel_id,
+        task.criado_por,
+        task.atualizado_por,
+      ])
+    ),
+    getCurrentUserShellProfile({
+      userId: authenticatedUser.id,
+      email: authenticatedUser.email,
+    }),
+    getUserOptions({
+      currentUserId: authenticatedUser.id,
+      currentUserEmail: authenticatedUser.email,
+    }),
+  ]);
 
   return (
     <TarefasView
@@ -62,6 +69,7 @@ export default async function TarefasPage() {
       services={services}
       currentUserId={authenticatedUser.id}
       userDisplayNames={userDisplayNames}
+      userOptions={userOptions}
       currentUserName={currentUserProfile.displayName}
       currentUserDetail={currentUserProfile.secondaryLabel}
       currentUserInitials={currentUserProfile.initials}

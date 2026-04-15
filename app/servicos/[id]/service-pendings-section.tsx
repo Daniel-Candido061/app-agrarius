@@ -18,6 +18,7 @@ import {
 import { getPendingTemplateByServiceType } from "../service-templates";
 import type { ServicoPendencia } from "../types";
 import { getUserLabel, type UserDisplayMap } from "../../../lib/user-profiles";
+import type { UserOption } from "../../../lib/user-profiles";
 
 type ServicePendingsSectionProps = {
   serviceId: number;
@@ -25,6 +26,7 @@ type ServicePendingsSectionProps = {
   pendings: ServicoPendencia[];
   currentUserId?: string | null;
   userDisplayNames?: UserDisplayMap;
+  userOptions?: UserOption[];
 };
 
 type ModalMode = "create" | "edit";
@@ -32,6 +34,7 @@ type ModalMode = "create" | "edit";
 type FormData = {
   titulo: string;
   origem: string;
+  responsavel_id: string;
   prioridade: string;
   prazo_resposta: string;
   status: string;
@@ -49,6 +52,7 @@ const pendingPriorityOptions = ["baixa", "media", "alta"] as const;
 const initialFormData: FormData = {
   titulo: "",
   origem: "",
+  responsavel_id: "",
   prioridade: pendingPriorityOptions[1],
   prazo_resposta: "",
   status: pendingStatusOptions[0],
@@ -113,6 +117,7 @@ export function ServicePendingsSection({
   pendings,
   currentUserId = null,
   userDisplayNames = {},
+  userOptions = [],
 }: ServicePendingsSectionProps) {
   const router = useRouter();
   const [modalMode, setModalMode] = useState<ModalMode>("create");
@@ -124,11 +129,15 @@ export function ServicePendingsSection({
   const [deletingPendingId, setDeletingPendingId] = useState<number | null>(null);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const pendingTemplates = getPendingTemplateByServiceType(serviceType ?? "");
+  const defaultResponsibleId = currentUserId || userOptions[0]?.id || "";
 
   function openCreateModal() {
     setModalMode("create");
     setEditingPendingId(null);
-    setFormData(initialFormData);
+    setFormData({
+      ...initialFormData,
+      responsavel_id: defaultResponsibleId,
+    });
     setErrorMessage("");
     setIsModalOpen(true);
   }
@@ -139,6 +148,7 @@ export function ServicePendingsSection({
     setFormData({
       titulo: pending.titulo ?? "",
       origem: pending.origem ?? "",
+      responsavel_id: pending.responsavel_id ?? defaultResponsibleId,
       prioridade: getNormalizedPriority(pending.prioridade),
       prazo_resposta: getDateInputValue(pending.prazo_resposta),
       status: pending.status ?? pendingStatusOptions[0],
@@ -168,6 +178,8 @@ export function ServicePendingsSection({
 
     const titulo = formData.titulo.trim();
     const origem = formData.origem.trim();
+    const responsavelId =
+      formData.responsavel_id.trim() || defaultResponsibleId || null;
     const prioridade = getNormalizedPriority(formData.prioridade);
     const prazoResposta = formData.prazo_resposta.trim();
     const status = formData.status.trim();
@@ -192,6 +204,7 @@ export function ServicePendingsSection({
       servico_id: serviceId,
       titulo,
       origem: origem || null,
+      responsavel_id: responsavelId,
       prioridade,
       prazo_resposta: prazoResposta || null,
       status,
@@ -204,6 +217,7 @@ export function ServicePendingsSection({
         : {
             criado_por: currentUserId || null,
             atualizado_por: currentUserId || null,
+            responsavel_id: responsavelId,
           }),
     };
 
@@ -337,6 +351,7 @@ export function ServicePendingsSection({
           status: "Aberta",
           criado_por: currentUserId || null,
           atualizado_por: currentUserId || null,
+          responsavel_id: currentUserId || null,
         }))
       ),
       supabase.from("servico_eventos").insert({
@@ -565,6 +580,24 @@ export function ServicePendingsSection({
                       placeholder="Cliente, cartório, órgão, confrontante..."
                       className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                     />
+                  </label>
+
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    Responsável
+                    <select
+                      value={formData.responsavel_id}
+                      onChange={(event) =>
+                        updateField("responsavel_id", event.target.value)
+                      }
+                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    >
+                      <option value="">Selecione um responsável</option>
+                      {userOptions.map((userOption) => (
+                        <option key={userOption.id} value={userOption.id}>
+                          {userOption.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">

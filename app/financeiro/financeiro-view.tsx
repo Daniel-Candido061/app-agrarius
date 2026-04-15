@@ -6,6 +6,7 @@ import { AppShell } from "../components/app-shell";
 import { ActiveFilterChips } from "../components/active-filter-chips";
 import { ActionsMenu } from "../components/actions-menu";
 import { PageTable } from "../components/page-table";
+import { ResponsibleInsights } from "../components/responsible-insights";
 import { SearchableSelect } from "../components/searchable-select";
 import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
 import {
@@ -26,7 +27,11 @@ import {
   type PeriodValue,
 } from "../../lib/period-utils";
 import { supabase } from "../../lib/supabase";
-import { getUserLabel, type UserDisplayMap } from "../../lib/user-profiles";
+import {
+  getUserLabel,
+  type UserDisplayMap,
+  type UserOption,
+} from "../../lib/user-profiles";
 import { getCategoryOptionsByType } from "./category-options";
 import type { LancamentoFinanceiro, ServicoOption } from "./types";
 
@@ -38,6 +43,7 @@ type FinanceiroViewProps = {
   currentUserDetail?: string;
   currentUserInitials?: string;
   userDisplayNames?: UserDisplayMap;
+  userOptions?: UserOption[];
 };
 
 type ModalMode = "create" | "edit";
@@ -51,11 +57,14 @@ type FormData = {
   data: string;
   servico_id: string;
   status: string;
+  responsavel_id: string;
 };
 
 type ServiceDetails = {
   clientName: string;
   serviceName: string;
+  contractedValue: number;
+  status: string;
 };
 
 const initialFormData: FormData = {
@@ -66,6 +75,7 @@ const initialFormData: FormData = {
   data: "",
   servico_id: "",
   status: "Pendente",
+  responsavel_id: "",
 };
 
 const financialDateLabel = "Data";
@@ -310,6 +320,7 @@ export function FinanceiroView({
   currentUserDetail,
   currentUserInitials,
   userDisplayNames = {},
+  userOptions = [],
 }: FinanceiroViewProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -330,6 +341,7 @@ export function FinanceiroView({
   const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
+  const defaultResponsibleId = currentUserId || userOptions[0]?.id || "";
   const serviceById = new Map(
     services.map((service) => [String(service.id), service])
   );
@@ -339,6 +351,8 @@ export function FinanceiroView({
       {
         clientName: getServiceClientName(service),
         serviceName: service.nome_servico ?? `Serviço ${service.id}`,
+        contractedValue: getNumericValue(service.valor),
+        status: service.status ?? "-",
       },
     ])
   );
@@ -431,8 +445,8 @@ export function FinanceiroView({
           key: "servico",
           label:
             serviceFilter === "general"
-              ? `Servico: ${serviceFallbackLabel}`
-              : `Servico: ${
+              ? `Serviço: ${serviceFallbackLabel}`
+              : `Serviço: ${
                   serviceDetailsById.get(serviceFilter)?.serviceName ?? serviceFilter
                 }`,
           onRemove: () => setServiceFilter(""),
@@ -441,13 +455,146 @@ export function FinanceiroView({
     responsavelFilter
       ? {
           key: "responsavel",
-          label: `Responsavel: ${responsavelFilter}`,
+          label: `Responsável: ${responsavelFilter}`,
           onRemove: () => setResponsavelFilter(""),
         }
       : null,
   ].filter((chip) => chip !== null);
   const tableEntries = filteredEntries;
   const summaryCards = buildSummaryCards(tableEntries);
+  const responsibleFinanceInsights = Array.from(
+    tableEntries.reduce(
+      (map, entry) => {
+        const responsibleLabel = getUserLabel(
+          userDisplayNames,
+          entry.responsavel_id
+        );
+        const currentItem = map.get(responsibleLabel) ?? {
+          label: responsibleLabel,
+          entries: 0,
+          amount: 0,
+          overdue: 0,
+        };
+
+        currentItem.entries += 1;
+        currentItem.amount += getNumericValue(entry.valor);
+
+        if (normalizeText(entry.status) === "vencido") {
+          currentItem.overdue += 1;
+        }
+
+        map.set(responsibleLabel, currentItem);
+        return map;
+      },
+      new Map<
+        string,
+        { label: string; entries: number; amount: number; overdue: number }
+      >()
+    ).values()
+  )
+    .sort((leftItem, rightItem) => {
+      if (rightItem.overdue !== leftItem.overdue) {
+        return rightItem.overdue - leftItem.overdue;
+      }
+
+      if (rightItem.entries !== leftItem.entries) {
+        return rightItem.entries - leftItem.entries;
+      }
+
+      return leftItem.label.localeCompare(rightItem.label, "pt-BR");
+    })
+    .slice(0, 4)
+    .map((item) => ({
+      label: item.label,
+      metric: String(item.entries),
+      detail:
+        item.overdue > 0
+          ? `${item.overdue} lançamento(s) vencidos. Movimentação de ${formatCurrency(item.amount)}.`
+          : `Movimentação de ${formatCurrency(item.amount)} no resultado atual.`,
+      tone: item.overdue > 0 ? ("warning" as const) : ("info" as const),
+    }));
+  const serviceFinancialInsights = Array.from(
+    tableEntries.reduce(
+      (map, entry) => {
+        if (entry.servico_id === null || entry.servico_id === undefined) {
+          return map;
+        }
+
+        const serviceId = String(entry.servico_id);
+        const serviceDetails = serviceDetailsById.get(serviceId);
+
+        if (!serviceDetails) {
+          return map;
+        }
+
+        const currentItem = map.get(serviceId) ?? {
+          id: serviceId,
+          label: serviceDetails.serviceName,
+          clientName: serviceDetails.clientName,
+          contractedValue: serviceDetails.contractedValue,
+          receivedValue: 0,
+          expenseValue: 0,
+        };
+
+        if (
+          normalizeText(entry.tipo) === "receita" &&
+          normalizeText(entry.status) === "recebido"
+        ) {
+          currentItem.receivedValue += getNumericValue(entry.valor);
+        }
+
+        if (
+          normalizeText(entry.tipo) === "despesa" &&
+          normalizeText(entry.status) === "pago"
+        ) {
+          currentItem.expenseValue += getNumericValue(entry.valor);
+        }
+
+        map.set(serviceId, currentItem);
+        return map;
+      },
+      new Map<
+        string,
+        {
+          id: string;
+          label: string;
+          clientName: string;
+          contractedValue: number;
+          receivedValue: number;
+          expenseValue: number;
+        }
+      >()
+    ).values()
+  )
+    .map((item) => {
+      const openValue = item.contractedValue - item.receivedValue;
+      const resultValue = item.receivedValue - item.expenseValue;
+
+      return {
+        label: item.label,
+        metric: formatCurrency(openValue),
+        detail: `${item.clientName}. Recebido ${formatCurrency(
+          item.receivedValue
+        )} de ${formatCurrency(item.contractedValue)}. Resultado ${formatCurrency(
+          resultValue
+        )}.`,
+        tone:
+          openValue > 0
+            ? ("warning" as const)
+            : resultValue < 0
+              ? ("danger" as const)
+              : ("success" as const),
+        openValue,
+      };
+    })
+    .sort((leftItem, rightItem) => rightItem.openValue - leftItem.openValue)
+    .slice(0, 4)
+    .map((item) => ({
+      label: item.label,
+      metric: item.metric,
+      detail: item.detail,
+      tone: item.tone,
+    }));
   const selectedTimeLabel =
     timeFilterMode === "rapido"
       ? `Período: ${getAppliedQuickPeriodLabel(periodFilter)}`
@@ -455,7 +602,10 @@ export function FinanceiroView({
   function openModal() {
     setModalMode("create");
     setEditingEntryId(null);
-    setFormData(initialFormData);
+    setFormData({
+      ...initialFormData,
+      responsavel_id: defaultResponsibleId,
+    });
     setErrorMessage("");
     setIsModalOpen(true);
   }
@@ -485,6 +635,7 @@ export function FinanceiroView({
         entry.status && entryStatusOptions.includes(entry.status)
           ? entry.status
           : entryStatusOptions[0],
+      responsavel_id: entry.responsavel_id ?? defaultResponsibleId,
     });
     setErrorMessage("");
     setIsModalOpen(true);
@@ -530,6 +681,8 @@ export function FinanceiroView({
     const data = formData.data.trim();
     const servicoId = formData.servico_id.trim();
     const status = formData.status.trim();
+    const responsavelId =
+      formData.responsavel_id.trim() || defaultResponsibleId || null;
 
     if (!tipo) {
       setErrorMessage("Selecione o tipo do lançamento.");
@@ -597,6 +750,7 @@ export function FinanceiroView({
       data,
       servico_id: parsedServiceId,
       status,
+      responsavel_id: responsavelId,
       ...(isEditing
         ? {
             updated_at: new Date().toISOString(),
@@ -605,7 +759,7 @@ export function FinanceiroView({
         : {
             criado_por: currentUserId || null,
             atualizado_por: currentUserId || null,
-            responsavel_id: currentUserId || null,
+            responsavel_id: responsavelId,
           }),
     };
 
@@ -926,6 +1080,24 @@ export function FinanceiroView({
             </SummaryCardsGrid>
           </section>
 
+          <section>
+            <ResponsibleInsights
+              title="Movimentação por responsável"
+              description="Quem está concentrando mais lançamentos dentro do resultado atual."
+              emptyMessage="A distribuição financeira por responsável aparecerá aqui quando houver lançamentos no resultado atual."
+              items={responsibleFinanceInsights}
+            />
+          </section>
+
+          <section>
+            <ResponsibleInsights
+              title="Financeiro por serviço"
+              description="Serviços com maior valor em aberto no resultado atual."
+              emptyMessage="Quando houver lançamentos vinculados a serviços, o resumo operacional aparecerá aqui."
+              items={serviceFinancialInsights}
+            />
+          </section>
+
           <div>
             <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
               Busca
@@ -1020,7 +1192,7 @@ export function FinanceiroView({
                           <td className="px-6 py-4 text-sm text-slate-500">
                             {entry.descricao ?? "-"}
                             <span className="mt-1 block text-xs text-slate-400">
-                              Responsavel: {responsavelLabel}
+                              Responsável: {responsavelLabel}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-500">
@@ -1209,6 +1381,24 @@ export function FinanceiroView({
                       ))}
                     </select>
                   </label>
+
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    Responsável
+                    <select
+                      value={formData.responsavel_id}
+                      onChange={(event) =>
+                        updateField("responsavel_id", event.target.value)
+                      }
+                      className={fieldSelectClassName}
+                    >
+                      <option value="">Selecione um responsável</option>
+                      {userOptions.map((userOption) => (
+                        <option key={userOption.id} value={userOption.id}>
+                          {userOption.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
 
                 {errorMessage ? (
@@ -1244,5 +1434,6 @@ export function FinanceiroView({
     </>
   );
 }
+
 
 

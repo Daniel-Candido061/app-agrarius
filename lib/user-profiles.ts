@@ -1,6 +1,10 @@
 import { supabase } from "./supabase";
 
 export type UserDisplayMap = Record<string, string>;
+export type UserOption = {
+  id: string;
+  label: string;
+};
 
 export type CurrentUserShellProfile = {
   displayName: string;
@@ -13,6 +17,7 @@ type PerfilUsuarioResumo = {
   nome_exibicao: string | null;
   email: string | null;
   papel: string | null;
+  ativo?: boolean | null;
 };
 
 function getUserDisplayName(profile: PerfilUsuarioResumo) {
@@ -79,6 +84,42 @@ export async function getUserDisplayMap(
       getUserDisplayName(profile),
     ])
   );
+}
+
+export async function getUserOptions(params?: {
+  currentUserId?: string | null;
+  currentUserEmail?: string | null;
+}): Promise<UserOption[]> {
+  const { currentUserId = null, currentUserEmail = null } = params ?? {};
+
+  const { data, error } = await supabase
+    .from("perfis_usuario")
+    .select("id, nome_exibicao, email, ativo")
+    .neq("ativo", false)
+    .order("nome_exibicao", { ascending: true, nullsFirst: false });
+
+  if (error) {
+    console.error("Erro ao buscar opções de usuário:", error.message);
+  }
+
+  const normalizedOptions = ((data ?? []) as PerfilUsuarioResumo[]).map(
+    (profile) => ({
+      id: profile.id,
+      label: getUserDisplayName(profile),
+    })
+  );
+
+  if (
+    currentUserId &&
+    !normalizedOptions.some((option) => option.id === currentUserId)
+  ) {
+    normalizedOptions.unshift({
+      id: currentUserId,
+      label: currentUserEmail?.trim() || "Usuário atual",
+    });
+  }
+
+  return normalizedOptions;
 }
 
 export function getUserLabel(

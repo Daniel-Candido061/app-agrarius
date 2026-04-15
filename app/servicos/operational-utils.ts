@@ -212,6 +212,115 @@ export function getServiceNextStepSummary(params: {
   return "Definir próxima ação";
 }
 
+export function getServiceOperationalFocus(params: {
+  situacaoOperacional: string | null | undefined;
+  status: string | null | undefined;
+  prazoFinal: string | null | undefined;
+  pendings: ServicoPendencia[];
+  stages: ServicoEtapa[];
+}) {
+  if (isClosedServiceStatus(params.status)) {
+    return {
+      label: "Serviço concluído",
+      detail: "A operação principal deste serviço já foi encerrada.",
+      tone: "success" as const,
+    };
+  }
+
+  const relevantPending = getMostRelevantOpenPending(params.pendings);
+
+  if (relevantPending && getPendingPriorityRank(relevantPending.prioridade) === 0) {
+    return {
+      label: relevantPending.titulo?.trim() || "Resolver pendência crítica",
+      detail: relevantPending.origem?.trim()
+        ? `Pendência de alta prioridade ligada a ${relevantPending.origem.trim()}.`
+        : "Existe pendência de alta prioridade bloqueando o fluxo operacional.",
+      tone: "danger" as const,
+    };
+  }
+
+  switch (params.situacaoOperacional) {
+    case "aguardando_cliente":
+      return {
+        label: "Cobrar retorno do cliente",
+        detail: "A carteira depende de documento, resposta ou confirmação do cliente.",
+        tone: "warning" as const,
+      };
+    case "aguardando_orgao":
+      return {
+        label: "Acompanhar retorno do órgão",
+        detail: "O serviço depende de resposta, análise ou protocolo externo.",
+        tone: "warning" as const,
+      };
+    case "aguardando_cartorio":
+      return {
+        label: "Acompanhar retorno do cartório",
+        detail: "Existe etapa cartorial aguardando devolutiva ou andamento.",
+        tone: "warning" as const,
+      };
+    case "aguardando_equipe":
+      return {
+        label: "Acionar equipe responsável",
+        detail: "O próximo avanço depende de execução interna da equipe.",
+        tone: "neutral" as const,
+      };
+    case "pronto_para_protocolar":
+      return {
+        label: "Protocolar serviço",
+        detail: "A base indica que o serviço já está pronto para protocolo.",
+        tone: "info" as const,
+      };
+    case "pronto_para_entregar":
+      return {
+        label: "Entregar ao cliente",
+        detail: "A entrega final já pode ser organizada com o cliente.",
+        tone: "success" as const,
+      };
+  }
+
+  const deadlineAlert = getServiceDeadlineAlert({
+    prazoFinal: params.prazoFinal,
+    status: params.status,
+  });
+
+  if (deadlineAlert) {
+    return {
+      label: deadlineAlert.label,
+      detail: "O prazo final exige prioridade no andamento deste serviço.",
+      tone:
+        deadlineAlert.tone === "danger"
+          ? ("danger" as const)
+          : ("warning" as const),
+    };
+  }
+
+  if (relevantPending?.titulo) {
+    return {
+      label: relevantPending.titulo,
+      detail: "Esta é a pendência aberta mais relevante no momento.",
+      tone: "warning" as const,
+    };
+  }
+
+  const nextStage = getNextUnfinishedStage(params.stages);
+
+  if (nextStage?.titulo) {
+    return {
+      label: nextStage.titulo,
+      detail: nextStage.opcional
+        ? "Próxima etapa opcional disponível no fluxo técnico."
+        : "Próxima etapa obrigatória disponível no fluxo técnico.",
+      tone: "neutral" as const,
+    };
+  }
+
+  return {
+    label: "Definir próxima ação",
+    detail: "Não há bloqueio ou etapa aberta suficientemente clara no momento.",
+    tone: "neutral" as const,
+  };
+}
+
 export function isServiceOverdue(prazoFinal: string | null | undefined) {
   return isBeforeTodayDateOnly(prazoFinal ?? null);
 }
@@ -266,9 +375,7 @@ export function getServiceDeadlineAlert(params: {
   return null;
 }
 
-export function getPendingLastMovementDate(
-  pending: ServicoPendencia
-) {
+export function getPendingLastMovementDate(pending: ServicoPendencia) {
   return pending.updated_at ?? pending.created_at ?? null;
 }
 

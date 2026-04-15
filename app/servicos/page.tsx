@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import {
   getCurrentUserShellProfile,
   getUserDisplayMap,
+  getUserOptions,
 } from "../../lib/user-profiles";
 import { ServicosView } from "./servicos-view";
 import type { ClienteOption, Servico, ServicoFinanceiro } from "./types";
@@ -67,17 +68,23 @@ export default async function ServicosPage() {
     getClientes(),
     getFinanceiroPorServico(),
   ]);
-  const userDisplayNames = await getUserDisplayMap(
-    services.flatMap((service) => [
-      service.responsavel_id,
-      service.criado_por,
-      service.atualizado_por,
-    ])
-  );
-  const currentUserProfile = await getCurrentUserShellProfile({
-    userId: authenticatedUser.id,
-    email: authenticatedUser.email,
-  });
+  const [userDisplayNames, currentUserProfile, userOptions] = await Promise.all([
+    getUserDisplayMap(
+      services.flatMap((service) => [
+        service.responsavel_id,
+        service.criado_por,
+        service.atualizado_por,
+      ])
+    ),
+    getCurrentUserShellProfile({
+      userId: authenticatedUser.id,
+      email: authenticatedUser.email,
+    }),
+    getUserOptions({
+      currentUserId: authenticatedUser.id,
+      currentUserEmail: authenticatedUser.email,
+    }),
+  ]);
 
   return (
     <ServicosView
@@ -86,6 +93,7 @@ export default async function ServicosPage() {
       financialEntries={financialEntries}
       currentUserId={authenticatedUser.id}
       userDisplayNames={userDisplayNames}
+      userOptions={userOptions}
       currentUserName={currentUserProfile.displayName}
       currentUserDetail={currentUserProfile.secondaryLabel}
       currentUserInitials={currentUserProfile.initials}
