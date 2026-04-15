@@ -824,7 +824,7 @@ export function TarefasView({
                       </div>
                     </div>
 
-                    <div className="mt-4">
+                    <div className="mt-4 hidden lg:block">
                       <select
                         value={task.status ?? ""}
                         disabled={updatingTaskId === task.id}

@@ -1155,7 +1155,7 @@ export function ServicosView({
                         </div>
                       </div>
 
-                      <div className="mt-4">
+                      <div className="mt-4 hidden lg:block">
                         <select
                           value={service.status ?? ""}
                           disabled={updatingServiceId === service.id}

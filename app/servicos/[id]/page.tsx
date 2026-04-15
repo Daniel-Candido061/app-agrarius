@@ -2,7 +2,6 @@
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { AppShell } from "../../components/app-shell";
-import { SummaryCard, SummaryCardsGrid } from "../../components/summary-card";
 import {
   formatSimpleDate,
   getElapsedDaysBetweenDateTimes,
@@ -681,7 +680,7 @@ export default async function ServicoDetalhesPage({
       }
     >
       <div className="space-y-6">
-        <section className="space-y-5">
+        <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
           <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -689,143 +688,98 @@ export default async function ServicoDetalhesPage({
                 <h2 className="mt-2 text-2xl font-semibold text-[#17352b]">
                   {service.nome_servico ?? "-"}
                 </h2>
-              </div>
-
-              <span
-                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getServiceStatusClassName(
-                  service.status
-                )}`}
-              >
-                {service.status ?? "Sem status"}
-              </span>
-            </div>
-
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              <div className="sm:col-span-2 xl:col-span-3">
-                <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
-                  <div
-                    className={`rounded-2xl border px-4 py-4 ${getFocusToneClassName(
-                      operationalFocus.tone
-                    )}`}
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em]">
-                      Foco operacional
-                    </p>
-                    <p className="mt-2 text-base font-semibold sm:text-lg">
-                      {operationalFocus.label}
-                    </p>
-                    <p className="mt-2 text-sm opacity-90">
-                      {operationalFocus.detail}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Próxima ação recomendada
-                    </p>
-                    <p className="mt-2 text-base font-semibold text-[#17352b]">
-                      {nextActionSummary}
-                    </p>
-                    <p className="mt-2 text-sm text-slate-500">
-                      {relevantPending
-                        ? "A fila atual indica que a pendencia aberta mais relevante deve ser tratada primeiro."
-                        : nextStage
-                          ? "A proxima etapa do fluxo tecnico ja esta identificada."
-                          : "Defina a proxima acao manualmente para manter o serviço orientado."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Cliente
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="mt-2 text-sm text-slate-500">
                   {getClientName(service)}
                 </p>
               </div>
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Cidade
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  {service.cidade ?? "-"}
-                </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getServiceStatusClassName(
+                    service.status
+                  )}`}
+                >
+                  {service.status ?? "Sem status"}
+                </span>
+                <span
+                  className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getSituacaoOperacionalClassName(
+                    service.situacao_operacional
+                  )}`}
+                >
+                  {getSituacaoOperacionalLabel(service.situacao_operacional)}
+                </span>
               </div>
+            </div>
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Tipo de serviço
+            <div className="mt-6 grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
+              <div
+                className={`rounded-2xl border px-4 py-4 ${getFocusToneClassName(
+                  operationalFocus.tone
+                )}`}
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.12em]">
+                  Comando do serviço
                 </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  {service.tipo_servico ?? "-"}
+                <p className="mt-2 text-lg font-semibold">
+                  {operationalFocus.label}
                 </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Situação operacional
+                <p className="mt-2 text-sm opacity-90">
+                  {operationalFocus.detail}
                 </p>
-                <div className="mt-2">
-                  <span
-                    className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getSituacaoOperacionalClassName(
-                      service.situacao_operacional
-                    )}`}
-                  >
-                    {getSituacaoOperacionalLabel(service.situacao_operacional)}
-                  </span>
+                <div className="mt-4 rounded-xl bg-white/55 px-4 py-3 text-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] opacity-70">
+                    Próxima ação
+                  </p>
+                  <p className="mt-2 font-semibold text-[#17352b]">
+                    {nextActionSummary}
+                  </p>
+                  <p className="mt-2 text-slate-600">
+                    {relevantPending
+                      ? "A pendência mais relevante deve ser tratada primeiro."
+                      : nextStage
+                        ? "A próxima etapa do fluxo já está identificada."
+                        : "Defina a próxima ação manualmente para manter o serviço orientado."}
+                  </p>
                 </div>
               </div>
 
-              <div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Valor contratado
+                  Contexto rápido
                 </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  {formatCurrency(service.valor)}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Data de entrada
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  {formatSimpleDate(serviceEntryDateLabel)}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Responsável
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  {serviceResponsibleLabel}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Prazo de entrega
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  {formatSimpleDate(service.prazo_final)}
-                </p>
-              </div>
-
-              <div className="sm:col-span-2 xl:col-span-3">
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Data de conclusão
+                      Responsável
                     </p>
                     <p className="mt-2 text-sm text-slate-600">
-                      {dataConclusao ? formatSimpleDate(dataConclusao) : "-"}
+                      {serviceResponsibleLabel}
                     </p>
                   </div>
-
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Tipo de serviço
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {service.tipo_servico ?? "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Data de entrada
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {formatSimpleDate(serviceEntryDateLabel)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Prazo de entrega
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {formatSimpleDate(service.prazo_final)}
+                    </p>
+                  </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                       Tempo de execução
@@ -834,7 +788,6 @@ export default async function ServicoDetalhesPage({
                       {executionTimeLabel}
                     </p>
                   </div>
-
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                       Situação do prazo
@@ -843,226 +796,197 @@ export default async function ServicoDetalhesPage({
                       {deadlineSummaryLabel}
                     </p>
                   </div>
+                </div>
+              </div>
+            </div>
 
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Criado por
-                    </p>
-                    <p className="mt-2 text-sm text-slate-600">
-                      {serviceCreatedByLabel}
-                    </p>
-                  </div>
+            {attentionItems.length > 0 ? (
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Atenções do momento
+                </p>
+                <div className="mt-3 space-y-3">
+                  {attentionItems.slice(0, 3).map((item) => (
+                    <div
+                      key={item.key}
+                      className={`rounded-xl border px-4 py-3 ${getFocusToneClassName(item.tone)}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold">{item.label}</p>
+                          <p className="mt-1 text-sm opacity-90">{item.detail}</p>
+                        </div>
+                        <span className="text-sm font-semibold">{item.value}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Atualizado por
-                    </p>
-                    <p className="mt-2 text-sm text-slate-600">
-                      {serviceUpdatedByLabel}
-                    </p>
-                  </div>
+            <details className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <summary className="cursor-pointer list-none text-sm font-semibold text-[#17352b]">
+                Mais detalhes do serviço
+              </summary>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Cidade
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {service.cidade ?? "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Valor contratado
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {formatCurrency(service.valor)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Criado por
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {serviceCreatedByLabel}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Atualizado por
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {serviceUpdatedByLabel}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Data de conclusão
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {dataConclusao ? formatSimpleDate(dataConclusao) : "-"}
+                  </p>
                 </div>
               </div>
 
-              <div className="sm:col-span-2 xl:col-span-3">
+              <div className="mt-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Observação
                 </p>
-                <p className="mt-2 whitespace-pre-line rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <p className="mt-2 whitespace-pre-line rounded-2xl bg-white px-4 py-3 text-sm text-slate-600">
                   {service.observacoes?.trim() || "Sem observações"}
                 </p>
               </div>
-            </div>
+            </details>
           </article>
 
-          {attentionItems.length > 0 ? (
-            <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {attentionItems.map((item) => (
-                <article
-                  key={item.key}
-                  className={`rounded-2xl border px-4 py-4 ${getFocusToneClassName(item.tone)}`}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] opacity-80">
-                    Radar de atenção
+          <div className="space-y-5">
+            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-[#17352b]">
+                    Visão operacional
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Etapas, pendências, tarefas e andamento do fluxo em um bloco mais compacto.
                   </p>
-                  <p className="mt-2 text-sm font-semibold">{item.label}</p>
-                  <p className="mt-3 text-lg font-semibold">{item.value}</p>
-                  <p className="mt-2 text-sm opacity-90">{item.detail}</p>
-                </article>
-              ))}
-            </section>
-          ) : null}
-
-          <SummaryCardsGrid className="md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4">
-            {financialSummaryCards.map((card) => (
-              <SummaryCard
-                key={card.title}
-                title={card.title}
-                value={card.value}
-                detail={card.detail}
-                tone={card.tone}
-                valueClassName={card.valueClassName}
-                compact
-              />
-            ))}
-          </SummaryCardsGrid>
-
-          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-[#17352b]">
-                  Leitura financeira do serviço
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Contratado, recebido, despesas e saldo operacional do serviço em um bloco só.
-                </p>
+                </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Situação financeira
-                </p>
-                <p className="mt-2 font-medium text-[#17352b]">
-                  {valorAReceber > 0
-                    ? `${formatCurrency(valorAReceber)} ainda em aberto`
-                    : "Serviço financeiramente quitado"}
-                </p>
-                <p className="mt-2 text-xs text-slate-500">
-                  {totalDespesasPagas > 0
-                    ? `Resultado já realizado: ${formatCurrency(lucroLiquidoRealizado)}`
-                    : "Sem despesas pagas registradas até o momento."}
-                </p>
+              <div className="mt-5 space-y-3">
+                {operationalSummaryCards.map((card) => (
+                  <div
+                    key={card.title}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                          {card.title}
+                        </p>
+                        <p className={`mt-2 text-lg font-semibold ${card.valueClassName ?? "text-[#17352b]"}`}>
+                          {card.value}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-500">{card.detail}</p>
+                      </div>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                          card.tone === "danger"
+                            ? "bg-rose-50 text-rose-700"
+                            : card.tone === "warning"
+                              ? "bg-amber-50 text-amber-700"
+                              : card.tone === "success"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : card.tone === "info"
+                                  ? "bg-cyan-50 text-cyan-700"
+                                  : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {card.tone === "danger"
+                          ? "Crítico"
+                          : card.tone === "warning"
+                            ? "Atenção"
+                            : card.tone === "success"
+                              ? "Estável"
+                              : card.tone === "info"
+                                ? "Fluxo"
+                                : "Resumo"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            </article>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Contratado
-                </p>
-                <p className="mt-2 text-lg font-semibold text-[#17352b]">
-                  {formatCurrency(valorContratado)}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700/70">
-                  Recebido
-                </p>
-                <p className="mt-2 text-lg font-semibold text-emerald-700">
-                  {formatCurrency(totalRecebido)}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-700/70">
-                  Em aberto
-                </p>
-                <p className="mt-2 text-lg font-semibold text-amber-700">
-                  {formatCurrency(valorAReceber)}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-rose-200 bg-rose-50/60 px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-rose-700/70">
-                  Despesas pagas
-                </p>
-                <p className="mt-2 text-lg font-semibold text-rose-700">
-                  {formatCurrency(totalDespesasPagas)}
-                </p>
-              </div>
-            </div>
-          </article>
-        </section>
-
-        <section className="space-y-5">
-          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-[#17352b]">
-                  Visão operacional
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Leitura rápida do que está travando e do próximo passo recomendado para este serviço.
-                </p>
-              </div>
-
-              <div
-                className={`rounded-2xl border px-4 py-3 text-sm ${getFocusToneClassName(
-                  operationalFocus.tone
-                )}`}
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.12em]">
-                  Comando do servico
-                </p>
-                <p className="mt-2 font-medium">{operationalFocus.label}</p>
-                <p className="mt-2 text-xs opacity-90">
-                  {operationalFocus.detail}
-                </p>
-                <p className="mt-3 text-xs font-medium text-[#17352b]">
-                  Proxima acao: {nextActionSummary}
-                </p>
-              </div>
-
-              <div className="hidden rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Proximo passo
-                </p>
-                <p className="mt-2 font-medium text-[#17352b]">
-                  {nextActionSummary}
-                </p>
-                {highPriorityOpenPendings.length > 0 ? (
-                  <p className="mt-2 text-xs font-medium text-rose-700">
-                    Existe pendência alta aberta com impacto bloqueador.
+            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-[#17352b]">
+                    Leitura financeira
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Situação financeira resumida, sem espalhar os números no topo inteiro.
                   </p>
-                ) : null}
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Situação financeira
+                  </p>
+                  <p className="mt-2 font-medium text-[#17352b]">
+                    {valorAReceber > 0
+                      ? `${formatCurrency(valorAReceber)} ainda em aberto`
+                      : "Serviço financeiramente quitado"}
+                  </p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    {totalDespesasPagas > 0
+                      ? `Resultado já realizado: ${formatCurrency(lucroLiquidoRealizado)}`
+                      : "Sem despesas pagas registradas até o momento."}
+                  </p>
+                </div>
               </div>
-            </div>
-          </article>
 
-          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {attentionItems.map((item) => (
-              <article
-                key={item.key}
-                className={`rounded-2xl border px-4 py-4 ${getFocusToneClassName(item.tone)}`}
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] opacity-80">
-                  Radar de atenção
-                </p>
-                <p className="mt-2 text-sm font-semibold">{item.label}</p>
-                <p className="mt-3 text-lg font-semibold">{item.value}</p>
-                <p className="mt-2 text-sm opacity-90">{item.detail}</p>
-              </article>
-            ))}
-          </section>
-
-          <SummaryCardsGrid className="md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4">
-            {operationalSummaryCards.map((card) => (
-              <SummaryCard
-                key={card.title}
-                title={card.title}
-                value={card.value}
-                detail={card.detail}
-                tone={card.tone}
-                valueClassName={card.valueClassName}
-                compact
-              />
-            ))}
-          </SummaryCardsGrid>
+              <div className="mt-5 space-y-3">
+                {financialSummaryCards.map((card) => (
+                  <div
+                    key={card.title}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      {card.title}
+                    </p>
+                    <p className={`mt-2 text-lg font-semibold ${card.valueClassName ?? "text-[#17352b]"}`}>
+                      {card.value}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">{card.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
         </section>
-
-        <ServiceStagesSection
-          serviceId={serviceId}
-          stages={stages}
-          currentUserId={authenticatedUser.id}
-        />
-
-        <ServiceDocumentsSection
-          serviceId={serviceId}
-          documents={documents}
-          currentUserId={authenticatedUser.id}
-          userDisplayNames={userDisplayNames}
-        />
 
         <ServicePendingsSection
           serviceId={serviceId}
@@ -1081,9 +1005,22 @@ export default async function ServicoDetalhesPage({
           userOptions={userOptions}
         />
 
+        <ServiceStagesSection
+          serviceId={serviceId}
+          stages={stages}
+          currentUserId={authenticatedUser.id}
+        />
+
         <ServiceTimelineSection
           serviceId={serviceId}
           events={events}
+          currentUserId={authenticatedUser.id}
+          userDisplayNames={userDisplayNames}
+        />
+
+        <ServiceDocumentsSection
+          serviceId={serviceId}
+          documents={documents}
           currentUserId={authenticatedUser.id}
           userDisplayNames={userDisplayNames}
         />
