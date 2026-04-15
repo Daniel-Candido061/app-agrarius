@@ -148,19 +148,27 @@ export function ServiceTasksSection({
     setIsSaving(true);
     setErrorMessage("");
 
-    const { error } = await supabase.from("tarefas").insert({
-      titulo,
-      servico_id: serviceId,
-      responsavel: responsavel || null,
-      data_limite: dataLimite || null,
-      prioridade,
-      status,
-      observacao: observacao || null,
-    });
+    const [{ error: taskError }, { error: eventError }] = await Promise.all([
+      supabase.from("tarefas").insert({
+        titulo,
+        servico_id: serviceId,
+        responsavel: responsavel || null,
+        data_limite: dataLimite || null,
+        prioridade,
+        status,
+        observacao: observacao || null,
+      }),
+      supabase.from("servico_eventos").insert({
+        servico_id: serviceId,
+        tipo: "tarefa",
+        titulo: "Nova tarefa vinculada",
+        descricao: titulo,
+      }),
+    ]);
 
     setIsSaving(false);
 
-    if (error) {
+    if (taskError || eventError) {
       setErrorMessage("Não foi possível salvar a tarefa agora. Tente novamente.");
       return;
     }

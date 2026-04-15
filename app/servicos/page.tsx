@@ -8,8 +8,9 @@ async function getServicos() {
   const { data, error } = await supabase
     .from("servicos")
     .select(
-      "id, cliente_id, created_at, nome_servico, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
+      "id, cliente_id, created_at, data_entrada, nome_servico, tipo_servico, situacao_operacional, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
     )
+    .order("data_entrada", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .order("id", { ascending: false });
 

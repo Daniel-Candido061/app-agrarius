@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
+import { ActiveFilterChips } from "../components/active-filter-chips";
 import { ActionsMenu } from "../components/actions-menu";
+import { KanbanBoard, type KanbanColumn } from "../components/kanban-board";
 import { SearchableSelect } from "../components/searchable-select";
 import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
+import { ViewModeToggle } from "../components/view-mode-toggle";
 import { getStatusClassName, normalizeStatusText } from "../components/status-utils";
 import {
   formatSimpleDate,
@@ -23,6 +26,7 @@ type TarefasViewProps = {
 };
 
 type ModalMode = "create" | "edit";
+type ViewMode = "list" | "kanban";
 type TaskFilter = "all" | "todo" | "overdue";
 
 type FormData = {
@@ -122,6 +126,20 @@ function getServiceOptionLabel(service: ServicoOption) {
   return `${serviceName} — ${clientName}`;
 }
 
+function getTaskTone(status: string | null) {
+  const normalizedStatus = normalizeStatusText(status);
+
+  if (normalizedStatus === "concluida" || normalizedStatus === "concluido") {
+    return "success" as const;
+  }
+
+  if (normalizedStatus === "em andamento") {
+    return "info" as const;
+  }
+
+  return "warning" as const;
+}
+
 export function TarefasView({ tasks, services }: TarefasViewProps) {
   const router = useRouter();
   const [taskList, setTaskList] = useState(tasks);
@@ -130,7 +148,9 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
+  const [statusFilter, setStatusFilter] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -165,6 +185,10 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     }
 
     if (taskFilter === "todo" && !isTodoTask(task)) {
+      return false;
+    }
+
+    if (statusFilter && task.status !== statusFilter) {
       return false;
     }
 
@@ -205,6 +229,41 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       filter: "overdue" as TaskFilter,
     },
   ];
+  const activeFilterChips = [
+    searchTerm
+      ? {
+          key: "search",
+          label: `Busca: ${searchTerm}`,
+          onRemove: () => setSearchTerm(""),
+        }
+      : null,
+    taskFilter !== "all"
+      ? {
+          key: "task-filter",
+          label: `Atalho: ${
+            summaryCards.find((card) => card.filter === taskFilter)?.title ??
+            taskFilter
+          }`,
+          onRemove: () => setTaskFilter("all"),
+        }
+      : null,
+    statusFilter
+      ? {
+          key: "status",
+          label: `Status: ${statusFilter}`,
+          onRemove: () => setStatusFilter(""),
+        }
+      : null,
+  ].filter((chip) => chip !== null);
+  const kanbanColumns: KanbanColumn<Tarefa>[] = TASK_STATUS_OPTIONS.map(
+    (statusOption) => ({
+      id: statusOption,
+      title: statusOption,
+      tone: getTaskTone(statusOption),
+      items: filteredTasks.filter((task) => task.status === statusOption),
+      emptyMessage: "Nenhuma tarefa nesta etapa com os filtros atuais.",
+    })
+  );
 
   function openModal() {
     setModalMode("create");
@@ -395,6 +454,16 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     router.refresh();
   }
 
+  function handleKanbanMove(taskId: string, nextColumnId: string) {
+    const task = taskList.find((currentTask) => String(currentTask.id) === taskId);
+
+    if (!task) {
+      return;
+    }
+
+    updateTaskStatus(task, nextColumnId);
+  }
+
   return (
     <>
       <AppShell
@@ -417,18 +486,52 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
           </div>
         ) : null}
 
-        <div className="mb-6">
-          <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-            Busca
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Buscar por título, serviço, responsável, prioridade ou status"
-              className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
-            />
-          </label>
-        </div>
+        <section className="mb-6 space-y-4 rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.28)] sm:p-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-sm font-medium text-slate-700">
+              Busca
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Buscar por titulo, servico, responsavel, prioridade ou status"
+                className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+              />
+            </label>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+                Status
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                  className="min-h-11 min-w-[220px] rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                >
+                  <option value="">Todos os status</option>
+                  {TASK_STATUS_OPTIONS.map((statusOption) => (
+                    <option key={statusOption} value={statusOption}>
+                      {statusOption}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <ViewModeToggle value={viewMode} onChange={setViewMode} />
+            </div>
+          </div>
+
+          <ActiveFilterChips
+            chips={activeFilterChips}
+            totalLabel={`${filteredTasks.length} resultado${
+              filteredTasks.length === 1 ? "" : "s"
+            }`}
+            onClearAll={() => {
+              setSearchTerm("");
+              setTaskFilter("all");
+              setStatusFilter("");
+            }}
+          />
+        </section>
 
         <section className="mb-6">
           <SummaryCardsGrid className="xl:grid-cols-3 2xl:grid-cols-3">
@@ -484,6 +587,98 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
               <p className="mt-2 text-sm text-slate-500">
                 Tente buscar por outro título, serviço, responsável ou status.
               </p>
+            </div>
+          ) : viewMode === "kanban" ? (
+            <div className="p-4 sm:p-5">
+              <KanbanBoard
+                columns={kanbanColumns}
+                getItemKey={(task) => String(task.id)}
+                onMoveItem={handleKanbanMove}
+                renderCard={(task) => (
+                  <article
+                    className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.26)] ${
+                      isOverdueTask(task) ? "ring-1 ring-rose-200" : ""
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[#17352b]">
+                          {task.titulo ?? "-"}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {getTaskServiceName(task)}
+                        </p>
+                      </div>
+
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getPriorityClassName(
+                          task.prioridade
+                        )}`}
+                      >
+                        {task.prioridade ?? "Sem prioridade"}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 space-y-2 text-sm text-slate-600">
+                      <div className="flex items-center justify-between gap-3">
+                        <span>Responsavel</span>
+                        <span className="font-medium text-slate-700">
+                          {task.responsavel ?? "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span>Data</span>
+                        <span
+                          className={
+                            isOverdueTask(task)
+                              ? "font-medium text-rose-700"
+                              : "font-medium text-slate-700"
+                          }
+                        >
+                          {formatSimpleDate(task.data_limite)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <select
+                        value={task.status ?? ""}
+                        disabled={updatingTaskId === task.id}
+                        onChange={(event) =>
+                          updateTaskStatus(task, event.target.value)
+                        }
+                        className={`h-10 w-full rounded-xl px-3 py-2 text-sm font-medium outline-none transition focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70 ${getStatusClassName(
+                          getTaskStatusLabel(task)
+                        )}`}
+                      >
+                        {TASK_STATUS_OPTIONS.map((statusOption) => (
+                          <option key={statusOption} value={statusOption}>
+                            {statusOption}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(task)}
+                        className="text-sm font-semibold text-[#17352b] transition hover:text-[#204638]"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(task)}
+                        disabled={deletingTaskId === task.id}
+                        className="text-sm font-medium text-slate-500 transition hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {deletingTaskId === task.id ? "Excluindo..." : "Excluir"}
+                      </button>
+                    </div>
+                  </article>
+                )}
+              />
             </div>
           ) : (
             <div className="w-full overflow-x-auto">

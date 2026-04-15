@@ -35,6 +35,7 @@ export type ServiceDashboardEntry = {
   nome_servico: string | null;
   valor: number | string | null;
   created_at: string | null;
+  data_entrada: string | null;
   prazo_final: string | null;
   status: string | null;
   cliente:
@@ -70,6 +71,29 @@ export type DashboardData = {
       valorEmAberto: number;
     }
   >;
+  metricasServicosPorTipo: DashboardServiceTypeMetric[];
+  conversaoComercialPorTipo: DashboardCommercialConversionMetric[];
+  conversaoComercialPorOrigem: DashboardCommercialConversionMetric[];
+};
+
+export type DashboardServiceTypeMetric = {
+  tipo_servico: string | null;
+  quantidade_servicos_concluidos: number | null;
+  servicos_com_tempo_calculavel: number | null;
+  tempo_medio_dias: number | null;
+  ticket_medio: number | null;
+  servicos_com_margem_calculavel: number | null;
+  margem_media: number | null;
+  receita_media_recebida: number | null;
+  despesa_media_paga: number | null;
+};
+
+export type DashboardCommercialConversionMetric = {
+  dimensao: string | null;
+  agrupador: string | null;
+  total_propostas: number | null;
+  propostas_ganhas: number | null;
+  taxa_conversao: number | null;
 };
 
 function normalizeText(value: string | null) {
@@ -177,13 +201,27 @@ export async function getDashboardData(
     servicesResult,
     financeiroResult,
     tasksResult,
+    serviceMetricsResult,
+    commercialConversionResult,
   ] = await Promise.all([
     supabase.from("clientes").select("id, created_at"),
     supabase
       .from("servicos")
-      .select("id, cliente_id, nome_servico, valor, created_at, prazo_final, status, cliente:clientes(nome)"),
+      .select(
+        "id, cliente_id, nome_servico, valor, created_at, data_entrada, prazo_final, status, cliente:clientes(nome)"
+      ),
     supabase.from("financeiro").select("tipo, valor, status, data, servico_id"),
     supabase.from("tarefas").select("id, data_limite, status"),
+    supabase
+      .from("vw_metricas_servicos_por_tipo")
+      .select(
+        "tipo_servico, quantidade_servicos_concluidos, servicos_com_tempo_calculavel, tempo_medio_dias, ticket_medio, servicos_com_margem_calculavel, margem_media, receita_media_recebida, despesa_media_paga"
+      ),
+    supabase
+      .from("vw_conversao_comercial")
+      .select(
+        "dimensao, agrupador, total_propostas, propostas_ganhas, taxa_conversao"
+      ),
   ]);
 
   if (clientsResult.error) {
@@ -205,10 +243,29 @@ export async function getDashboardData(
     console.error("Erro ao buscar tarefas do painel:", tasksResult.error.message);
   }
 
+  if (serviceMetricsResult.error) {
+    console.error(
+      "Erro ao buscar metricas de servicos por tipo:",
+      serviceMetricsResult.error.message
+    );
+  }
+
+  if (commercialConversionResult.error) {
+    console.error(
+      "Erro ao buscar conversao comercial:",
+      commercialConversionResult.error.message
+    );
+  }
+
   const clients = (clientsResult.data ?? []) as ClientDashboardEntry[];
   const services = (servicesResult.data ?? []) as ServiceDashboardEntry[];
   const financialEntries = (financeiroResult.data ?? []) as FinancialEntry[];
   const tasks = (tasksResult.data ?? []) as TaskDashboardEntry[];
+  const serviceTypeMetrics =
+    (serviceMetricsResult.data ?? []) as DashboardServiceTypeMetric[];
+  const commercialConversionMetrics =
+    (commercialConversionResult.data ??
+      []) as DashboardCommercialConversionMetric[];
   const periodFinancialEntries = financialEntries.filter((entry) =>
     isDateInPeriod(entry.data, selectedPeriod, customStartDate, customEndDate)
   );
@@ -245,7 +302,7 @@ export async function getDashboardData(
 
   const servicosCriados = services.filter((service) =>
     isDateInPeriod(
-      service.created_at,
+      service.data_entrada ?? service.created_at,
       selectedPeriod,
       customStartDate,
       customEndDate
@@ -345,5 +402,12 @@ export async function getDashboardData(
       .slice(0, 3),
     servicosUrgentes,
     proximosPrazos,
+    metricasServicosPorTipo: serviceTypeMetrics,
+    conversaoComercialPorTipo: commercialConversionMetrics.filter(
+      (metric) => normalizeText(metric.dimensao) === "tipo_servico"
+    ),
+    conversaoComercialPorOrigem: commercialConversionMetrics.filter(
+      (metric) => normalizeText(metric.dimensao) === "origem"
+    ),
   };
 }

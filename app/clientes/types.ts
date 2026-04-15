@@ -24,6 +24,25 @@ export type ClienteFinanceiro = {
   status: string | null;
 };
 
+export type ClienteProposta = {
+  id: number;
+  nome_oportunidade: string | null;
+  status: string | null;
+  valor_estimado: number | string | null;
+  convertido_em: string | null;
+  servico_id: number | string | null;
+};
+
+export type ClientePendencia = {
+  id: number;
+  servico_id: number | string | null;
+  titulo: string | null;
+  origem: string | null;
+  prioridade: string | null;
+  prazo_resposta: string | null;
+  status: string | null;
+};
+
 export type ClientePortfolioServico = {
   id: number;
   cliente_id: number | string | null;

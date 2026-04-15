@@ -1,0 +1,19 @@
+export type PropostaComercial = {
+  id: number;
+  nome_oportunidade: string | null;
+  nome_contato: string | null;
+  empresa: string | null;
+  telefone: string | null;
+  cidade: string | null;
+  origem: string | null;
+  tipo_servico: string | null;
+  valor_estimado: number | string | null;
+  proxima_acao_data: string | null;
+  status: string | null;
+  motivo_perda: string | null;
+  observacoes: string | null;
+  cliente_id: number | string | null;
+  servico_id: number | string | null;
+  convertido_em: string | null;
+  created_at: string | null;
+};

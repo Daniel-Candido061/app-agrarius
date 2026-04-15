@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -105,10 +105,10 @@ function getStatusOptionsByType(type: string) {
 
 function getServiceClientName(service: ServicoOption) {
   if (Array.isArray(service.cliente)) {
-    return service.cliente[0]?.nome ?? "Cliente não encontrado";
+    return service.cliente[0]?.nome ?? "Cliente nÃ£o encontrado";
   }
 
-  return service.cliente?.nome ?? "Cliente não encontrado";
+  return service.cliente?.nome ?? "Cliente nÃ£o encontrado";
 }
 
 function entryMatchesSearch(
@@ -141,7 +141,7 @@ function entryMatchesSearch(
 
 function getCustomPeriodLabel(startDate: string, endDate: string) {
   if (startDate && endDate) {
-    return `${formatSimpleDate(startDate)} até ${formatSimpleDate(endDate)}`;
+    return `${formatSimpleDate(startDate)} atÃ© ${formatSimpleDate(endDate)}`;
   }
 
   if (startDate) {
@@ -149,7 +149,7 @@ function getCustomPeriodLabel(startDate: string, endDate: string) {
   }
 
   if (endDate) {
-    return `até ${formatSimpleDate(endDate)}`;
+    return `atÃ© ${formatSimpleDate(endDate)}`;
   }
 
   return "Intervalo personalizado";
@@ -165,9 +165,6 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
     (entry) =>
       normalizeText(entry.tipo) === "despesa" &&
       normalizeText(entry.status) === "pago"
-  );
-  const lancamentosVencidosEntries = entries.filter(
-    (entry) => normalizeText(entry.status) === "vencido"
   );
   const receitasRecebidas = receitasRecebidasEntries.reduce(
     (total, entry) => total + getNumericValue(entry.valor),
@@ -210,23 +207,6 @@ function buildSummaryCards(entries: LancamentoFinanceiro[]) {
           : "border-orange-200 bg-orange-50/30",
       detailClassName:
         lucroDoPeriodo >= 0 ? "text-emerald-700/80" : "text-orange-700/80",
-    },
-    {
-      title: "Lançamentos vencidos no período",
-      value: String(lancamentosVencidosEntries.length),
-      detail: 'Lançamentos com status "Vencido" dentro do filtro aplicado',
-      valueClassName:
-        lancamentosVencidosEntries.length > 0
-          ? "text-rose-700"
-          : "text-[#17352b]",
-      cardClassName:
-        lancamentosVencidosEntries.length > 0
-          ? "border-rose-200 bg-rose-50/30"
-          : "border-slate-200 bg-white",
-      detailClassName:
-        lancamentosVencidosEntries.length > 0
-          ? "text-rose-700/80"
-          : "text-slate-500",
     },
     {
       title: "Lançamentos no período",
@@ -334,7 +314,7 @@ export function FinanceiroView({
       String(service.id),
       {
         clientName: getServiceClientName(service),
-        serviceName: service.nome_servico ?? `Serviço ${service.id}`,
+        serviceName: service.nome_servico ?? `ServiÃ§o ${service.id}`,
       },
     ])
   );
@@ -388,7 +368,7 @@ export function FinanceiroView({
   const summaryCards = buildSummaryCards(tableEntries);
   const selectedTimeLabel =
     timeFilterMode === "rapido"
-      ? `Período: ${getAppliedQuickPeriodLabel(periodFilter)}`
+      ? `PerÃ­odo: ${getAppliedQuickPeriodLabel(periodFilter)}`
       : getCustomPeriodLabel(customStartDate, customEndDate);
   const appliedPeriodLabel =
     timeFilterMode === "rapido"
@@ -475,37 +455,37 @@ export function FinanceiroView({
     const status = formData.status.trim();
 
     if (!tipo) {
-      setErrorMessage("Selecione o tipo do lançamento.");
+      setErrorMessage("Selecione o tipo do lanÃ§amento.");
       return;
     }
 
     if (!descricao) {
-      setErrorMessage("Informe a descrição do lançamento.");
+      setErrorMessage("Informe a descriÃ§Ã£o do lanÃ§amento.");
       return;
     }
 
     if (!categoria) {
-      setErrorMessage("Selecione a categoria do lançamento.");
+      setErrorMessage("Selecione a categoria do lanÃ§amento.");
       return;
     }
 
     if (!valor) {
-      setErrorMessage("Informe o valor do lançamento.");
+      setErrorMessage("Informe o valor do lanÃ§amento.");
       return;
     }
 
     if (!data) {
-      setErrorMessage("Informe a data do lançamento.");
+      setErrorMessage("Informe a data do lanÃ§amento.");
       return;
     }
 
     if (!status) {
-      setErrorMessage("Selecione o status do lançamento.");
+      setErrorMessage("Selecione o status do lanÃ§amento.");
       return;
     }
 
     if (!getStatusOptionsByType(tipo).includes(status)) {
-      setErrorMessage("Selecione um status compatível com o tipo do lançamento.");
+      setErrorMessage("Selecione um status compatÃ­vel com o tipo do lanÃ§amento.");
       return;
     }
 
@@ -522,7 +502,7 @@ export function FinanceiroView({
     }
 
     if (servicoId && Number.isNaN(parsedServiceId)) {
-      setErrorMessage("Serviço inválido.");
+      setErrorMessage("ServiÃ§o invÃ¡lido.");
       return;
     }
 
@@ -562,15 +542,26 @@ export function FinanceiroView({
     if (response.error) {
       setErrorMessage(
         isEditing
-          ? "Não foi possível atualizar o lançamento agora. Tente novamente."
-          : "Não foi possível salvar o lançamento agora. Tente novamente."
+          ? "NÃ£o foi possÃ­vel atualizar o lanÃ§amento agora. Tente novamente."
+          : "NÃ£o foi possÃ­vel salvar o lanÃ§amento agora. Tente novamente."
       );
       return;
     }
 
     if (isEditing && !response.data?.id) {
-      setErrorMessage("Não foi possível identificar o lançamento atualizado.");
+      setErrorMessage("NÃ£o foi possÃ­vel identificar o lanÃ§amento atualizado.");
       return;
+    }
+
+    if (parsedServiceId !== null) {
+      await supabase.from("servico_eventos").insert({
+        servico_id: parsedServiceId,
+        tipo: "financeiro",
+        titulo: isEditing
+          ? "Lancamento financeiro atualizado"
+          : "Novo lancamento financeiro",
+        descricao: `${tipo}: ${descricao} (${status}).`,
+      });
     }
 
     closeModal();
@@ -587,16 +578,23 @@ export function FinanceiroView({
     setDeletingEntryId(entry.id);
     setErrorMessage("");
 
-    const { error } = await supabase
-      .from("financeiro")
-      .delete()
-      .eq("id", entry.id);
+    const [{ error: deleteError }, { error: eventError }] = await Promise.all([
+      supabase.from("financeiro").delete().eq("id", entry.id),
+      entry.servico_id !== null && entry.servico_id !== undefined
+        ? supabase.from("servico_eventos").insert({
+            servico_id: Number(entry.servico_id),
+            tipo: "financeiro",
+            titulo: "Lancamento financeiro removido",
+            descricao: entry.descricao ?? "Lancamento sem descricao",
+          })
+        : Promise.resolve({ error: null }),
+    ]);
 
     setDeletingEntryId(null);
 
-    if (error) {
+    if (deleteError || eventError) {
       setErrorMessage(
-        "Não foi possível excluir o lançamento agora. Tente novamente."
+        "NÃ£o foi possÃ­vel excluir o lanÃ§amento agora. Tente novamente."
       );
       return;
     }
@@ -608,7 +606,7 @@ export function FinanceiroView({
     <>
       <AppShell
         title="Financeiro"
-        description="Lançamentos reais sincronizados com a tabela financeiro do Supabase."
+        description="LanÃ§amentos reais sincronizados com a tabela financeiro do Supabase."
         currentPath="/financeiro"
         action={
           <button
@@ -616,13 +614,13 @@ export function FinanceiroView({
             onClick={openModal}
             className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
           >
-            Novo lançamento
+            Novo lanÃ§amento
           </button>
         }
       >
         <div className="space-y-7">
           <p className="text-sm text-slate-500">
-            Período aplicado:{" "}
+            PerÃ­odo aplicado:{" "}
             <span className="font-medium text-slate-700">
               {appliedPeriodLabel}
             </span>
@@ -635,7 +633,7 @@ export function FinanceiroView({
                   Filtros
                 </span>
                 <span className="block truncate text-xs text-slate-500">
-                  Tipo, status, serviço e {selectedTimeLabel.toLowerCase()}
+                  Tipo, status, serviÃ§o e {selectedTimeLabel.toLowerCase()}
                 </span>
               </span>
               <svg
@@ -670,7 +668,7 @@ export function FinanceiroView({
                       }
                       className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
                     >
-                      <option value="rapido">Período rápido</option>
+                      <option value="rapido">PerÃ­odo rÃ¡pido</option>
                       <option value="personalizado">
                         Intervalo personalizado
                       </option>
@@ -679,7 +677,7 @@ export function FinanceiroView({
 
                   {timeFilterMode === "rapido" ? (
                     <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                      Período rápido
+                      PerÃ­odo rÃ¡pido
                       <select
                         value={periodFilter}
                         onChange={(event) =>
@@ -761,17 +759,17 @@ export function FinanceiroView({
                     </label>
 
                     <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                      Serviço
+                      ServiÃ§o
                       <select
                         value={serviceFilter}
                         onChange={(event) => setServiceFilter(event.target.value)}
                         className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
                       >
-                        <option value="">Todos os serviços</option>
+                        <option value="">Todos os serviÃ§os</option>
                         <option value="general">{serviceFallbackLabel}</option>
                         {services.map((service) => (
                           <option key={service.id} value={String(service.id)}>
-                            {service.nome_servico ?? `Serviço ${service.id}`} -{" "}
+                            {service.nome_servico ?? `ServiÃ§o ${service.id}`} -{" "}
                             {getServiceClientName(service)}
                           </option>
                         ))}
@@ -785,22 +783,20 @@ export function FinanceiroView({
 
           <section>
             <SummaryCardsGrid className="md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3">
-              {summaryCards.map((card, index) => (
+              {summaryCards.map((card) => (
                 <SummaryCard
                   key={card.title}
                   title={card.title}
                   value={card.value}
                   detail={card.detail}
                   tone={
-                    index === 0
+                    card.title === "Receitas no período"
                       ? "success"
-                      : index === 1
+                      : card.title === "Despesas no período"
                         ? "warning"
-                        : index === 2
+                        : card.title === "Lucro no período"
                           ? "info"
-                          : index === 3
-                            ? "danger"
-                            : "neutral"
+                          : "neutral"
                   }
                   valueClassName={card.valueClassName}
                   className={card.cardClassName}
@@ -817,7 +813,7 @@ export function FinanceiroView({
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Digite cliente, serviço, descrição, categoria ou valor"
+                placeholder="Digite cliente, serviÃ§o, descriÃ§Ã£o, categoria ou valor"
                 className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
               />
             </label>
@@ -827,10 +823,10 @@ export function FinanceiroView({
             {entries.length === 0 ? (
               <div className="px-6 py-16 text-center">
                 <h2 className="text-lg font-semibold text-[#17352b]">
-                  Nenhum lançamento cadastrado
+                  Nenhum lanÃ§amento cadastrado
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">
-                  Quando houver registros na tabela financeiro, eles aparecerão
+                  Quando houver registros na tabela financeiro, eles aparecerÃ£o
                   aqui.
                 </p>
               </div>
@@ -840,7 +836,7 @@ export function FinanceiroView({
                   Nenhum resultado encontrado
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">
-                  Tente buscar por outro termo para filtrar os lançamentos.
+                  Tente buscar por outro termo para filtrar os lanÃ§amentos.
                 </p>
               </div>
             ) : (
@@ -852,13 +848,13 @@ export function FinanceiroView({
                         Tipo
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Descrição
+                        DescriÃ§Ã£o
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Cliente
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Serviço
+                        ServiÃ§o
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Categoria
@@ -873,7 +869,7 @@ export function FinanceiroView({
                         {financialDateLabel}
                       </th>
                       <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Ações
+                        AÃ§Ãµes
                       </th>
                     </tr>
                   </thead>
@@ -957,12 +953,12 @@ export function FinanceiroView({
           <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="shrink-0 border-b border-slate-200 px-6 py-5">
               <h2 className="text-xl font-semibold text-[#17352b]">
-                {modalMode === "edit" ? "Editar lançamento" : "Novo lançamento"}
+                {modalMode === "edit" ? "Editar lanÃ§amento" : "Novo lanÃ§amento"}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 {modalMode === "edit"
-                  ? "Atualize os dados do lançamento selecionado."
-                  : "Preencha os campos abaixo para cadastrar um novo lançamento."}
+                  ? "Atualize os dados do lanÃ§amento selecionado."
+                  : "Preencha os campos abaixo para cadastrar um novo lanÃ§amento."}
               </p>
             </div>
 
@@ -985,12 +981,12 @@ export function FinanceiroView({
                 </label>
 
                 <SearchableSelect
-                  label="Serviço"
+                  label="ServiÃ§o"
                   value={formData.servico_id}
                   onChange={(value) => updateField("servico_id", value)}
                   options={services.map((service) => {
                     const serviceName =
-                      service.nome_servico ?? `Serviço ${service.id}`;
+                      service.nome_servico ?? `ServiÃ§o ${service.id}`;
                     const clientName = getServiceClientName(service);
 
                     return {
@@ -1000,13 +996,13 @@ export function FinanceiroView({
                     };
                   })}
                   emptyOptionLabel={serviceFallbackLabel}
-                  searchPlaceholder="Digite para buscar serviço ou cliente"
+                  searchPlaceholder="Digite para buscar serviÃ§o ou cliente"
                   helperText={
                     selectedService
                       ? `Cliente relacionado: ${getServiceClientName(
                           selectedService
                         )}`
-                      : "Use esta opção para despesas sem serviço vinculado."
+                      : "Use esta opÃ§Ã£o para despesas sem serviÃ§o vinculado."
                   }
                 />
 
@@ -1028,14 +1024,14 @@ export function FinanceiroView({
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                  Descrição
+                  DescriÃ§Ã£o
                   <input
                     type="text"
                     value={formData.descricao}
                     onChange={(event) =>
                       updateField("descricao", event.target.value)
                     }
-                    placeholder="Digite a descrição do lançamento"
+                    placeholder="Digite a descriÃ§Ã£o do lanÃ§amento"
                     className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                   />
                 </label>
@@ -1061,7 +1057,7 @@ export function FinanceiroView({
                     className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                   />
                   <span className="text-xs font-normal text-slate-500">
-                    Para parcelas, cadastre cada data como um lançamento separado.
+                    Para parcelas, cadastre cada data como um lanÃ§amento separado.
                   </span>
                 </label>
 
@@ -1114,4 +1110,5 @@ export function FinanceiroView({
     </>
   );
 }
+
 

@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
+import { ActiveFilterChips } from "../components/active-filter-chips";
 import { ActionsMenu } from "../components/actions-menu";
+import { KanbanBoard, type KanbanColumn } from "../components/kanban-board";
 import { SearchableSelect } from "../components/searchable-select";
 import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
+import { ViewModeToggle } from "../components/view-mode-toggle";
 import {
   getStatusClassName,
   normalizeStatusText,
@@ -17,7 +20,18 @@ import {
   isBeforeTodayDateOnly,
 } from "../../lib/date-utils";
 import { supabase } from "../../lib/supabase";
+import {
+  getSituacaoOperacionalClassName,
+  getSituacaoOperacionalLabel,
+  getServiceDeadlineAlert,
+  SERVICE_OPERATIONAL_STATUS_OPTIONS,
+} from "./operational-utils";
+import {
+  getPendingTemplateByServiceType,
+  getStageTemplateByServiceType,
+} from "./service-templates";
 import { SERVICE_STATUS_OPTIONS } from "./status-options";
+import { SERVICE_TYPE_OPTIONS } from "./type-options";
 import type { ClienteOption, Servico, ServicoFinanceiro } from "./types";
 
 type ServicosViewProps = {
@@ -27,10 +41,20 @@ type ServicosViewProps = {
 };
 
 type ModalMode = "create" | "edit";
+type ViewMode = "list" | "kanban";
+type ServiceQuickFilter =
+  | "all"
+  | "inProgress"
+  | "pastDue"
+  | "openBalance"
+  | "protocolado";
 
 type FormData = {
   cliente_id: string;
   nome_servico: string;
+  tipo_servico: string;
+  situacao_operacional: string;
+  data_entrada: string;
   cidade: string;
   valor: string;
   prazo_final: string;
@@ -41,12 +65,41 @@ type FormData = {
 const initialFormData: FormData = {
   cliente_id: "",
   nome_servico: "",
+  tipo_servico: SERVICE_TYPE_OPTIONS[0],
+  situacao_operacional: "em_execucao_ativa",
+  data_entrada: "",
   cidade: "",
   valor: "",
   prazo_final: "",
   observacoes: "",
   status: SERVICE_STATUS_OPTIONS[0],
 };
+
+const serviceQuickFilters = [
+  {
+    key: "all",
+    label: "Todos",
+  },
+  {
+    key: "inProgress",
+    label: "Em andamento",
+  },
+  {
+    key: "pastDue",
+    label: "Atrasados",
+  },
+  {
+    key: "openBalance",
+    label: "Nao quitados",
+  },
+  {
+    key: "protocolado",
+    label: "Protocolado",
+  },
+] satisfies Array<{
+  key: ServiceQuickFilter;
+  label: string;
+}>;
 
 function formatCurrency(value: number | string | null) {
   if (value === null || value === undefined || value === "") {
@@ -123,6 +176,32 @@ function getClientName(service: Servico) {
   return service.cliente?.nome ?? "Cliente não encontrado";
 }
 
+function getServiceTone(status: string | null) {
+  const normalizedStatus = normalizeStatusText(status);
+
+  if (normalizedStatus === "concluido" || normalizedStatus === "entregue") {
+    return "success" as const;
+  }
+
+  if (normalizedStatus === "em andamento") {
+    return "info" as const;
+  }
+
+  if (normalizedStatus === "protocolado") {
+    return "warning" as const;
+  }
+
+  if (normalizedStatus === "cancelado") {
+    return "danger" as const;
+  }
+
+  return "neutral" as const;
+}
+
+function getOperationalSearchValue(value: string | null) {
+  return value ? getSituacaoOperacionalLabel(value) : "";
+}
+
 export function ServicosView({
   services,
   clients,
@@ -137,6 +216,8 @@ export function ServicosView({
   const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [quickFilter, setQuickFilter] = useState<ServiceQuickFilter>("all");
   const [statusFilter, setStatusFilter] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -150,31 +231,6 @@ export function ServicosView({
   useEffect(() => {
     setServiceList(services);
   }, [services]);
-
-  const normalizedSearchTerm = normalizeText(searchTerm);
-  const filteredServices = serviceList.filter((service) => {
-    const matchesStatus = !statusFilter || service.status === statusFilter;
-
-    if (!matchesStatus) {
-      return false;
-    }
-
-    if (!normalizedSearchTerm) {
-      return true;
-    }
-
-    const searchableFields = [
-      getClientName(service),
-      service.nome_servico,
-      service.cidade,
-      service.status,
-      formatSimpleDate(service.created_at),
-    ];
-
-    return searchableFields.some((field) =>
-      normalizeText(field).includes(normalizedSearchTerm)
-    );
-  });
   const receivedByServiceId = new Map<string, number>();
 
   financialEntries
@@ -207,6 +263,61 @@ export function ServicosView({
       totalRecebido,
       valorEmAberto: valorContratado - totalRecebido,
     };
+  });
+  const balanceByServiceId = new Map(
+    serviceBalances.map((summary) => [String(summary.service.id), summary])
+  );
+  const normalizedSearchTerm = normalizeText(searchTerm);
+  const filteredServices = serviceList.filter((service) => {
+    const summary = balanceByServiceId.get(String(service.id));
+    const matchesStatus = !statusFilter || service.status === statusFilter;
+
+    if (!matchesStatus) {
+      return false;
+    }
+
+    if (quickFilter === "inProgress") {
+      if (normalizeStatusText(service.status) !== "em andamento") {
+        return false;
+      }
+    }
+
+    if (quickFilter === "pastDue" && !isPastDue(service)) {
+      return false;
+    }
+
+    if (
+      quickFilter === "openBalance" &&
+      (summary?.valorEmAberto ?? 0) <= 0
+    ) {
+      return false;
+    }
+
+    if (
+      quickFilter === "protocolado" &&
+      normalizeStatusText(service.status) !== "protocolado"
+    ) {
+      return false;
+    }
+
+    if (!normalizedSearchTerm) {
+      return true;
+    }
+
+    const searchableFields = [
+      getClientName(service),
+      service.nome_servico,
+      service.tipo_servico,
+      getOperationalSearchValue(service.situacao_operacional),
+      service.cidade,
+      service.status,
+      formatSimpleDate(service.data_entrada),
+      formatSimpleDate(service.created_at),
+    ];
+
+    return searchableFields.some((field) =>
+      normalizeText(field).includes(normalizedSearchTerm)
+    );
   });
   const unPaidServiceBalances = serviceBalances.filter(
     (summary) => summary.totalRecebido < summary.valorContratado
@@ -251,6 +362,55 @@ export function ServicosView({
       tone: "warning" as const,
     },
   ];
+  const quickFilterCounts = {
+    all: serviceList.length,
+    inProgress: serviceList.filter(
+      (service) => normalizeStatusText(service.status) === "em andamento"
+    ).length,
+    pastDue: serviceList.filter(isPastDue).length,
+    openBalance: serviceBalances.filter((summary) => summary.valorEmAberto > 0)
+      .length,
+    protocolado: serviceList.filter(
+      (service) => normalizeStatusText(service.status) === "protocolado"
+    ).length,
+  } satisfies Record<ServiceQuickFilter, number>;
+  const activeFilterChips = [
+    searchTerm
+      ? {
+          key: "search",
+          label: `Busca: ${searchTerm}`,
+          onRemove: () => setSearchTerm(""),
+        }
+      : null,
+    quickFilter !== "all"
+      ? {
+          key: "quick",
+          label: `Atalho: ${
+            serviceQuickFilters.find((filter) => filter.key === quickFilter)
+              ?.label ?? quickFilter
+          }`,
+          onRemove: () => setQuickFilter("all"),
+        }
+      : null,
+    statusFilter
+      ? {
+          key: "status",
+          label: `Status: ${statusFilter}`,
+          onRemove: () => setStatusFilter(""),
+        }
+      : null,
+  ].filter((chip) => chip !== null);
+  const kanbanColumns: KanbanColumn<Servico>[] = SERVICE_STATUS_OPTIONS.map(
+    (statusOption) => ({
+      id: statusOption,
+      title: statusOption,
+      tone: getServiceTone(statusOption),
+      items: filteredServices.filter(
+        (service) => normalizeStatusText(service.status) === normalizeStatusText(statusOption)
+      ),
+      emptyMessage: "Nenhum servico nesta etapa com os filtros atuais.",
+    })
+  );
   const selectedServiceEntries = selectedFinanceService
     ? financialEntries.filter(
         (entry) => String(entry.servico_id) === String(selectedFinanceService.id)
@@ -289,6 +449,10 @@ export function ServicosView({
     setFormData({
       cliente_id: service.cliente_id ? String(service.cliente_id) : "",
       nome_servico: service.nome_servico ?? "",
+      tipo_servico: service.tipo_servico ?? SERVICE_TYPE_OPTIONS[0],
+      situacao_operacional:
+        service.situacao_operacional ?? "em_execucao_ativa",
+      data_entrada: getDateInputValue(service.data_entrada ?? service.created_at),
       cidade: service.cidade ?? "",
       valor:
         service.valor === null || service.valor === undefined
@@ -339,6 +503,9 @@ export function ServicosView({
 
     const clienteId = formData.cliente_id.trim();
     const nomeServico = formData.nome_servico.trim();
+    const tipoServico = formData.tipo_servico.trim();
+    const situacaoOperacional = formData.situacao_operacional.trim();
+    const dataEntrada = formData.data_entrada.trim();
     const cidade = formData.cidade.trim();
     const valor = formData.valor.trim();
     const prazoFinal = formData.prazo_final.trim();
@@ -355,8 +522,18 @@ export function ServicosView({
       return;
     }
 
+    if (!tipoServico) {
+      setErrorMessage("Selecione o tipo do serviço.");
+      return;
+    }
+
     if (!status) {
       setErrorMessage("Selecione o status do serviço.");
+      return;
+    }
+
+    if (!situacaoOperacional) {
+      setErrorMessage("Selecione a situacao operacional.");
       return;
     }
 
@@ -387,6 +564,9 @@ export function ServicosView({
     const servicePayload = {
       cliente_id: parsedClienteId,
       nome_servico: nomeServico,
+      tipo_servico: tipoServico,
+      situacao_operacional: situacaoOperacional,
+      data_entrada: dataEntrada || null,
       cidade: cidade || null,
       valor: parsedValor,
       prazo_final: prazoFinal || null,
@@ -423,6 +603,54 @@ export function ServicosView({
     if (isEditing && !response.data?.id) {
       setErrorMessage("Não foi possível identificar o serviço atualizado.");
       return;
+    }
+
+    if (!isEditing && response.data?.id) {
+      const serviceId = response.data.id;
+      const stageTitles = getStageTemplateByServiceType(tipoServico);
+      const pendingTemplates = getPendingTemplateByServiceType(tipoServico);
+
+      await supabase.from("servico_etapas").insert(
+        stageTitles.map((title, index) => ({
+          servico_id: serviceId,
+          titulo: title,
+          ordem: index + 1,
+          status: index === 0 ? "Em andamento" : "Pendente",
+        }))
+      );
+
+      if (pendingTemplates.length > 0) {
+        await supabase.from("servico_pendencias").insert(
+          pendingTemplates.map((pendingTemplate) => ({
+            servico_id: serviceId,
+            titulo: pendingTemplate.titulo,
+            origem: pendingTemplate.origem,
+            prioridade: pendingTemplate.prioridade ?? "media",
+            status: "Aberta",
+          }))
+        );
+      }
+
+      await supabase.from("servico_eventos").insert([
+        {
+          servico_id: serviceId,
+          tipo: "sistema",
+          titulo: "Servico criado",
+          descricao: `Servico iniciado como ${tipoServico}.`,
+        },
+        {
+          servico_id: serviceId,
+          tipo: "sistema",
+          titulo: "Etapas iniciais geradas",
+          descricao: `${stageTitles.length} etapas padrao foram criadas automaticamente.`,
+        },
+        {
+          servico_id: serviceId,
+          tipo: "sistema",
+          titulo: "Pendencias iniciais sugeridas",
+          descricao: `${pendingTemplates.length} pendencia(s) padrao foram criadas automaticamente.`,
+        },
+      ]);
     }
 
     closeModal();
@@ -517,6 +745,18 @@ export function ServicosView({
     router.refresh();
   }
 
+  function handleKanbanMove(serviceId: string, nextColumnId: string) {
+    const service = serviceList.find(
+      (currentService) => String(currentService.id) === serviceId
+    );
+
+    if (!service) {
+      return;
+    }
+
+    updateServiceStatus(service, nextColumnId);
+  }
+
   return (
     <>
       <AppShell
@@ -533,18 +773,79 @@ export function ServicosView({
           </button>
         }
       >
-        <div className="mb-6">
-          <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-            Busca
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Buscar por cliente, serviço, cidade ou status"
-              className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
-            />
-          </label>
-        </div>
+        <section className="mb-6 space-y-4 rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.28)] sm:p-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-sm font-medium text-slate-700">
+              Busca
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Buscar por cliente, servico, tipo, operacao ou status"
+                className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+              />
+            </label>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+                Status
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                  className="min-h-11 min-w-[220px] rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                >
+                  <option value="">Todos os status</option>
+                  {SERVICE_STATUS_OPTIONS.map((statusOption) => (
+                    <option key={statusOption} value={statusOption}>
+                      {statusOption}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <ViewModeToggle value={viewMode} onChange={setViewMode} />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {serviceQuickFilters.map((filter) => (
+              <button
+                key={filter.key}
+                type="button"
+                onClick={() => setQuickFilter(filter.key)}
+                aria-pressed={quickFilter === filter.key}
+                className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition ${
+                  quickFilter === filter.key
+                    ? "border-[#17352b] bg-[#17352b] text-white"
+                    : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <span>{filter.label}</span>
+                <span
+                  className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-semibold ${
+                    quickFilter === filter.key
+                      ? "bg-white/18 text-white"
+                      : "bg-white text-slate-500"
+                  }`}
+                >
+                  {quickFilterCounts[filter.key]}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <ActiveFilterChips
+            chips={activeFilterChips}
+            totalLabel={`${filteredServices.length} resultado${
+              filteredServices.length === 1 ? "" : "s"
+            }`}
+            onClearAll={() => {
+              setSearchTerm("");
+              setQuickFilter("all");
+              setStatusFilter("");
+            }}
+          />
+        </section>
 
         <section className="mb-6">
           <SummaryCardsGrid className="2xl:grid-cols-4">
@@ -558,28 +859,6 @@ export function ServicosView({
               />
             ))}
           </SummaryCardsGrid>
-        </section>
-
-        <section className="mb-6 rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.28)] sm:p-5">
-          <div className="grid min-w-0 gap-3 md:grid-cols-3">
-            <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-              Status
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
-              >
-                <option value="">Todos os status</option>
-                {SERVICE_STATUS_OPTIONS.filter(
-                  (statusOption) => statusOption !== "Entregue"
-                ).map((statusOption) => (
-                  <option key={statusOption} value={statusOption}>
-                    {statusOption}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
         </section>
 
         <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
@@ -601,6 +880,152 @@ export function ServicosView({
                 Tente selecionar outro status para filtrar a lista.
               </p>
             </div>
+          ) : viewMode === "kanban" ? (
+            <div className="p-4 sm:p-5">
+              <KanbanBoard
+                columns={kanbanColumns}
+                getItemKey={(service) => String(service.id)}
+                onMoveItem={handleKanbanMove}
+                renderCard={(service) => {
+                  const detailsPath = `/servicos/${service.id}`;
+                  const summary = balanceByServiceId.get(String(service.id));
+                  const deadlineAlert = getServiceDeadlineAlert({
+                    prazoFinal: service.prazo_final,
+                    status: service.status,
+                  });
+
+                  return (
+                    <article
+                      className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.26)] ${
+                        deadlineAlert?.tone === "danger"
+                          ? "ring-1 ring-rose-200"
+                          : deadlineAlert?.tone === "warning"
+                            ? "ring-1 ring-amber-200"
+                            : ""
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-[#17352b]">
+                            {service.nome_servico ?? "-"}
+                          </p>
+                          <p className="mt-1 truncate text-xs text-slate-500">
+                            {getClientName(service)}
+                          </p>
+                          <span
+                            className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${getSituacaoOperacionalClassName(
+                              service.situacao_operacional
+                            )}`}
+                          >
+                            {getSituacaoOperacionalLabel(
+                              service.situacao_operacional
+                            )}
+                          </span>
+                          {deadlineAlert ? (
+                            <span
+                              className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                deadlineAlert.tone === "danger"
+                                  ? "bg-rose-50 text-rose-700"
+                                  : "bg-amber-50 text-amber-700"
+                              }`}
+                            >
+                              {deadlineAlert.label}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => openFinancialModal(service)}
+                          className="inline-flex shrink-0 rounded-full border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                        >
+                          Financeiro
+                        </button>
+                      </div>
+
+                        <div className="mt-4 space-y-2 text-sm text-slate-600">
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Tipo</span>
+                          <span className="font-medium text-slate-700">
+                            {service.tipo_servico ?? "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Cidade</span>
+                          <span className="font-medium text-slate-700">
+                            {service.cidade ?? "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Operacao</span>
+                          <span className="font-medium text-slate-700">
+                            {getSituacaoOperacionalLabel(
+                              service.situacao_operacional
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Entrega</span>
+                          <span
+                            className={
+                              deadlineAlert?.tone === "danger"
+                                ? "font-medium text-rose-700"
+                                : deadlineAlert?.tone === "warning"
+                                  ? "font-medium text-amber-700"
+                                : "font-medium text-slate-700"
+                            }
+                          >
+                            {formatSimpleDate(service.prazo_final)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Em aberto</span>
+                          <span className="font-medium text-amber-700">
+                            {formatCurrency(summary?.valorEmAberto ?? 0)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <select
+                          value={service.status ?? ""}
+                          disabled={updatingServiceId === service.id}
+                          onChange={(event) =>
+                            updateServiceStatus(service, event.target.value)
+                          }
+                          className={`h-10 w-full rounded-xl px-3 py-2 text-sm font-medium outline-none transition focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70 ${getStatusClassName(
+                            service.status
+                          )}`}
+                          aria-label={`Alterar status do servico ${service.nome_servico ?? service.id}`}
+                        >
+                          {SERVICE_STATUS_OPTIONS.map((statusOption) => (
+                            <option key={statusOption} value={statusOption}>
+                              {statusOption}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <Link
+                          href={detailsPath}
+                          className="text-sm font-semibold text-[#17352b] transition hover:text-[#204638]"
+                        >
+                          Ver detalhes
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(service)}
+                          className="text-sm font-medium text-slate-500 transition hover:text-slate-700"
+                        >
+                          Editar
+                        </button>
+                      </div>
+                    </article>
+                  );
+                }}
+              />
+            </div>
           ) : (
             <div className="w-full overflow-x-auto">
               <table className="min-w-[860px] divide-y divide-slate-200">
@@ -616,10 +1041,13 @@ export function ServicosView({
                       Cidade
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Operacao
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Valor
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Prazo
+                      Prazo de entrega
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Status
@@ -632,6 +1060,10 @@ export function ServicosView({
                 <tbody className="divide-y divide-slate-100">
                   {filteredServices.map((service) => {
                     const detailsPath = `/servicos/${service.id}`;
+                    const deadlineAlert = getServiceDeadlineAlert({
+                      prazoFinal: service.prazo_final,
+                      status: service.status,
+                    });
 
                     return (
                       <tr
@@ -646,7 +1078,11 @@ export function ServicosView({
                         role="link"
                         tabIndex={0}
                         className={`cursor-pointer hover:bg-slate-50/80 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#17352b]/20 ${
-                          isPastDue(service) ? "bg-rose-50/70" : ""
+                          deadlineAlert?.tone === "danger"
+                            ? "bg-rose-50/70"
+                            : deadlineAlert?.tone === "warning"
+                              ? "bg-amber-50/60"
+                              : ""
                         }`}
                       >
                         <td className="px-6 py-4 text-sm font-medium text-slate-700">
@@ -659,24 +1095,51 @@ export function ServicosView({
                         >
                           {service.nome_servico ?? "-"}
                         </Link>
+                        <span className="mt-1 block text-xs text-slate-500">
+                          {service.tipo_servico ?? "Sem tipo"}
+                        </span>
                         <span className="mt-1 block text-xs text-slate-400">
-                          Criado em: {formatSimpleDate(service.created_at)}
+                          Entrada: {formatSimpleDate(service.data_entrada ?? service.created_at)}
                         </span>
                       </td>
                         <td className="px-6 py-4 text-sm text-slate-500">
                           {service.cidade ?? "-"}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getSituacaoOperacionalClassName(
+                              service.situacao_operacional
+                            )}`}
+                          >
+                            {getSituacaoOperacionalLabel(
+                              service.situacao_operacional
+                            )}
+                          </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-500">
                           {formatCurrency(service.valor)}
                         </td>
                         <td
                           className={`px-6 py-4 text-sm ${
-                            isPastDue(service)
+                            deadlineAlert?.tone === "danger"
                               ? "font-medium text-rose-700"
+                              : deadlineAlert?.tone === "warning"
+                                ? "font-medium text-amber-700"
                               : "text-slate-500"
                           }`}
                         >
                           {formatSimpleDate(service.prazo_final)}
+                          {deadlineAlert ? (
+                            <span
+                              className={`mt-1 block text-xs font-medium ${
+                                deadlineAlert.tone === "danger"
+                                  ? "text-rose-700"
+                                  : "text-amber-700"
+                              }`}
+                            >
+                              {deadlineAlert.label}
+                            </span>
+                          ) : null}
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <div
@@ -884,6 +1347,35 @@ export function ServicosView({
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Tipo de serviço
+                  <select
+                    value={formData.tipo_servico}
+                    onChange={(event) =>
+                      updateField("tipo_servico", event.target.value)
+                    }
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  >
+                    {SERVICE_TYPE_OPTIONS.map((typeOption) => (
+                      <option key={typeOption} value={typeOption}>
+                        {typeOption}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Data de entrada
+                  <input
+                    type="date"
+                    value={formData.data_entrada}
+                    onChange={(event) =>
+                      updateField("data_entrada", event.target.value)
+                    }
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
                   Cidade
                   <input
                     type="text"
@@ -892,6 +1384,23 @@ export function ServicosView({
                     placeholder="Cidade - UF"
                     className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                   />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Situacao operacional
+                  <select
+                    value={formData.situacao_operacional}
+                    onChange={(event) =>
+                      updateField("situacao_operacional", event.target.value)
+                    }
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                  >
+                    {SERVICE_OPERATIONAL_STATUS_OPTIONS.map((statusOption) => (
+                      <option key={statusOption} value={statusOption}>
+                        {getSituacaoOperacionalLabel(statusOption)}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
@@ -907,7 +1416,7 @@ export function ServicosView({
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  Prazo
+                  Prazo de entrega
                   <input
                     type="date"
                     value={formData.prazo_final}

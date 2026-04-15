@@ -5,13 +5,40 @@ import { AppShell } from "../../components/app-shell";
 import { SummaryCard, SummaryCardsGrid } from "../../components/summary-card";
 import {
   formatSimpleDate,
+  getElapsedDaysBetweenDateTimes,
   getElapsedDaysFromDateTime,
+  isBeforeTodayDateOnly,
 } from "../../../lib/date-utils";
 import { requireAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
-import type { Servico, ServicoFinanceiro } from "../types";
+import type {
+  Servico,
+  ServicoDocumento,
+  ServicoEtapa,
+  ServicoEvento,
+  ServicoFinanceiro,
+  ServicoPendencia,
+} from "../types";
+import {
+  getNextUnfinishedStage,
+  getMostRelevantOpenPending,
+  getPendingPriorityLabel,
+  isClosedServiceStatus,
+  getServiceDeadlineAlert,
+  getServiceNextStepSummary,
+  getSituacaoOperacionalClassName,
+  getSituacaoOperacionalLabel,
+  isCompletedStageStatus,
+  isPendingStale,
+  isResolvedPendingStatus,
+  normalizeOperationalText,
+} from "../operational-utils";
 import type { Tarefa } from "../../tarefas/types";
+import { ServiceDocumentsSection } from "./service-documents-section";
+import { ServicePendingsSection } from "./service-pendings-section";
+import { ServiceStagesSection } from "./service-stages-section";
 import { ServiceTasksSection } from "./service-tasks-section";
+import { ServiceTimelineSection } from "./service-timeline-section";
 
 function formatCurrency(value: number | string | null) {
   if (value === null || value === undefined || value === "") {
@@ -142,11 +169,51 @@ function getClientName(service: Servico) {
   return service.cliente?.nome ?? "Cliente nao encontrado";
 }
 
+function isConcludedServiceStatus(status: string | null | undefined) {
+  return normalizeText(status) === "concluido";
+}
+
+function isCompletedTask(status: string | null | undefined) {
+  const normalizedStatus = normalizeText(status);
+  return normalizedStatus === "concluida" || normalizedStatus === "concluido";
+}
+
+function getFirstCompletionDate(
+  events: ServicoEvento[]
+) {
+  const completionEvent = [...events]
+    .filter((event) => {
+      const normalizedTitle = normalizeText(event.titulo);
+      const normalizedDescription = normalizeText(event.descricao);
+
+      return (
+        normalizedTitle === "status atualizado" &&
+        normalizedDescription.includes("status alterado para concluido")
+      );
+    })
+    .sort((leftEvent, rightEvent) => {
+      const leftTime = leftEvent.created_at
+        ? new Date(leftEvent.created_at).getTime()
+        : Number.POSITIVE_INFINITY;
+      const rightTime = rightEvent.created_at
+        ? new Date(rightEvent.created_at).getTime()
+        : Number.POSITIVE_INFINITY;
+
+      return leftTime - rightTime;
+    })[0];
+
+  if (completionEvent?.created_at) {
+    return completionEvent.created_at;
+  }
+
+  return null;
+}
+
 async function getServico(id: number) {
   const { data, error } = await supabase
     .from("servicos")
     .select(
-      "id, cliente_id, created_at, nome_servico, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
+      "id, cliente_id, created_at, data_entrada, nome_servico, tipo_servico, situacao_operacional, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
     )
     .eq("id", id)
     .maybeSingle();
@@ -157,6 +224,69 @@ async function getServico(id: number) {
   }
 
   return (data ?? null) as Servico | null;
+}
+
+async function getEtapasDoServico(id: number) {
+  const { data, error } = await supabase
+    .from("servico_etapas")
+    .select("id, servico_id, titulo, status, ordem, opcional, created_at")
+    .eq("servico_id", id)
+    .order("ordem", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Erro ao buscar etapas do servico:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as ServicoEtapa[];
+}
+
+async function getPendenciasDoServico(id: number) {
+  const { data, error } = await supabase
+    .from("servico_pendencias")
+    .select("id, servico_id, titulo, origem, prioridade, prazo_resposta, status, observacao, created_at, updated_at")
+    .eq("servico_id", id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao buscar pendencias do servico:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as ServicoPendencia[];
+}
+
+async function getEventosDoServico(id: number) {
+  const { data, error } = await supabase
+    .from("servico_eventos")
+    .select("id, servico_id, tipo, titulo, descricao, created_at")
+    .eq("servico_id", id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao buscar eventos do servico:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as ServicoEvento[];
+}
+
+async function getDocumentosDoServico(id: number) {
+  const { data, error } = await supabase
+    .from("servico_documentos")
+    .select(
+      "id, servico_id, nome_original, nome_arquivo, caminho_storage, tipo_mime, tamanho_bytes, observacao, criado_em, criado_por"
+    )
+    .eq("servico_id", id)
+    .order("criado_em", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao buscar documentos do servico:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as ServicoDocumento[];
 }
 
 async function getLancamentosDoServico(id: number) {
@@ -197,7 +327,7 @@ export default async function ServicoDetalhesPage({
   params: Promise<{ id: string }>;
 }) {
   await connection();
-  await requireAuth();
+  const authenticatedUser = await requireAuth();
 
   const { id } = await params;
   const serviceId = Number(id);
@@ -206,10 +336,14 @@ export default async function ServicoDetalhesPage({
     notFound();
   }
 
-  const [service, financialEntries, tasks] = await Promise.all([
+  const [service, financialEntries, tasks, stages, pendings, events, documents] = await Promise.all([
     getServico(serviceId),
     getLancamentosDoServico(serviceId),
     getTarefasDoServico(serviceId),
+    getEtapasDoServico(serviceId),
+    getPendenciasDoServico(serviceId),
+    getEventosDoServico(serviceId),
+    getDocumentosDoServico(serviceId),
   ]);
 
   if (!service) {
@@ -234,16 +368,47 @@ export default async function ServicoDetalhesPage({
 
   const lucroLiquidoRealizado = totalRecebido - totalDespesasPagas;
   const totalLancamentos = financialEntries.length;
-  const tempoDecorridoEmDias = getElapsedDaysFromDateTime(service.created_at);
+  const dataConclusao = getFirstCompletionDate(events);
+  const nextStage = getNextUnfinishedStage(stages);
+  const resolvedStagesCount = stages.filter((stage) =>
+    isCompletedStageStatus(stage.status)
+  ).length;
+  const openPendings = pendings.filter(
+    (pending) => !isResolvedPendingStatus(pending.status)
+  );
+  const staleOpenPendings = openPendings.filter((pending) =>
+    isPendingStale(pending)
+  );
+  const highPriorityOpenPendings = openPendings.filter(
+    (pending) => normalizeOperationalText(pending.prioridade) === "alta"
+  );
+  const overduePendings = openPendings.filter(
+    (pending) => pending.prazo_resposta && isBeforeTodayDateOnly(pending.prazo_resposta)
+  );
+  const pendingTasks = tasks.filter((task) => !isCompletedTask(task.status));
+  const overdueTasks = pendingTasks.filter(
+    (task) => task.data_limite && isBeforeTodayDateOnly(task.data_limite)
+  );
+  const relevantPending = getMostRelevantOpenPending(pendings);
+  const nextActionSummary = getServiceNextStepSummary({ pendings, stages });
+  const deadlineAlert = getServiceDeadlineAlert({
+    prazoFinal: service.prazo_final,
+    status: service.status,
+  });
+  const serviceEntryDateLabel = service.data_entrada ?? service.created_at;
+  const serviceEntryDateTime = service.data_entrada
+    ? `${service.data_entrada}T12:00:00`
+    : service.created_at;
+  const tempoEmAndamentoEmDias =
+    dataConclusao === null && !isConcludedServiceStatus(service.status)
+      ? getElapsedDaysFromDateTime(serviceEntryDateTime)
+      : null;
+  const tempoExecucaoEmDias = getElapsedDaysBetweenDateTimes(
+    serviceEntryDateTime,
+    dataConclusao
+  );
 
   const financialSummaryCards = [
-    {
-      title: "Valor contratado",
-      value: formatCurrency(valorContratado),
-      detail: "Valor definido no cadastro do servico.",
-      tone: "neutral" as const,
-      valueClassName: "text-[#163728]",
-    },
     {
       title: "Total recebido",
       value: formatCurrency(totalRecebido),
@@ -261,7 +426,7 @@ export default async function ServicoDetalhesPage({
     {
       title: "Despesas vinculadas",
       value: formatCurrency(totalDespesasVinculadas),
-      detail: "Todas as despesas vinculadas ao servico.",
+      detail: "Todas as despesas lancadas para este servico.",
       tone: "warning" as const,
       valueClassName: "text-[#163728]",
     },
@@ -275,6 +440,71 @@ export default async function ServicoDetalhesPage({
           : ("danger" as const),
       valueClassName:
         lucroLiquidoRealizado >= 0 ? "text-[#163728]" : "text-rose-700",
+    },
+  ];
+
+  const operationalSummaryCards = [
+    {
+      title: "Etapas concluidas",
+      value: `${resolvedStagesCount}/${stages.length || 0}`,
+      detail: stages.length
+        ? "Quantidade de etapas finalizadas no fluxo tecnico."
+        : "Nenhuma etapa cadastrada para este servico.",
+      tone: "info" as const,
+    },
+    {
+      title: "Pendencias abertas",
+      value: String(openPendings.length),
+      detail:
+        highPriorityOpenPendings.length > 0
+          ? `${highPriorityOpenPendings.length} pendencia(s) alta bloqueando o fluxo operacional.`
+          : staleOpenPendings.length > 0
+            ? `${staleOpenPendings.length} pendencia(s) estao paradas ha mais de 10 dias.`
+          : relevantPending
+            ? `Mais relevante: ${relevantPending.titulo ?? "Pendencia aberta"} (${getPendingPriorityLabel(
+                relevantPending.prioridade
+              )}).`
+          : overduePendings.length > 0
+            ? `${overduePendings.length} pendencia(s) ja passaram do prazo de resposta.`
+          : "Itens aguardando retorno de cliente, cartorio ou orgao.",
+      tone:
+        highPriorityOpenPendings.length > 0 ||
+        overduePendings.length > 0 ||
+        staleOpenPendings.length > 0
+          ? ("danger" as const)
+          : ("warning" as const),
+    },
+    {
+      title: "Tarefas pendentes",
+      value: String(pendingTasks.length),
+      detail:
+        overdueTasks.length > 0
+          ? `${overdueTasks.length} tarefa(s) estao atrasadas.`
+          : "Execucoes ainda nao concluidas neste servico.",
+      tone: overdueTasks.length > 0 ? ("warning" as const) : ("neutral" as const),
+    },
+    {
+      title: "Proxima etapa",
+      value:
+        deadlineAlert?.label ??
+        nextStage?.titulo ??
+        (isClosedServiceStatus(service.status)
+          ? "Servico concluido"
+          : "Definir proxima acao"),
+      detail: deadlineAlert
+        ? `Entrega prevista para ${formatSimpleDate(service.prazo_final)}.`
+        : nextStage
+        ? `${nextStage.opcional ? "Etapa opcional. " : ""}Status atual: ${
+            nextStage.status ?? "Pendente"
+          }.`
+        : "Fluxo tecnico sem etapas em aberto no momento.",
+      tone:
+        deadlineAlert?.tone === "danger"
+          ? ("danger" as const)
+          : deadlineAlert?.tone === "warning"
+            ? ("warning" as const)
+            : ("success" as const),
+      valueClassName: "text-[#163728] text-[1.35rem] leading-tight sm:text-[1.5rem]",
     },
   ];
 
@@ -333,6 +563,30 @@ export default async function ServicoDetalhesPage({
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Tipo de servico
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {service.tipo_servico ?? "-"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Situacao operacional
+                </p>
+                <div className="mt-2">
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getSituacaoOperacionalClassName(
+                      service.situacao_operacional
+                    )}`}
+                  >
+                    {getSituacaoOperacionalLabel(service.situacao_operacional)}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Valor contratado
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
@@ -342,16 +596,16 @@ export default async function ServicoDetalhesPage({
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Criado em
+                  Data de entrada
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  {formatSimpleDate(service.created_at)}
+                  {formatSimpleDate(serviceEntryDateLabel)}
                 </p>
               </div>
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Prazo final
+                  Prazo de entrega
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
                   {formatSimpleDate(service.prazo_final)}
@@ -362,14 +616,38 @@ export default async function ServicoDetalhesPage({
                 <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Tempo decorrido
+                      Data de conclusao
                     </p>
                     <p className="mt-2 text-sm text-slate-600">
-                      {tempoDecorridoEmDias === null
-                        ? "-"
-                        : `${tempoDecorridoEmDias} dia${
-                            tempoDecorridoEmDias === 1 ? "" : "s"
+                      {dataConclusao ? formatSimpleDate(dataConclusao) : "-"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Tempo de execucao
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {tempoExecucaoEmDias === null
+                        ? tempoEmAndamentoEmDias === null
+                          ? "-"
+                          : `Em andamento ha ${tempoEmAndamentoEmDias} dia${
+                              tempoEmAndamentoEmDias === 1 ? "" : "s"
+                            }`
+                        : `${tempoExecucaoEmDias} dia${
+                            tempoExecucaoEmDias === 1 ? "" : "s"
                           }`}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Situacao do prazo
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {service.prazo_final
+                        ? `Entrega prevista em ${formatSimpleDate(service.prazo_final)}`
+                        : "Prazo de entrega nao informado"}
                     </p>
                   </div>
                 </div>
@@ -386,7 +664,7 @@ export default async function ServicoDetalhesPage({
             </div>
           </article>
 
-          <SummaryCardsGrid className="md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3">
+          <SummaryCardsGrid className="md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4">
             {financialSummaryCards.map((card) => (
               <SummaryCard
                 key={card.title}
@@ -401,7 +679,66 @@ export default async function ServicoDetalhesPage({
           </SummaryCardsGrid>
         </section>
 
+        <section className="space-y-5">
+          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-[#17352b]">
+                  Visao operacional
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Leitura rapida do que esta travando e do proximo passo recomendado para este servico.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Proximo passo
+                </p>
+                <p className="mt-2 font-medium text-[#17352b]">
+                  {nextActionSummary}
+                </p>
+                {highPriorityOpenPendings.length > 0 ? (
+                  <p className="mt-2 text-xs font-medium text-rose-700">
+                    Existe pendencia alta aberta com impacto bloqueador.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </article>
+
+          <SummaryCardsGrid className="md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4">
+            {operationalSummaryCards.map((card) => (
+              <SummaryCard
+                key={card.title}
+                title={card.title}
+                value={card.value}
+                detail={card.detail}
+                tone={card.tone}
+                valueClassName={card.valueClassName}
+                compact
+              />
+            ))}
+          </SummaryCardsGrid>
+        </section>
+
+        <ServiceStagesSection serviceId={serviceId} stages={stages} />
+
+        <ServiceDocumentsSection
+          serviceId={serviceId}
+          documents={documents}
+          currentUserId={authenticatedUser.id}
+        />
+
+        <ServicePendingsSection
+          serviceId={serviceId}
+          serviceType={service.tipo_servico}
+          pendings={pendings}
+        />
+
         <ServiceTasksSection serviceId={serviceId} tasks={tasks} />
+
+        <ServiceTimelineSection serviceId={serviceId} events={events} />
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
           <div className="border-b border-slate-200 px-6 py-5">

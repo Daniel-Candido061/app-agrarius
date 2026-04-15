@@ -15,7 +15,6 @@ type DashboardPageProps = {
     periodo?: string | string[];
     dataInicial?: string | string[];
     dataFinal?: string | string[];
-    filtro?: string | string[];
   }>;
 };
 
@@ -31,8 +30,7 @@ export default async function Home({ searchParams }: DashboardPageProps) {
   await connection();
   await requireAuth();
 
-  const { modoTempo, periodo, dataInicial, dataFinal, filtro } =
-    await searchParams;
+  const { modoTempo, periodo, dataInicial, dataFinal } = await searchParams;
   const timeFilterMode = getTimeFilterMode(modoTempo);
   const selectedQuickPeriod: QuickPeriodValue = getQuickPeriodValue(periodo);
   const selectedPeriod: PeriodValue =
@@ -45,8 +43,6 @@ export default async function Home({ searchParams }: DashboardPageProps) {
   const customEndDate = Array.isArray(dataFinal)
     ? dataFinal[0] ?? ""
     : dataFinal ?? "";
-  const isTimeFilterOpen =
-    (Array.isArray(filtro) ? filtro[0] : filtro) === "aberto";
   const dashboardData = await getDashboardData(
     selectedPeriod,
     customStartDate,
@@ -66,7 +62,6 @@ export default async function Home({ searchParams }: DashboardPageProps) {
         initialSelectedPeriod={selectedPeriod}
         initialStartDate={customStartDate}
         initialEndDate={customEndDate}
-        initialIsOpen={isTimeFilterOpen}
       />
     </AppShell>
   );

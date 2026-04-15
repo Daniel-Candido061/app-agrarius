@@ -96,7 +96,7 @@ export function getElapsedDaysFromDateTime(value: string | null) {
     return null;
   }
 
-  const date = new Date(value);
+  const date = getSimpleDateAtNoon(value) ?? new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return null;
@@ -115,6 +115,46 @@ export function getElapsedDaysFromDateTime(value: string | null) {
   return Math.max(
     0,
     Math.round((today.getTime() - createdAtDate.getTime()) / millisecondsPerDay)
+  );
+}
+
+export function getElapsedDaysBetweenDateTimes(
+  startValue: string | null,
+  endValue: string | null
+) {
+  if (!startValue || !endValue) {
+    return null;
+  }
+
+  const startDate = getSimpleDateAtNoon(startValue) ?? new Date(startValue);
+  const endDate = getSimpleDateAtNoon(endValue) ?? new Date(endValue);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return null;
+  }
+
+  const startParts = getSaoPauloDateParts(startDate);
+  const endParts = getSaoPauloDateParts(endDate);
+  const normalizedStartDate = new Date(
+    Number(startParts.year),
+    Number(startParts.month) - 1,
+    Number(startParts.day),
+    12
+  );
+  const normalizedEndDate = new Date(
+    Number(endParts.year),
+    Number(endParts.month) - 1,
+    Number(endParts.day),
+    12
+  );
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+
+  return Math.max(
+    0,
+    Math.round(
+      (normalizedEndDate.getTime() - normalizedStartDate.getTime()) /
+        millisecondsPerDay
+    )
   );
 }
 

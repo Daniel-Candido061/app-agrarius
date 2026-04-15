@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 const navigationItems = [
   { label: "Painel", href: "/painel", icon: DashboardIcon },
+  { label: "Comercial", href: "/comercial", icon: BriefcaseIcon },
   { label: "Clientes", href: "/clientes", icon: UserIcon },
   { label: "Servicos", href: "/servicos", icon: ClipboardIcon },
   { label: "Tarefas", href: "/tarefas", icon: CheckIcon },
@@ -38,6 +39,24 @@ function UserIcon() {
     >
       <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
       <path d="M5 20a7 7 0 0 1 14 0" />
+    </svg>
+  );
+}
+
+function BriefcaseIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M4 9h16v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9Z" />
+      <path d="M4 11h16" />
+      <path d="M10 13h4" />
     </svg>
   );
 }
@@ -232,9 +251,9 @@ export function AppShell({
           </div>
         </aside>
 
-        <section className="flex-1 px-3 py-3 sm:px-5 sm:py-5 lg:ml-[248px] lg:px-6 lg:py-6">
-          <div className="mx-auto flex max-w-[1600px] flex-col gap-5">
-            <div className="overflow-hidden rounded-[30px] border border-[rgba(21,55,40,0.08)] bg-[var(--panel-background)] shadow-[0_28px_70px_-52px_rgba(15,23,42,0.4)]">
+        <section className="min-w-0 flex-1 px-3 py-3 sm:px-5 sm:py-5 lg:ml-[248px] lg:px-6 lg:py-6">
+          <div className="mx-auto flex min-w-0 max-w-[1600px] flex-col gap-5">
+            <div className="min-w-0 overflow-hidden rounded-[30px] border border-[rgba(21,55,40,0.08)] bg-[var(--panel-background)] shadow-[0_28px_70px_-52px_rgba(15,23,42,0.4)]">
               <header className="border-b border-[rgba(21,55,40,0.08)] px-5 py-5 sm:px-7 sm:py-6 lg:px-8 lg:py-7">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
@@ -266,7 +285,7 @@ export function AppShell({
                 </div>
               </header>
 
-              <div className="px-5 py-5 sm:px-7 sm:py-6 lg:px-8 lg:py-7">
+              <div className="min-w-0 px-5 py-5 sm:px-7 sm:py-6 lg:px-8 lg:py-7">
                 {children}
               </div>
             </div>
