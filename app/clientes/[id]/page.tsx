@@ -142,7 +142,7 @@ async function getServicosDoCliente(id: number) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar servicos do cliente:", error.message);
+    console.error("Erro ao buscar serviços do cliente:", error.message);
     return [];
   }
 
@@ -161,7 +161,7 @@ async function getLancamentosDosServicos(serviceIds: number[]) {
 
   if (error) {
     console.error(
-      "Erro ao buscar financeiro dos servicos do cliente:",
+      "Erro ao buscar financeiro dos serviços do cliente:",
       error.message
     );
     return [];
@@ -200,7 +200,7 @@ async function getPendenciasDosServicos(serviceIds: number[]) {
 
   if (error) {
     console.error(
-      "Erro ao buscar pendencias dos servicos do cliente:",
+      "Erro ao buscar pendências dos serviços do cliente:",
       error.message
     );
     return [];
@@ -303,21 +303,21 @@ export default async function ClienteDetalhesPage({
 
   const summaryCards = [
     {
-      title: "Total de servicos",
+      title: "Total de serviços",
       value: String(services.length),
-      detail: "Servicos vinculados a este cliente.",
+      detail: "Serviços vinculados a este cliente.",
       tone: "neutral" as const,
     },
     {
       title: "Em andamento",
       value: String(servicosEmAndamento),
-      detail: "Servicos ativos na operacao.",
+      detail: "Serviços ativos na operação.",
       tone: "success" as const,
     },
     {
-      title: "Concluidos",
+      title: "Concluídos",
       value: String(servicosConcluidos),
-      detail: "Servicos finalizados do cliente.",
+      detail: "Serviços finalizados do cliente.",
       tone: "info" as const,
     },
     {
@@ -325,7 +325,7 @@ export default async function ClienteDetalhesPage({
       value: String(openPendings.length),
       detail:
         overduePendings.length > 0
-          ? `${overduePendings.length} pendencia(s) estao atrasadas.`
+          ? `${overduePendings.length} pendência(s) estão atrasadas.`
           : "Itens aguardando retorno na carteira deste cliente.",
       tone: overduePendings.length > 0 ? ("danger" as const) : ("warning" as const),
     },
@@ -335,12 +335,12 @@ export default async function ClienteDetalhesPage({
     {
       title: "Total contratado",
       value: formatCurrency(totalContratado),
-      detail: "Soma dos valores contratados nos servicos.",
+      detail: "Soma dos valores contratados nos serviços.",
     },
     {
       title: "Total recebido",
       value: formatCurrency(totalRecebido),
-      detail: "Receitas recebidas dos servicos do cliente.",
+      detail: "Receitas recebidas dos serviços do cliente.",
     },
     {
       title: "Valor em aberto",
@@ -352,7 +352,7 @@ export default async function ClienteDetalhesPage({
   return (
     <AppShell
       title="Detalhes do cliente"
-      description="Resumo do cliente, da carteira ativa e do historico comercial vinculado."
+      description="Resumo do cliente, da carteira ativa e do histórico comercial vinculado."
       currentPath="/clientes"
       currentUserName={currentUserProfile.displayName}
       currentUserDetail={currentUserProfile.secondaryLabel}
@@ -466,7 +466,7 @@ export default async function ClienteDetalhesPage({
                 Propostas convertidas
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Historico comercial que originou servicos para este cliente.
+                Histórico comercial que originou serviços para este cliente.
               </p>
             </div>
 
@@ -498,14 +498,14 @@ export default async function ClienteDetalhesPage({
                         <span className="text-xs text-slate-400">
                           {proposal.convertido_em
                             ? `Convertida em ${formatSimpleDate(proposal.convertido_em)}`
-                            : "Sem data de conversao"}
+                            : "Sem data de conversão"}
                         </span>
                         {proposal.servico_id ? (
                           <Link
                             href={`/servicos/${proposal.servico_id}`}
                             className="text-xs font-semibold text-[#17352b] transition hover:text-[#204638]"
                           >
-                            Abrir servico
+                            Abrir serviço
                           </Link>
                         ) : null}
                       </div>
@@ -528,7 +528,7 @@ export default async function ClienteDetalhesPage({
 
             {openPendings.length === 0 ? (
               <div className="px-6 py-12 text-center text-sm text-emerald-700">
-                Nenhuma pendencia aberta para este cliente.
+                Nenhuma pendência aberta para este cliente.
               </div>
             ) : (
               <div className="space-y-3 p-6">
@@ -543,7 +543,7 @@ export default async function ClienteDetalhesPage({
                           {pending.titulo ?? "-"}
                         </h4>
                         <p className="mt-1 text-xs text-slate-500">
-                          {pending.origem ?? "Origem nao informada"}
+                          {pending.origem ?? "Origem não informada"}
                         </p>
                       </div>
 
@@ -571,10 +571,10 @@ export default async function ClienteDetalhesPage({
           {services.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">
-                Nenhum servico vinculado
+                Nenhum serviço vinculado
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                Este cliente ainda nao possui servicos cadastrados.
+                Este cliente ainda não possui serviços cadastrados.
               </p>
             </div>
           ) : (
@@ -583,7 +583,7 @@ export default async function ClienteDetalhesPage({
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Nome do servico
+                      Nome do serviço
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Cidade

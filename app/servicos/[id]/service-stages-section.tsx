@@ -163,8 +163,8 @@ export function ServiceStagesSection({
     if (stageError || eventError) {
       setErrorMessage(
         isEditing
-          ? "Nao foi possivel atualizar a etapa agora."
-          : "Nao foi possivel adicionar a etapa agora."
+          ? "Não foi possível atualizar a etapa agora."
+          : "Não foi possível adicionar a etapa agora."
       );
       return;
     }
@@ -201,7 +201,7 @@ export function ServiceStagesSection({
     setUpdatingStageId(null);
 
     if (stageError || eventError) {
-      setErrorMessage("Nao foi possivel atualizar a etapa agora.");
+      setErrorMessage("Não foi possível atualizar a etapa agora.");
       return;
     }
 
@@ -238,7 +238,7 @@ export function ServiceStagesSection({
     setUpdatingStageId(null);
 
     if (stageError || eventError) {
-      setErrorMessage("Nao foi possivel atualizar a etapa agora.");
+      setErrorMessage("Não foi possível atualizar a etapa agora.");
       return;
     }
 
@@ -295,7 +295,7 @@ export function ServiceStagesSection({
     setReorderingStageId(null);
 
     if (stageError || eventError) {
-      setErrorMessage("Nao foi possivel reordenar as etapas agora.");
+      setErrorMessage("Não foi possível reordenar as etapas agora.");
       return;
     }
 
@@ -309,10 +309,10 @@ export function ServiceStagesSection({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-[#17352b]">
-                Etapas do servico
+                Etapas do serviço
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Fluxo tecnico com ordem, status e opcionalidade ajustaveis.
+                Fluxo técnico com ordem, status e opcionalidade ajustáveis.
               </p>
             </div>
 
@@ -334,7 +334,7 @@ export function ServiceStagesSection({
 
         {orderedStages.length === 0 ? (
           <div className="px-6 py-14 text-center text-sm text-slate-500">
-            Nenhuma etapa cadastrada para este servico.
+            Nenhuma etapa cadastrada para este serviço.
           </div>
         ) : (
           <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
@@ -436,7 +436,7 @@ export function ServiceStagesSection({
               <p className="mt-1 text-sm text-slate-500">
                 {modalMode === "edit"
                   ? "Ajuste o nome e a natureza desta etapa."
-                  : "Cadastre uma nova etapa para o fluxo do servico."}
+                  : "Cadastre uma nova etapa para o fluxo do serviço."}
               </p>
             </div>
 

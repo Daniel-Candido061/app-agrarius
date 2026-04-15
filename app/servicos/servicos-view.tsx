@@ -363,9 +363,9 @@ export function ServicosView({
   }).length;
   const summaryCards = [
     {
-      title: "Total de servicos",
+      title: "Total de serviços",
       value: String(serviceList.length),
-      detail: "Servicos cadastrados na operacao.",
+      detail: "Serviços cadastrados na operação.",
       tone: "neutral" as const,
     },
     {
@@ -375,13 +375,13 @@ export function ServicosView({
           (service) => normalizeStatusText(service.status) === "em andamento"
         ).length
       ),
-      detail: "Servicos ativos no momento.",
+      detail: "Serviços ativos no momento.",
       tone: "success" as const,
     },
     {
-      title: "Concluidos",
+      title: "Concluídos",
       value: String(completedServicesCount),
-      detail: "Servicos finalizados ou entregues.",
+      detail: "Serviços finalizados ou entregues.",
       tone: "info" as const,
     },
     {
@@ -436,7 +436,7 @@ export function ServicosView({
     responsavelFilter
       ? {
           key: "responsavel",
-          label: `Responsavel: ${responsavelFilter}`,
+          label: `Responsável: ${responsavelFilter}`,
           onRemove: () => setResponsavelFilter(""),
         }
       : null,
@@ -456,7 +456,7 @@ export function ServicosView({
       items: filteredServices.filter(
         (service) => normalizeStatusText(service.status) === normalizeStatusText(statusOption)
       ),
-      emptyMessage: "Nenhum servico nesta etapa com os filtros atuais.",
+      emptyMessage: "Nenhum serviço nesta etapa com os filtros atuais.",
     })
   );
   const selectedServiceEntries = selectedFinanceService
@@ -581,7 +581,7 @@ export function ServicosView({
     }
 
     if (!situacaoOperacional) {
-      setErrorMessage("Selecione a situacao operacional.");
+      setErrorMessage("Selecione a situação operacional.");
       return;
     }
 
@@ -695,22 +695,22 @@ export function ServicosView({
         {
           servico_id: serviceId,
           tipo: "sistema",
-          titulo: "Servico criado",
-          descricao: `Servico iniciado como ${tipoServico}.`,
+          titulo: "Serviço criado",
+          descricao: `Serviço iniciado como ${tipoServico}.`,
           criado_por: currentUserId || null,
         },
         {
           servico_id: serviceId,
           tipo: "sistema",
           titulo: "Etapas iniciais geradas",
-          descricao: `${stageTitles.length} etapas padrao foram criadas automaticamente.`,
+          descricao: `${stageTitles.length} etapas padrão foram criadas automaticamente.`,
           criado_por: currentUserId || null,
         },
         {
           servico_id: serviceId,
           tipo: "sistema",
-          titulo: "Pendencias iniciais sugeridas",
-          descricao: `${pendingTemplates.length} pendencia(s) padrao foram criadas automaticamente.`,
+          titulo: "Pendências iniciais sugeridas",
+          descricao: `${pendingTemplates.length} pendência(s) padrão foram criadas automaticamente.`,
           criado_por: currentUserId || null,
         },
       ]);
@@ -848,7 +848,7 @@ export function ServicosView({
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Buscar por cliente, servico, tipo, operacao ou status"
+                placeholder="Buscar por cliente, serviço, tipo, operação ou status"
                 className={toolbarSearchInputClassName}
               />
             </label>
@@ -871,13 +871,13 @@ export function ServicosView({
               </label>
 
               <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                Responsavel
+                Responsável
                 <select
                   value={responsavelFilter}
                   onChange={(event) => setResponsavelFilter(event.target.value)}
                   className={toolbarSelectClassName}
                 >
-                  <option value="">Todos os responsaveis</option>
+                  <option value="">Todos os responsáveis</option>
                   {responsibleOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -961,7 +961,7 @@ export function ServicosView({
                 Nenhum serviço encontrado
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                Tente selecionar outro status para filtrar a lista.
+                Tente selecionar outro status para refinar a lista.
               </p>
             </div>
           ) : viewMode === "kanban" ? (
@@ -997,7 +997,7 @@ export function ServicosView({
                             {getClientName(service)}
                           </p>
                           <p className="mt-2 truncate text-xs text-slate-400">
-                            Responsavel:{" "}
+                            Responsável:{" "}
                             {getServiceResponsibleLabel(service, userDisplayNames)}
                           </p>
                           <span
@@ -1045,7 +1045,7 @@ export function ServicosView({
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-3">
-                          <span>Operacao</span>
+                          <span>Operação</span>
                           <span className="font-medium text-slate-700">
                             {getSituacaoOperacionalLabel(
                               service.situacao_operacional
@@ -1053,7 +1053,7 @@ export function ServicosView({
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-3">
-                          <span>Responsavel</span>
+                          <span>Responsável</span>
                           <span className="font-medium text-slate-700">
                             {getServiceResponsibleLabel(service, userDisplayNames)}
                           </span>
@@ -1135,7 +1135,7 @@ export function ServicosView({
                       Cidade
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Operacao
+                      Operação
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Valor
@@ -1193,7 +1193,7 @@ export function ServicosView({
                           {service.tipo_servico ?? "Sem tipo"}
                         </span>
                         <span className="mt-1 block text-xs text-slate-400">
-                          Responsavel:{" "}
+                          Responsável:{" "}
                           {getServiceResponsibleLabel(service, userDisplayNames)}
                         </span>
                         <span className="mt-1 block text-xs text-slate-400">
@@ -1485,7 +1485,7 @@ export function ServicosView({
                 </label>
 
                 <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  Situacao operacional
+                  Situação operacional
                   <select
                     value={formData.situacao_operacional}
                     onChange={(event) =>

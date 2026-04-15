@@ -370,7 +370,7 @@ export function ComercialView({
     {
       title: "Ganhas",
       value: String(proposalList.filter(isWonProposal).length),
-      detail: "Propostas convertidas em negocio.",
+      detail: "Propostas convertidas em negócio.",
       tone: "success" as const,
     },
     {
@@ -416,7 +416,7 @@ export function ComercialView({
     responsavelFilter
       ? {
           key: "responsavel",
-          label: `Responsavel: ${responsavelFilter}`,
+          label: `Responsável: ${responsavelFilter}`,
           onRemove: () => setResponsavelFilter(""),
         }
       : null,
@@ -627,8 +627,8 @@ export function ComercialView({
     if (response.error) {
       setErrorMessage(
         isEditing
-          ? "Nao foi possivel atualizar a proposta agora. Tente novamente."
-          : "Nao foi possivel salvar a proposta agora. Tente novamente."
+          ? "Não foi possível atualizar a proposta agora. Tente novamente."
+          : "Não foi possível salvar a proposta agora. Tente novamente."
       );
       return;
     }
@@ -661,7 +661,7 @@ export function ComercialView({
     setDeletingProposalId(null);
 
     if (error) {
-      setErrorMessage("Nao foi possivel excluir a proposta agora. Tente novamente.");
+      setErrorMessage("Não foi possível excluir a proposta agora. Tente novamente.");
       return;
     }
 
@@ -711,17 +711,17 @@ export function ComercialView({
     }
 
     if (!trimmedServiceName) {
-      setConversionErrorMessage("Informe o nome do servico que sera criado.");
+      setConversionErrorMessage("Informe o nome do serviço que será criado.");
       return;
     }
 
     if (!trimmedServiceType) {
-      setConversionErrorMessage("Selecione o tipo do servico.");
+      setConversionErrorMessage("Selecione o tipo do serviço.");
       return;
     }
 
     if (!trimmedServiceStatus) {
-      setConversionErrorMessage("Selecione o status inicial do servico.");
+      setConversionErrorMessage("Selecione o status inicial do serviço.");
       return;
     }
 
@@ -731,7 +731,7 @@ export function ComercialView({
       parsedServiceValue = Number(serviceValue.replace(",", "."));
 
       if (Number.isNaN(parsedServiceValue)) {
-        setConversionErrorMessage("Informe um valor valido para o servico.");
+        setConversionErrorMessage("Informe um valor válido para o serviço.");
         return;
       }
     }
@@ -769,7 +769,7 @@ export function ComercialView({
       if (clientResponse.error || !clientResponse.data?.id) {
         setIsConverting(false);
         setConversionErrorMessage(
-          "Nao foi possivel criar o cliente agora. Tente novamente."
+          "Não foi possível criar o cliente agora. Tente novamente."
         );
         return;
       }
@@ -801,7 +801,7 @@ export function ComercialView({
     if (serviceResponse.error || !serviceResponse.data?.id) {
       setIsConverting(false);
       setConversionErrorMessage(
-        "Nao foi possivel criar o servico agora. Tente novamente."
+        "Não foi possível criar o serviço agora. Tente novamente."
       );
       return;
     }
@@ -838,22 +838,22 @@ export function ComercialView({
       {
         servico_id: serviceId,
         tipo: "sistema",
-        titulo: "Servico criado",
-        descricao: `Servico originado da proposta comercial ${convertingProposal.nome_oportunidade ?? convertingProposal.id}.`,
+        titulo: "Serviço criado",
+        descricao: `Serviço originado da proposta comercial ${convertingProposal.nome_oportunidade ?? convertingProposal.id}.`,
         criado_por: currentUserId || null,
       },
       {
         servico_id: serviceId,
         tipo: "sistema",
         titulo: "Etapas iniciais geradas",
-        descricao: `${stageTitles.length} etapas padrao foram criadas automaticamente.`,
+        descricao: `${stageTitles.length} etapas padrão foram criadas automaticamente.`,
         criado_por: currentUserId || null,
       },
       {
         servico_id: serviceId,
         tipo: "sistema",
         titulo: "Pendencias iniciais sugeridas",
-        descricao: `${pendingTemplates.length} pendencia(s) padrao foram criadas automaticamente.`,
+        descricao: `${pendingTemplates.length} pendência(s) padrão foram criadas automaticamente.`,
         criado_por: currentUserId || null,
       },
     ]);
@@ -875,13 +875,13 @@ export function ComercialView({
 
     if (proposalResponse.error) {
       setConversionErrorMessage(
-        "O cliente e o servico foram criados, mas nao foi possivel atualizar a proposta."
+        "O cliente e o serviço foram criados, mas não foi possível atualizar a proposta."
       );
       return;
     }
 
     closeConversionModal();
-    setSuccessMessage("Proposta convertida em cliente e servico com sucesso.");
+    setSuccessMessage("Proposta convertida em cliente e serviço com sucesso.");
     router.refresh();
   }
 
@@ -936,7 +936,7 @@ export function ComercialView({
         )
       );
       setErrorMessage(
-        "Nao foi possivel atualizar o status da proposta agora. Tente novamente."
+        "Não foi possível atualizar o status da proposta agora. Tente novamente."
       );
       return;
     }
@@ -961,7 +961,7 @@ export function ComercialView({
     <>
       <AppShell
         title="Comercial"
-        description="Funil comercial com propostas, negociacoes e historico de conversao."
+        description="Funil comercial com propostas, negociações e histórico de conversão."
         currentPath="/comercial"
         currentUserName={currentUserName}
         currentUserDetail={currentUserDetail}
@@ -990,7 +990,7 @@ export function ComercialView({
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Buscar por oportunidade, contato, empresa, cidade ou tipo de servico"
+                placeholder="Buscar por oportunidade, contato, empresa, cidade ou tipo de serviço"
                 className={toolbarSearchInputClassName}
               />
             </label>
@@ -1013,13 +1013,13 @@ export function ComercialView({
               </label>
 
               <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                Responsavel
+                Responsável
                 <select
                   value={responsavelFilter}
                   onChange={(event) => setResponsavelFilter(event.target.value)}
                   className={toolbarSelectClassName}
                 >
-                  <option value="">Todos os responsaveis</option>
+                  <option value="">Todos os responsáveis</option>
                   {responsibleOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -1094,7 +1094,7 @@ export function ComercialView({
                 Nenhuma proposta cadastrada
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                Quando houver registros na tabela propostas, eles aparecerao aqui.
+                Quando houver registros na tabela de propostas, eles aparecerão aqui.
               </p>
             </div>
           ) : filteredProposals.length === 0 ? (
@@ -1127,7 +1127,7 @@ export function ComercialView({
                           {getProposalDisplayName(proposal)}
                         </p>
                         <p className="mt-2 truncate text-xs text-slate-400">
-                          Responsavel:{" "}
+                          Responsável:{" "}
                           {getProposalResponsibleLabel(proposal, userDisplayNames)}
                         </p>
                       </div>
@@ -1155,7 +1155,7 @@ export function ComercialView({
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <span>Proxima acao</span>
+                        <span>Próxima ação</span>
                         <span
                           className={
                             isFollowUpOverdue(proposal)
@@ -1186,7 +1186,7 @@ export function ComercialView({
                             href={`/servicos/${proposal.servico_id}`}
                             className="text-xs font-semibold text-[#17352b] transition hover:text-[#204638]"
                           >
-                            Abrir servico
+                            Abrir serviço
                           </Link>
                         ) : null}
                       </div>
@@ -1208,7 +1208,7 @@ export function ComercialView({
                             href={`/servicos/${proposal.servico_id}`}
                             className="text-xs font-semibold text-[#17352b] transition hover:text-[#204638]"
                           >
-                            Abrir servico
+                            Abrir serviço
                           </Link>
                         ) : null}
                       </div>
@@ -1246,19 +1246,19 @@ export function ComercialView({
                 <thead className="bg-slate-50">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Servico / oportunidade
+                      Serviço / oportunidade
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Cliente / contato
                       </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Tipo de servico
+                      Tipo de serviço
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Valor estimado
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Proxima acao
+                      Próxima ação
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Status
@@ -1285,7 +1285,7 @@ export function ComercialView({
                           {proposal.cidade ?? "Sem cidade"}
                         </span>
                         <span className="mt-1 block text-xs text-slate-400">
-                          Responsavel:{" "}
+                          Responsável:{" "}
                           {getProposalResponsibleLabel(proposal, userDisplayNames)}
                         </span>
                       </td>
@@ -1334,7 +1334,7 @@ export function ComercialView({
                                   {
                                     label: hasConversionHistory(proposal)
                                       ? "Converter novamente"
-                                      : "Converter em servico",
+                                      : "Converter em serviço",
                                     onClick: () => openConversionModal(proposal),
                                   },
                                 ]
@@ -1350,7 +1350,7 @@ export function ComercialView({
                             ...(proposal.servico_id
                               ? [
                                   {
-                                    label: "Abrir servico",
+                                    label: "Abrir serviço",
                                     href: `/servicos/${proposal.servico_id}`,
                                   },
                                 ]
@@ -1397,7 +1397,7 @@ export function ComercialView({
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
                 <div className="grid gap-5 sm:grid-cols-2">
                     <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                    Servico ou oportunidade
+                    Serviço ou oportunidade
                       <input
                         type="text"
                         value={formData.nome_oportunidade}
@@ -1467,7 +1467,7 @@ export function ComercialView({
                   </label>
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    Tipo de servico
+                    Tipo de serviço
                     <input
                       type="text"
                       value={formData.tipo_servico}
@@ -1494,7 +1494,7 @@ export function ComercialView({
                   </label>
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    Proxima acao
+                    Próxima ação
                     <input
                       type="date"
                       value={formData.proxima_acao_data}
@@ -1534,14 +1534,14 @@ export function ComercialView({
                   </label>
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                    Observacoes
+                    Observações
                     <textarea
                       rows={4}
                       value={formData.observacoes}
                       onChange={(event) =>
                         updateField("observacoes", event.target.value)
                       }
-                      placeholder="Anote o contexto da negociacao, escopo e proximos passos"
+                      placeholder="Anote o contexto da negociação, o escopo e os próximos passos"
                       className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                     />
                   </label>
@@ -1583,10 +1583,10 @@ export function ComercialView({
           <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="shrink-0 border-b border-slate-200 px-6 py-5">
               <h2 className="text-xl font-semibold text-[#17352b]">
-                Converter proposta em servico
+                Converter proposta em serviço
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Reaproveite os dados da proposta para criar o cliente e iniciar a execucao.
+                Reaproveite os dados da proposta para criar o cliente e iniciar a execução.
               </p>
             </div>
 
@@ -1761,32 +1761,32 @@ export function ComercialView({
                   <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
                     <div className="mb-4">
                       <h3 className="text-base font-semibold text-[#17352b]">
-                        Servico inicial
+                        Serviço inicial
                       </h3>
                       <p className="mt-1 text-sm text-slate-500">
-                        Confira os dados que vao abrir a execucao tecnica a partir da venda.
+                        Confira os dados que vão abrir a execução técnica a partir da venda.
                       </p>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                        Nome do servico
+                        Nome do serviço
                         <input
                           type="text"
                           value={conversionFormData.serviceName}
                           onChange={(event) =>
                             updateConversionField("serviceName", event.target.value)
                           }
-                          placeholder="Nome do servico"
+                          placeholder="Nome do serviço"
                           className={fieldInputClassName}
                         />
                         <span className="text-xs font-normal text-slate-500">
-                          Este campo usa o valor de &quot;Servico ou oportunidade&quot; da proposta.
+                          Este campo usa o valor de &quot;Serviço ou oportunidade&quot; da proposta.
                         </span>
                       </label>
 
                       <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                        Tipo de servico
+                        Tipo de serviço
                         <select
                           value={conversionFormData.serviceType}
                           onChange={(event) =>
@@ -1871,14 +1871,14 @@ export function ComercialView({
                       </label>
 
                       <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                        Observacoes iniciais
+                        Observações iniciais
                         <textarea
                           rows={4}
                           value={conversionFormData.serviceNotes}
                           onChange={(event) =>
                             updateConversionField("serviceNotes", event.target.value)
                           }
-                          placeholder="Contexto da venda, escopo e proximos passos"
+                          placeholder="Contexto da venda, escopo e próximos passos"
                           className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                         />
                       </label>

@@ -452,11 +452,6 @@ export function FinanceiroView({
     timeFilterMode === "rapido"
       ? `Período: ${getAppliedQuickPeriodLabel(periodFilter)}`
       : getCustomPeriodLabel(customStartDate, customEndDate);
-  const appliedPeriodLabel =
-    timeFilterMode === "rapido"
-      ? getAppliedQuickPeriodLabel(periodFilter)
-      : getCustomPeriodLabel(customStartDate, customEndDate);
-
   function openModal() {
     setModalMode("create");
     setEditingEntryId(null);
@@ -714,227 +709,183 @@ export function FinanceiroView({
           </button>
         }
       >
-        <div className="space-y-7">
-          <p className="text-sm text-slate-500">
-            Período aplicado:{" "}
-            <span className="font-medium text-slate-700">
-              {appliedPeriodLabel}
-            </span>
-          </p>
-
-          <details
-            open
-            className="group overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.22)]"
-          >
-            <summary className="list-none px-4 py-4 sm:px-5 sm:py-5">
-              <div className="flex cursor-pointer flex-col gap-4 xl:flex-row xl:items-end">
-                <div className="flex min-w-0 items-start gap-3 xl:w-[280px] xl:shrink-0">
-                  <span
-                    aria-hidden="true"
-                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[#17352b]"
+        <div className="space-y-6 sm:space-y-7">
+          <section className="rounded-[24px] border border-slate-200 bg-white p-3.5 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.22)] sm:rounded-[28px] sm:p-5">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+              <div className="flex min-w-0 items-start gap-3 xl:w-[280px] xl:shrink-0">
+                <span
+                  aria-hidden="true"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[#17352b]"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    >
-                      <path d="M7 3v3M17 3v3M4.5 9h15" strokeLinecap="round" />
-                      <path
-                        d="M6.5 5h11A2.5 2.5 0 0 1 20 7.5v10A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5v-10A2.5 2.5 0 0 1 6.5 5Z"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
+                    <path d="M7 3v3M17 3v3M4.5 9h15" strokeLinecap="round" />
+                    <path
+                      d="M6.5 5h11A2.5 2.5 0 0 1 20 7.5v10A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5v-10A2.5 2.5 0 0 1 6.5 5Z"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
 
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
-                      Filtro do financeiro
-                    </p>
-                    <p className="mt-1 text-base font-semibold text-[#17352b]">
-                      {selectedTimeLabel}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Ajuste o período e refine a listagem no mesmo contexto.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="ml-auto hidden xl:block">
-                  <span className="inline-flex min-h-9 items-center rounded-full bg-slate-100 px-3 text-xs font-semibold text-slate-600">
-                    Período aplicado
-                  </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
+                    Filtro de tempo
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[#17352b] sm:text-base">
+                    {selectedTimeLabel}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Ajuste o recorte do financeiro e refine a listagem no mesmo contexto.
+                  </p>
                 </div>
               </div>
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 20 20"
-                className="h-4 w-4 shrink-0 text-slate-500 transition group-open:rotate-180"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <path
-                  d="M5 8l5 5 5-5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </summary>
 
-            <div className="grid min-w-0 gap-4 border-t border-slate-100 px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-4 xl:grid-cols-[minmax(260px,0.85fr)_minmax(0,1.7fr)]">
-              <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                <p className="text-sm font-semibold text-[#17352b]">
-                  Período aplicado
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Escolha um recorte rápido ou um intervalo personalizado.
-                </p>
+              <div className="grid flex-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(170px,0.9fr)_minmax(220px,1fr)_auto]">
+                <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                  Modo
+                  <select
+                    value={timeFilterMode}
+                    onChange={(event) =>
+                      setTimeFilterMode(event.target.value as TimeFilterMode)
+                    }
+                    className={toolbarSelectClassName}
+                  >
+                    <option value="rapido">Período rápido</option>
+                    <option value="personalizado">Intervalo personalizado</option>
+                  </select>
+                </label>
 
-                <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">
-                  <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                    Modo
+                {timeFilterMode === "rapido" ? (
+                  <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                    Período
                     <select
-                      value={timeFilterMode}
+                      value={periodFilter}
                       onChange={(event) =>
-                        setTimeFilterMode(event.target.value as TimeFilterMode)
+                        setPeriodFilter(event.target.value as QuickPeriodValue)
                       }
                       className={toolbarSelectClassName}
                     >
-                      <option value="rapido">Período rápido</option>
-                      <option value="personalizado">
-                        Intervalo personalizado
-                      </option>
+                      {quickPeriodOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
                   </label>
-
-                  {timeFilterMode === "rapido" ? (
-                    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                      Período
-                      <select
-                        value={periodFilter}
+                ) : (
+                  <div className="grid gap-3 md:col-span-2 xl:grid-cols-2">
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                      Data inicial
+                      <input
+                        type="date"
+                        value={customStartDate}
                         onChange={(event) =>
-                          setPeriodFilter(event.target.value as QuickPeriodValue)
+                          setCustomStartDate(event.target.value)
                         }
-                        className={toolbarSelectClassName}
-                      >
-                        {quickPeriodOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : (
-                    <div className="grid min-w-0 gap-3 sm:col-span-2 sm:grid-cols-2">
-                      <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                        Data inicial
-                        <input
-                          type="date"
-                          value={customStartDate}
-                          onChange={(event) =>
-                            setCustomStartDate(event.target.value)
-                          }
-                          className={fieldInputClassName}
-                        />
-                      </label>
-
-                      <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                        Data final
-                        <input
-                          type="date"
-                          value={customEndDate}
-                          onChange={(event) =>
-                            setCustomEndDate(event.target.value)
-                          }
-                          className={fieldInputClassName}
-                        />
-                      </label>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                <p className="text-sm font-semibold text-[#17352b]">
-                  Filtros da listagem
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Refine os lançamentos por tipo, status, serviço e responsável.
-                </p>
-
-                <div className="mt-3 space-y-3">
-                  <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                      Tipo
-                      <select
-                        value={typeFilter}
-                        onChange={(event) => setTypeFilter(event.target.value)}
-                        className={toolbarSelectClassName}
-                      >
-                        <option value="">Todos os tipos</option>
-                        <option value="Receita">Receita</option>
-                        <option value="Despesa">Despesa</option>
-                      </select>
+                        className={fieldInputClassName}
+                      />
                     </label>
 
-                    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                      Status
-                      <select
-                        value={statusFilter}
-                        onChange={(event) => setStatusFilter(event.target.value)}
-                        className={toolbarSelectClassName}
-                      >
-                        <option value="">Todos os status</option>
-                        {allStatusOptions.map((statusOption) => (
-                          <option key={statusOption} value={statusOption}>
-                            {statusOption}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                      Serviço
-                      <select
-                        value={serviceFilter}
-                        onChange={(event) => setServiceFilter(event.target.value)}
-                        className={toolbarSelectClassName}
-                      >
-                        <option value="">Todos os serviços</option>
-                        <option value="general">{serviceFallbackLabel}</option>
-                        {services.map((service) => (
-                          <option key={service.id} value={String(service.id)}>
-                            {service.nome_servico ?? `Serviço ${service.id}`} -{" "}
-                            {getServiceClientName(service)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                      Responsável
-                      <select
-                        value={responsavelFilter}
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                      Data final
+                      <input
+                        type="date"
+                        value={customEndDate}
                         onChange={(event) =>
-                          setResponsavelFilter(event.target.value)
+                          setCustomEndDate(event.target.value)
                         }
-                        className={toolbarSelectClassName}
-                      >
-                        <option value="">Todos os responsáveis</option>
-                        {responsibleOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
+                        className={fieldInputClassName}
+                      />
                     </label>
                   </div>
-                </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setTypeFilter("");
+                    setStatusFilter("");
+                    setServiceFilter("");
+                    setResponsavelFilter("");
+                  }}
+                  className="w-full self-end rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 md:w-auto"
+                >
+                  Limpar filtros
+                </button>
               </div>
             </div>
-          </details>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+                Tipo
+                <select
+                  value={typeFilter}
+                  onChange={(event) => setTypeFilter(event.target.value)}
+                  className={toolbarSelectClassName}
+                >
+                  <option value="">Todos os tipos</option>
+                  <option value="Receita">Receita</option>
+                  <option value="Despesa">Despesa</option>
+                </select>
+              </label>
+
+              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+                Status
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                  className={toolbarSelectClassName}
+                >
+                  <option value="">Todos os status</option>
+                  {allStatusOptions.map((statusOption) => (
+                    <option key={statusOption} value={statusOption}>
+                      {statusOption}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+                Serviço
+                <select
+                  value={serviceFilter}
+                  onChange={(event) => setServiceFilter(event.target.value)}
+                  className={toolbarSelectClassName}
+                >
+                  <option value="">Todos os serviços</option>
+                  <option value="general">{serviceFallbackLabel}</option>
+                  {services.map((service) => (
+                    <option key={service.id} value={String(service.id)}>
+                      {service.nome_servico ?? `Serviço ${service.id}`} -{" "}
+                      {getServiceClientName(service)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+                Responsável
+                <select
+                  value={responsavelFilter}
+                  onChange={(event) => setResponsavelFilter(event.target.value)}
+                  className={toolbarSelectClassName}
+                >
+                  <option value="">Todos os responsáveis</option>
+                  {responsibleOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </section>
 
           <ActiveFilterChips
             chips={activeFilterChips}

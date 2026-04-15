@@ -48,7 +48,7 @@ export function ServiceTimelineSection({
     const trimmedDescription = description.trim();
 
     if (!trimmedTitle) {
-      setErrorMessage("Informe o titulo do evento.");
+      setErrorMessage("Informe o título do evento.");
       return;
     }
 
@@ -66,7 +66,7 @@ export function ServiceTimelineSection({
     setIsSaving(false);
 
     if (error) {
-      setErrorMessage("Nao foi possivel adicionar o evento agora.");
+      setErrorMessage("Não foi possível adicionar o evento agora.");
       return;
     }
 
@@ -81,10 +81,10 @@ export function ServiceTimelineSection({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h3 className="text-lg font-semibold text-[#17352b]">
-              Timeline do servico
+              Timeline do serviço
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Historico de movimentacoes relevantes da execucao.
+              Histórico de movimentações relevantes da execução.
             </p>
           </div>
 
@@ -96,7 +96,7 @@ export function ServiceTimelineSection({
               type="text"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Titulo do evento"
+              placeholder="Título do evento"
               className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
             />
             <input
@@ -125,7 +125,7 @@ export function ServiceTimelineSection({
 
       {events.length === 0 ? (
         <div className="px-6 py-14 text-center text-sm text-slate-500">
-          Nenhum evento registrado para este servico.
+          Nenhum evento registrado para este serviço.
         </div>
       ) : (
         <div className="space-y-4 p-6">

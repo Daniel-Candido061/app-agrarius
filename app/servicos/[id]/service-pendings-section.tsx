@@ -174,12 +174,12 @@ export function ServicePendingsSection({
     const observacao = formData.observacao.trim();
 
     if (!titulo) {
-      setErrorMessage("Informe a pendencia.");
+      setErrorMessage("Informe a pendência.");
       return;
     }
 
     if (!status) {
-      setErrorMessage("Selecione o status da pendencia.");
+      setErrorMessage("Selecione o status da pendência.");
       return;
     }
 
@@ -215,8 +215,8 @@ export function ServicePendingsSection({
         servico_id: serviceId,
         tipo: "pendencia",
         titulo: isEditing
-          ? "Pendencia atualizada"
-          : "Nova pendencia registrada",
+          ? "Pendência atualizada"
+          : "Nova pendência registrada",
         descricao: `${titulo} - ${status}${prazoResposta ? ` - prazo ${prazoResposta}` : ""}`,
         criado_por: currentUserId || null,
       }),
@@ -227,8 +227,8 @@ export function ServicePendingsSection({
     if (pendingError || eventError) {
       setErrorMessage(
         isEditing
-          ? "Nao foi possivel atualizar a pendencia agora."
-          : "Nao foi possivel registrar a pendencia agora."
+          ? "Não foi possível atualizar a pendência agora."
+          : "Não foi possível registrar a pendência agora."
       );
       return;
     }
@@ -259,14 +259,14 @@ export function ServicePendingsSection({
       supabase.from("servico_eventos").insert({
         servico_id: serviceId,
         tipo: "pendencia",
-        titulo: "Pendencia atualizada",
-        descricao: `${pending.titulo ?? "Pendencia"} alterada para ${nextStatus}.`,
+        titulo: "Pendência atualizada",
+        descricao: `${pending.titulo ?? "Pendência"} alterada para ${nextStatus}.`,
         criado_por: currentUserId || null,
       }),
     ]);
 
     if (pendingError || eventError) {
-      setErrorMessage("Nao foi possivel atualizar a pendencia agora.");
+      setErrorMessage("Não foi possível atualizar a pendência agora.");
       return;
     }
 
@@ -288,8 +288,8 @@ export function ServicePendingsSection({
       supabase.from("servico_eventos").insert({
         servico_id: serviceId,
         tipo: "pendencia",
-        titulo: "Pendencia removida",
-        descricao: pending.titulo ?? "Pendencia sem titulo",
+        titulo: "Pendência removida",
+        descricao: pending.titulo ?? "Pendência sem título",
         criado_por: currentUserId || null,
       }),
     ]);
@@ -297,7 +297,7 @@ export function ServicePendingsSection({
     setDeletingPendingId(null);
 
     if (deleteError || eventError) {
-      setErrorMessage("Nao foi possivel excluir a pendencia agora.");
+      setErrorMessage("Não foi possível excluir a pendência agora.");
       return;
     }
 
@@ -306,7 +306,7 @@ export function ServicePendingsSection({
 
   async function handleApplyTemplatePendings() {
     if (!serviceType || pendingTemplates.length === 0) {
-      setErrorMessage("Nao ha sugestoes padrao para este tipo de servico.");
+      setErrorMessage("Não há sugestões padrão para este tipo de serviço.");
       return;
     }
 
@@ -323,7 +323,7 @@ export function ServicePendingsSection({
 
     if (pendingsToInsert.length === 0) {
       setIsApplyingTemplate(false);
-      setErrorMessage("As pendencias sugeridas deste tipo ja foram aplicadas.");
+      setErrorMessage("As pendências sugeridas deste tipo já foram aplicadas.");
       return;
     }
 
@@ -342,8 +342,8 @@ export function ServicePendingsSection({
       supabase.from("servico_eventos").insert({
         servico_id: serviceId,
         tipo: "pendencia",
-        titulo: "Pendencias sugeridas aplicadas",
-        descricao: `${pendingsToInsert.length} pendencia(s) padrao foram adicionadas ao servico.`,
+        titulo: "Pendências sugeridas aplicadas",
+        descricao: `${pendingsToInsert.length} pendência(s) padrão foram adicionadas ao serviço.`,
         criado_por: currentUserId || null,
       }),
     ]);
@@ -351,7 +351,7 @@ export function ServicePendingsSection({
     setIsApplyingTemplate(false);
 
     if (pendingError || eventError) {
-      setErrorMessage("Nao foi possivel aplicar as pendencias sugeridas agora.");
+      setErrorMessage("Não foi possível aplicar as pendências sugeridas agora.");
       return;
     }
 
@@ -365,10 +365,10 @@ export function ServicePendingsSection({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-[#17352b]">
-                Pendencias do servico
+                Pendências do serviço
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Itens aguardando retorno do cliente, cartorio ou orgaos.
+                Itens aguardando retorno do cliente, cartório ou órgãos.
               </p>
             </div>
 
@@ -378,7 +378,7 @@ export function ServicePendingsSection({
                 onClick={openCreateModal}
                 className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#204638]"
               >
-                Nova pendencia
+                Nova pendência
               </button>
 
               {pendingTemplates.length > 0 ? (
@@ -388,7 +388,7 @@ export function ServicePendingsSection({
                   disabled={isApplyingTemplate}
                   className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {isApplyingTemplate ? "Aplicando..." : "Aplicar sugestoes"}
+                  {isApplyingTemplate ? "Aplicando..." : "Aplicar sugestões"}
                 </button>
               ) : null}
             </div>
@@ -403,7 +403,7 @@ export function ServicePendingsSection({
 
         {pendings.length === 0 ? (
           <div className="px-6 py-14 text-center text-sm text-slate-500">
-            Nenhuma pendencia cadastrada para este servico.
+            Nenhuma pendência cadastrada para este serviço.
           </div>
         ) : (
           <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
@@ -418,7 +418,7 @@ export function ServicePendingsSection({
                       {pending.titulo ?? "-"}
                     </h4>
                     <p className="mt-1 text-xs text-slate-500">
-                      {pending.origem ?? "Origem nao informada"}
+                      {pending.origem ?? "Origem não informada"}
                     </p>
                   </div>
 
@@ -471,7 +471,7 @@ export function ServicePendingsSection({
                   </span>
                   {isPendingStale(pending) ? (
                     <span className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
-                      Parada ha {getPendingStaleDays(pending)} dias
+                      Parada há {getPendingStaleDays(pending)} dias
                     </span>
                   ) : null}
                 </div>
@@ -480,13 +480,13 @@ export function ServicePendingsSection({
                   <p className="mt-3 text-sm text-slate-500">{pending.observacao}</p>
                 ) : (
                   <p className="mt-3 text-sm text-slate-400">
-                    Sem observacoes adicionais.
+                    Sem observações adicionais.
                   </p>
                 )}
 
                 <div className="mt-3 grid gap-2 rounded-xl bg-white px-3 py-2 text-xs text-slate-500">
                   <div className="flex items-center justify-between gap-3">
-                    <span>Responsavel</span>
+                    <span>Responsável</span>
                     <span className="font-medium text-slate-700">
                       {getUserLabel(
                         userDisplayNames,
@@ -496,7 +496,7 @@ export function ServicePendingsSection({
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span>Ultima atualizacao</span>
+                    <span>Última atualização</span>
                     <span className="font-medium text-slate-700">
                       {getUserLabel(
                         userDisplayNames,
@@ -533,12 +533,12 @@ export function ServicePendingsSection({
           <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="shrink-0 border-b border-slate-200 px-6 py-5">
               <h2 className="text-xl font-semibold text-[#17352b]">
-                {modalMode === "edit" ? "Editar pendencia" : "Nova pendencia"}
+                {modalMode === "edit" ? "Editar pendência" : "Nova pendência"}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 {modalMode === "edit"
-                  ? "Atualize os dados da pendencia selecionada."
-                  : "Registre um item pendente para acompanhar o servico."}
+                  ? "Atualize os dados da pendência selecionada."
+                  : "Registre um item pendente para acompanhar o serviço."}
               </p>
             </div>
 
@@ -546,12 +546,12 @@ export function ServicePendingsSection({
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
                 <div className="grid gap-5 sm:grid-cols-2">
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                    Pendencia
+                    Pendência
                     <input
                       type="text"
                       value={formData.titulo}
                       onChange={(event) => updateField("titulo", event.target.value)}
-                      placeholder="Descreva a pendencia"
+                      placeholder="Descreva a pendência"
                       className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                     />
                   </label>
@@ -562,7 +562,7 @@ export function ServicePendingsSection({
                       type="text"
                       value={formData.origem}
                       onChange={(event) => updateField("origem", event.target.value)}
-                      placeholder="Cliente, cartorio, orgao, confrontante..."
+                      placeholder="Cliente, cartório, órgão, confrontante..."
                       className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                     />
                   </label>
@@ -612,14 +612,14 @@ export function ServicePendingsSection({
                   </label>
 
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                    Observacoes
+                    Observações
                     <textarea
                       rows={4}
                       value={formData.observacao}
                       onChange={(event) =>
                         updateField("observacao", event.target.value)
                       }
-                      placeholder="Detalhes importantes para acompanhar esta pendencia"
+                      placeholder="Detalhes importantes para acompanhar esta pendência"
                       className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
                     />
                   </label>

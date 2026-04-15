@@ -97,8 +97,8 @@ export function SummaryCard({
 
   return (
     <article
-      className={`group relative flex h-full min-h-[188px] flex-col overflow-hidden rounded-[26px] border border-[rgba(21,55,40,0.09)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,252,246,0.96))] p-5 shadow-[0_12px_30px_-24px_rgba(16,24,40,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-26px_rgba(16,24,40,0.34)] sm:p-6 ${
-        compact ? "min-h-[168px]" : "sm:min-h-[196px]"
+      className={`group relative flex h-full min-h-[172px] flex-col overflow-hidden rounded-[24px] border border-[rgba(21,55,40,0.09)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,252,246,0.96))] p-4 shadow-[0_12px_30px_-24px_rgba(16,24,40,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-26px_rgba(16,24,40,0.34)] sm:rounded-[26px] sm:p-6 ${
+        compact ? "min-h-[156px] sm:min-h-[168px]" : "sm:min-h-[196px]"
       } ${className}`}
     >
       <div className="absolute inset-x-0 top-0 h-[3px] bg-[linear-gradient(90deg,#0f5f3d_0%,#67b88a_100%)] opacity-65" />
@@ -110,7 +110,7 @@ export function SummaryCard({
           >
             Resumo
           </p>
-          <p className="mt-2.5 min-h-[2.8rem] max-w-[28ch] text-sm font-medium leading-5 text-slate-600 sm:min-h-[3rem] sm:text-[0.95rem]">
+          <p className="mt-2 min-h-[2.6rem] max-w-[28ch] text-[0.92rem] font-medium leading-5 text-slate-600 sm:mt-2.5 sm:min-h-[3rem] sm:text-[0.95rem]">
             {title}
           </p>
         </div>
@@ -119,12 +119,12 @@ export function SummaryCard({
       </div>
 
       <strong
-        className={`mt-6 block text-[1.85rem] leading-[0.95] font-semibold tracking-[-0.045em] sm:text-[2.15rem] ${valueClassName}`}
+        className={`mt-5 block text-[1.65rem] leading-[0.95] font-semibold tracking-[-0.045em] sm:mt-6 sm:text-[2.15rem] ${valueClassName}`}
       >
         {value}
       </strong>
 
-      <p className="mt-3 min-h-[3.25rem] max-w-[38ch] text-[0.9rem] leading-5 text-slate-500 sm:mt-3.5">
+      <p className="mt-2.5 min-h-[3rem] max-w-[38ch] text-[0.85rem] leading-5 text-slate-500 sm:mt-3.5 sm:text-[0.9rem]">
         {detail}
       </p>
     </article>
@@ -137,7 +137,7 @@ export function SummaryCardsGrid({
 }: SummaryCardsGridProps) {
   return (
     <div
-      className={`grid gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4 ${className}`}
+      className={`grid gap-3 sm:gap-5 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4 ${className}`}
     >
       {children}
     </div>

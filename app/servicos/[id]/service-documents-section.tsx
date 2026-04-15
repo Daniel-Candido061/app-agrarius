@@ -133,7 +133,7 @@ export function ServiceDocumentsSection({
     const extension = getFileExtension(selectedFile.name);
 
     if (!acceptedFileExtensions.includes(extension as (typeof acceptedFileExtensions)[number])) {
-      setErrorMessage("Formato nao permitido para este anexo.");
+      setErrorMessage("Formato não permitido para este anexo.");
       return;
     }
 
@@ -159,7 +159,7 @@ export function ServiceDocumentsSection({
 
     if (uploadError) {
       setIsUploading(false);
-      setErrorMessage("Nao foi possivel enviar o arquivo agora.");
+      setErrorMessage("Não foi possível enviar o arquivo agora.");
       return;
     }
 
@@ -189,7 +189,7 @@ export function ServiceDocumentsSection({
     if (documentError || eventError) {
       await supabase.storage.from(STORAGE_BUCKET).remove([storagePath]);
       setIsUploading(false);
-      setErrorMessage("O arquivo foi enviado, mas nao foi possivel registrar o anexo.");
+      setErrorMessage("O arquivo foi enviado, mas não foi possível registrar o anexo.");
       return;
     }
 
@@ -220,7 +220,7 @@ export function ServiceDocumentsSection({
 
       if (storageError) {
         setDeletingDocumentId(null);
-        setErrorMessage("Nao foi possivel remover o arquivo do storage.");
+        setErrorMessage("Não foi possível remover o arquivo do storage.");
         return;
       }
     }
@@ -239,7 +239,7 @@ export function ServiceDocumentsSection({
     setDeletingDocumentId(null);
 
     if (deleteError || eventError) {
-      setErrorMessage("Nao foi possivel remover o anexo agora.");
+      setErrorMessage("Não foi possível remover o anexo agora.");
       return;
     }
 
@@ -253,10 +253,10 @@ export function ServiceDocumentsSection({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h3 className="text-lg font-semibold text-[#17352b]">
-              Documentos do servico
+              Documentos do serviço
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Anexe arquivos tecnicos e administrativos direto no contexto deste servico.
+              Anexe arquivos técnicos e administrativos direto no contexto deste serviço.
             </p>
           </div>
 
@@ -283,7 +283,7 @@ export function ServiceDocumentsSection({
           </label>
 
           <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-            Observacao
+            Observação
             <input
               type="text"
               value={observation}
@@ -319,7 +319,7 @@ export function ServiceDocumentsSection({
 
       {documentItems.length === 0 ? (
         <div className="px-6 py-14 text-center text-sm text-slate-500">
-          Nenhum documento anexado para este servico.
+          Nenhum documento anexado para este serviço.
         </div>
       ) : (
         <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
@@ -391,7 +391,7 @@ export function ServiceDocumentsSection({
               </div>
 
               <p className="mt-3 rounded-xl bg-white px-3 py-2 text-sm text-slate-500">
-                {document.observacao?.trim() || "Sem observacao adicional."}
+                {document.observacao?.trim() || "Sem observação adicional."}
               </p>
 
               {document.publicUrl ? (

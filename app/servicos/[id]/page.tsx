@@ -168,10 +168,10 @@ function getEntryTypeClassName(type: string | null) {
 
 function getClientName(service: Servico) {
   if (Array.isArray(service.cliente)) {
-    return service.cliente[0]?.nome ?? "Cliente nao encontrado";
+    return service.cliente[0]?.nome ?? "Cliente não encontrado";
   }
 
-  return service.cliente?.nome ?? "Cliente nao encontrado";
+  return service.cliente?.nome ?? "Cliente não encontrado";
 }
 
 function isConcludedServiceStatus(status: string | null | undefined) {
@@ -224,7 +224,7 @@ async function getServico(id: number) {
     .maybeSingle();
 
   if (error) {
-    console.error("Erro ao buscar servico:", error.message);
+    console.error("Erro ao buscar serviço:", error.message);
     return null;
   }
 
@@ -240,7 +240,7 @@ async function getEtapasDoServico(id: number) {
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("Erro ao buscar etapas do servico:", error.message);
+    console.error("Erro ao buscar etapas do serviço:", error.message);
     return [];
   }
 
@@ -255,7 +255,7 @@ async function getPendenciasDoServico(id: number) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar pendencias do servico:", error.message);
+    console.error("Erro ao buscar pendências do serviço:", error.message);
     return [];
   }
 
@@ -270,7 +270,7 @@ async function getEventosDoServico(id: number) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar eventos do servico:", error.message);
+    console.error("Erro ao buscar eventos do serviço:", error.message);
     return [];
   }
 
@@ -287,7 +287,7 @@ async function getDocumentosDoServico(id: number) {
     .order("criado_em", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar documentos do servico:", error.message);
+    console.error("Erro ao buscar documentos do serviço:", error.message);
     return [];
   }
 
@@ -303,7 +303,7 @@ async function getLancamentosDoServico(id: number) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar financeiro do servico:", error.message);
+    console.error("Erro ao buscar financeiro do serviço:", error.message);
     return [];
   }
 
@@ -319,7 +319,7 @@ async function getTarefasDoServico(id: number) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Erro ao buscar tarefas do servico:", error.message);
+    console.error("Erro ao buscar tarefas do serviço:", error.message);
     return [];
   }
 
@@ -446,7 +446,7 @@ export default async function ServicoDetalhesPage({
     {
       title: "Total recebido",
       value: formatCurrency(totalRecebido),
-      detail: "Receitas recebidas vinculadas ao servico.",
+      detail: "Receitas recebidas vinculadas ao serviço.",
       tone: "success" as const,
       valueClassName: "text-[#163728]",
     },
@@ -460,12 +460,12 @@ export default async function ServicoDetalhesPage({
     {
       title: "Despesas vinculadas",
       value: formatCurrency(totalDespesasVinculadas),
-      detail: "Todas as despesas lancadas para este servico.",
+      detail: "Todas as despesas lançadas para este serviço.",
       tone: "warning" as const,
       valueClassName: "text-[#163728]",
     },
     {
-      title: "Lucro liquido realizado",
+      title: "Lucro líquido realizado",
       value: formatCurrency(lucroLiquidoRealizado),
       detail: "Total recebido menos despesas pagas.",
       tone:
@@ -483,7 +483,7 @@ export default async function ServicoDetalhesPage({
       value: `${resolvedStagesCount}/${stages.length || 0}`,
       detail: stages.length
         ? "Quantidade de etapas finalizadas no fluxo tecnico."
-        : "Nenhuma etapa cadastrada para este servico.",
+        : "Nenhuma etapa cadastrada para este serviço.",
       tone: "info" as const,
     },
     {
@@ -491,16 +491,16 @@ export default async function ServicoDetalhesPage({
       value: String(openPendings.length),
       detail:
         highPriorityOpenPendings.length > 0
-          ? `${highPriorityOpenPendings.length} pendencia(s) alta bloqueando o fluxo operacional.`
+          ? `${highPriorityOpenPendings.length} pendência(s) de alta prioridade bloqueando o fluxo operacional.`
           : staleOpenPendings.length > 0
-            ? `${staleOpenPendings.length} pendencia(s) estao paradas ha mais de 10 dias.`
+            ? `${staleOpenPendings.length} pendência(s) estão paradas há mais de 10 dias.`
           : relevantPending
             ? `Mais relevante: ${relevantPending.titulo ?? "Pendencia aberta"} (${getPendingPriorityLabel(
                 relevantPending.prioridade
               )}).`
           : overduePendings.length > 0
-            ? `${overduePendings.length} pendencia(s) ja passaram do prazo de resposta.`
-          : "Itens aguardando retorno de cliente, cartorio ou orgao.",
+            ? `${overduePendings.length} pendência(s) já passaram do prazo de resposta.`
+          : "Itens aguardando retorno de cliente, cartório ou órgão.",
       tone:
         highPriorityOpenPendings.length > 0 ||
         overduePendings.length > 0 ||
@@ -513,8 +513,8 @@ export default async function ServicoDetalhesPage({
       value: String(pendingTasks.length),
       detail:
         overdueTasks.length > 0
-          ? `${overdueTasks.length} tarefa(s) estao atrasadas.`
-          : "Execucoes ainda nao concluidas neste servico.",
+          ? `${overdueTasks.length} tarefa(s) estão atrasadas.`
+          : "Execuções ainda não concluídas neste serviço.",
       tone: overdueTasks.length > 0 ? ("warning" as const) : ("neutral" as const),
     },
     {
@@ -523,8 +523,8 @@ export default async function ServicoDetalhesPage({
         deadlineAlert?.label ??
         nextStage?.titulo ??
         (isClosedServiceStatus(service.status)
-          ? "Servico concluido"
-          : "Definir proxima acao"),
+          ? "Serviço concluído"
+          : "Definir próxima ação"),
       detail: deadlineAlert
         ? `Entrega prevista para ${formatSimpleDate(service.prazo_final)}.`
         : nextStage
@@ -544,8 +544,8 @@ export default async function ServicoDetalhesPage({
 
   return (
     <AppShell
-      title="Detalhes do servico"
-      description="Resumo do servico, do cliente vinculado e do financeiro relacionado."
+      title="Detalhes do serviço"
+      description="Resumo do serviço, do cliente vinculado e do financeiro relacionado."
       currentPath="/servicos"
       currentUserName={currentUserProfile.displayName}
       currentUserDetail={currentUserProfile.secondaryLabel}
@@ -564,7 +564,7 @@ export default async function ServicoDetalhesPage({
           <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-500">Servico</p>
+                <p className="text-sm font-medium text-slate-500">Serviço</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#17352b]">
                   {service.nome_servico ?? "-"}
                 </h2>
@@ -600,7 +600,7 @@ export default async function ServicoDetalhesPage({
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Tipo de servico
+                  Tipo de serviço
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
                   {service.tipo_servico ?? "-"}
@@ -609,7 +609,7 @@ export default async function ServicoDetalhesPage({
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Situacao operacional
+                  Situação operacional
                 </p>
                 <div className="mt-2">
                   <span
@@ -642,7 +642,7 @@ export default async function ServicoDetalhesPage({
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Responsavel
+                  Responsável
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
                   {serviceResponsibleLabel}
@@ -662,7 +662,7 @@ export default async function ServicoDetalhesPage({
                 <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Data de conclusao
+                      Data de conclusão
                     </p>
                     <p className="mt-2 text-sm text-slate-600">
                       {dataConclusao ? formatSimpleDate(dataConclusao) : "-"}
@@ -671,7 +671,7 @@ export default async function ServicoDetalhesPage({
 
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Tempo de execucao
+                      Tempo de execução
                     </p>
                     <p className="mt-2 text-sm text-slate-600">
                       {tempoExecucaoEmDias === null
@@ -688,12 +688,12 @@ export default async function ServicoDetalhesPage({
 
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Situacao do prazo
+                      Situação do prazo
                     </p>
                     <p className="mt-2 text-sm text-slate-600">
                       {service.prazo_final
                         ? `Entrega prevista em ${formatSimpleDate(service.prazo_final)}`
-                        : "Prazo de entrega nao informado"}
+                        : "Prazo de entrega não informado"}
                     </p>
                   </div>
 
@@ -719,10 +719,10 @@ export default async function ServicoDetalhesPage({
 
               <div className="sm:col-span-2 xl:col-span-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Observacao
+                  Observação
                 </p>
                 <p className="mt-2 whitespace-pre-line rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                  {service.observacoes?.trim() || "Sem observacoes"}
+                  {service.observacoes?.trim() || "Sem observações"}
                 </p>
               </div>
             </div>
@@ -748,10 +748,10 @@ export default async function ServicoDetalhesPage({
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-[#17352b]">
-                  Visao operacional
+                  Visão operacional
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Leitura rapida do que esta travando e do proximo passo recomendado para este servico.
+                  Leitura rápida do que está travando e do próximo passo recomendado para este serviço.
                 </p>
               </div>
 
@@ -764,7 +764,7 @@ export default async function ServicoDetalhesPage({
                 </p>
                 {highPriorityOpenPendings.length > 0 ? (
                   <p className="mt-2 text-xs font-medium text-rose-700">
-                    Existe pendencia alta aberta com impacto bloqueador.
+                    Existe pendência alta aberta com impacto bloqueador.
                   </p>
                 ) : null}
               </div>
@@ -826,10 +826,10 @@ export default async function ServicoDetalhesPage({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-[#17352b]">
-                  Historico financeiro
+                  Histórico financeiro
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Todos os lancamentos financeiros vinculados a este servico.
+                  Todos os lançamentos financeiros vinculados a este serviço.
                 </p>
               </div>
 
@@ -841,7 +841,7 @@ export default async function ServicoDetalhesPage({
                   Despesas
                 </span>
                 <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-slate-700">
-                  {totalLancamentos} lancamentos
+                  {totalLancamentos} lançamentos
                 </span>
               </div>
             </div>
@@ -850,10 +850,10 @@ export default async function ServicoDetalhesPage({
           {financialEntries.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">
-                Nenhum lancamento vinculado
+                Nenhum lançamento vinculado
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                Este servico ainda nao possui receitas ou despesas cadastradas.
+                Este serviço ainda não possui receitas ou despesas cadastradas.
               </p>
             </div>
           ) : (
@@ -868,7 +868,7 @@ export default async function ServicoDetalhesPage({
                       Categoria
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      Descricao
+                      Descrição
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       Valor

@@ -33,14 +33,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const errorMessage = getErrorMessage(error);
 
   return (
-    <main className="min-h-screen bg-[#f4f7f5] px-5 py-8 text-slate-800">
-      <section className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md items-center">
-        <div className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)]">
+    <main className="min-h-screen bg-[#f4f7f5] px-4 py-5 text-slate-800 sm:px-5 sm:py-8">
+      <section className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md items-center sm:min-h-[calc(100vh-4rem)]">
+        <div className="w-full rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)] sm:rounded-2xl sm:p-8">
           <div className="text-center">
             <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
               <AgrariusLogo className="h-14 w-14" />
             </span>
-            <h1 className="mt-5 text-2xl font-semibold text-[#17352b]">
+            <h1 className="mt-4 text-[1.7rem] font-semibold text-[#17352b] sm:mt-5 sm:text-2xl">
               Entrar no Agrarius Gestão
             </h1>
             <p className="mt-2 text-sm text-slate-500">
@@ -48,7 +48,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </p>
           </div>
 
-          <form action="/auth/login" method="post" className="mt-8 space-y-5">
+          <form action="/auth/login" method="post" className="mt-7 space-y-4 sm:mt-8 sm:space-y-5">
             <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
               E-mail
               <input
@@ -57,7 +57,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 autoComplete="email"
                 required
                 placeholder="seu@email.com"
-                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
               />
             </label>
 
@@ -69,7 +69,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 autoComplete="current-password"
                 required
                 placeholder="Digite sua senha"
-                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
               />
             </label>
 
@@ -81,7 +81,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
             <button
               type="submit"
-              className="inline-flex w-full items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
             >
               Entrar
             </button>

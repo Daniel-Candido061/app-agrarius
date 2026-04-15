@@ -528,7 +528,7 @@ export function ClientesView({
                 Nenhum cliente cadastrado
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                Quando houver registros na tabela clientes, eles aparecerao aqui.
+                Quando houver registros na tabela de clientes, eles aparecerão aqui.
               </p>
             </div>
           ) : filteredClients.length === 0 ? (

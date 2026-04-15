@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 const navigationItems = [
   { label: "Painel", href: "/painel", icon: DashboardIcon },
@@ -112,6 +114,39 @@ function CheckIcon() {
   );
 }
 
+function MenuIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+    >
+      <path d="M4 7h16" strokeLinecap="round" />
+      <path d="M4 12h16" strokeLinecap="round" />
+      <path d="M4 17h16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+    >
+      <path d="m6 6 12 12" strokeLinecap="round" />
+      <path d="M18 6 6 18" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function AgrariusLogo({
   className = "h-12 w-12",
 }: {
@@ -170,18 +205,52 @@ export function AppShell({
   currentUserDetail = "Agrarius Gestão",
   currentUserInitials = "AG",
 }: AppShellProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileMenuOpen]);
+
+  function closeMobileMenu() {
+    setIsMobileMenuOpen(false);
+  }
+
   return (
     <main className="min-h-screen bg-transparent text-slate-800">
       <div className="flex min-h-screen flex-col lg:flex-row">
-        <aside className="w-full border-b border-white/10 bg-[linear-gradient(180deg,#082715_0%,#0d3520_48%,#133f27_100%)] text-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-[248px] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:border-r-white/8">
-          <div className="flex h-full min-h-full flex-col px-4 py-4 sm:px-5 sm:py-5 lg:min-h-screen lg:px-4 lg:py-6">
-            <div className="border-b border-white/8 pb-4 lg:pb-5">
-              <div className="flex items-center gap-3 rounded-[22px] border border-white/8 bg-white/3 px-3 py-3">
+        <div
+          className={`fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] transition lg:hidden ${
+            isMobileMenuOpen
+              ? "pointer-events-auto opacity-100"
+              : "pointer-events-none opacity-0"
+          }`}
+          aria-hidden="true"
+          onClick={closeMobileMenu}
+        />
+
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 flex w-[min(88vw,320px)] flex-col border-r border-white/8 bg-[linear-gradient(180deg,#082715_0%,#0d3520_48%,#133f27_100%)] text-white shadow-[0_24px_60px_-30px_rgba(0,0,0,0.7)] transition-transform duration-300 lg:fixed lg:z-auto lg:w-[248px] lg:translate-x-0 lg:shadow-none ${
+            isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+          aria-label="Menu principal"
+        >
+          <div className="flex h-full min-h-0 flex-col px-4 py-4 sm:px-5 sm:py-5 lg:min-h-screen lg:px-4 lg:py-6">
+            <div className="flex items-center justify-between border-b border-white/8 pb-4 lg:pb-5">
+              <div className="flex min-w-0 items-center gap-3 rounded-[22px] border border-white/8 bg-white/3 px-3 py-3">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#159452] shadow-[0_10px_25px_-14px_rgba(0,0,0,0.6)] ring-1 ring-white/18">
                   <AgrariusLogo className="h-10 w-10" />
                 </span>
-                <div>
-                  <span className="block text-[1.22rem] font-semibold tracking-[-0.03em] sm:text-[1.3rem]">
+                <div className="min-w-0">
+                  <span className="block truncate text-[1.22rem] font-semibold tracking-[-0.03em] sm:text-[1.3rem]">
                     Agrarius
                   </span>
                   <span className="mt-1 block text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-100/70">
@@ -189,9 +258,18 @@ export function AppShell({
                   </span>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10 lg:hidden"
+                aria-label="Fechar menu"
+              >
+                <CloseIcon />
+              </button>
             </div>
 
-            <nav className="mt-5 flex flex-col gap-1.5">
+            <nav className="mt-5 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1">
               {navigationItems.map((item) => {
                 const isActive = item.href === currentPath;
                 const Icon = item.icon;
@@ -200,6 +278,7 @@ export function AppShell({
                   <Link
                     key={`${item.label}-${item.href}`}
                     href={item.href}
+                    onClick={closeMobileMenu}
                     className={`group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-[0.95rem] font-medium transition ${
                       isActive
                         ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
@@ -224,7 +303,7 @@ export function AppShell({
               })}
             </nav>
 
-            <div className="mt-auto pt-6">
+            <div className="mt-5 pt-4">
               <div className="rounded-[22px] border border-white/8 bg-white/4 p-3">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
@@ -240,6 +319,7 @@ export function AppShell({
                   </div>
                   <Link
                     href="/conta"
+                    onClick={closeMobileMenu}
                     aria-label="Abrir configurações da conta"
                     title="Configurações da conta"
                     className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/5 text-emerald-50/80 transition hover:bg-white/10 hover:text-white"
@@ -265,6 +345,7 @@ export function AppShell({
                     </svg>
                   </Link>
                 </div>
+
                 <form action="/auth/logout" method="post" className="mt-3">
                   <button
                     type="submit"
@@ -278,27 +359,50 @@ export function AppShell({
           </div>
         </aside>
 
-        <section className="min-w-0 flex-1 px-3 py-3 sm:px-5 sm:py-5 lg:ml-[248px] lg:px-6 lg:py-6">
-          <div className="mx-auto flex min-w-0 max-w-[1600px] flex-col gap-5">
-            <div className="min-w-0 overflow-hidden rounded-[30px] border border-[rgba(21,55,40,0.08)] bg-[var(--panel-background)] shadow-[0_28px_70px_-52px_rgba(15,23,42,0.4)]">
-              <header className="border-b border-[rgba(21,55,40,0.08)] px-5 py-5 sm:px-7 sm:py-6 lg:px-8 lg:py-7">
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <section className="min-w-0 flex-1 px-3 py-3 sm:px-4 sm:py-4 lg:ml-[248px] lg:px-6 lg:py-6">
+          <div className="mx-auto flex min-w-0 max-w-[1600px] flex-col gap-4 sm:gap-5">
+            <div className="sticky top-3 z-30 lg:hidden">
+              <div className="flex items-center gap-3 rounded-[24px] border border-[rgba(21,55,40,0.08)] bg-[rgba(255,253,248,0.92)] px-3 py-3 shadow-[0_18px_38px_-28px_rgba(15,23,42,0.38)] backdrop-blur">
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-[#17352b] transition hover:bg-slate-50"
+                  aria-label="Abrir menu"
+                >
+                  <MenuIcon />
+                </button>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-[#17352b]">
+                    {title}
+                  </p>
+                  <p className="truncate text-xs text-slate-500">
+                    {currentUserName}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="min-w-0 overflow-hidden rounded-[28px] border border-[rgba(21,55,40,0.08)] bg-[var(--panel-background)] shadow-[0_28px_70px_-52px_rgba(15,23,42,0.4)]">
+              <header className="border-b border-[rgba(21,55,40,0.08)] px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-7">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
-                    <h1 className="text-[1.85rem] font-semibold tracking-[-0.05em] text-[#163728] sm:text-[2.15rem] lg:text-[2.3rem]">
+                    <h1 className="text-[1.55rem] font-semibold tracking-[-0.05em] text-[#163728] sm:text-[1.85rem] lg:text-[2.3rem]">
                       {title}
                     </h1>
-                    <p className="mt-2.5 max-w-3xl text-[0.92rem] leading-6 text-slate-500 sm:text-[0.97rem] sm:leading-7">
+                    <p className="mt-2 max-w-3xl text-[0.92rem] leading-6 text-slate-500 sm:text-[0.97rem] sm:leading-7">
                       {description}
                     </p>
                   </div>
 
                   {action ? (
-                    <div className="shrink-0 self-start lg:pt-2">{action}</div>
+                    <div className="flex w-full shrink-0 self-start sm:w-auto lg:pt-2">
+                      {action}
+                    </div>
                   ) : null}
                 </div>
               </header>
 
-              <div className="min-w-0 px-5 py-5 sm:px-7 sm:py-6 lg:px-8 lg:py-7">
+              <div className="min-w-0 px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-7">
                 {children}
               </div>
             </div>

@@ -45,7 +45,7 @@ export function getSituacaoOperacionalLabel(value: string | null | undefined) {
     case "em_execucao_ativa":
       return "Em execucao ativa";
     default:
-      return "Nao definida";
+      return "Não definida";
   }
 }
 
@@ -209,7 +209,7 @@ export function getServiceNextStepSummary(params: {
     return nextStage.titulo;
   }
 
-  return "Definir proxima acao";
+  return "Definir próxima ação";
 }
 
 export function isServiceOverdue(prazoFinal: string | null | undefined) {

@@ -18,7 +18,7 @@ export function PageTable({
 }: PageTableProps) {
   return (
     <section className={`${pageSurfaceClassName} ${className}`}>
-      <div className={scrollClassName}>{children}</div>
+      <div className={`max-w-full ${scrollClassName}`}>{children}</div>
     </section>
   );
 }

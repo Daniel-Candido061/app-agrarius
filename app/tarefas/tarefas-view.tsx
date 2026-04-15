@@ -277,7 +277,7 @@ export function TarefasView({
       filter: "overdue" as TaskFilter,
     },
     {
-      title: "Concluidas",
+      title: "Concluídas",
       value: String(doneTasks.length),
       detail: "Tarefas finalizadas dentro do fluxo atual",
       filter: "done" as TaskFilter,
@@ -311,7 +311,7 @@ export function TarefasView({
     responsavelFilter
       ? {
           key: "responsavel",
-          label: `Responsavel: ${responsavelFilter}`,
+          label: `Responsável: ${responsavelFilter}`,
           onRemove: () => setResponsavelFilter(""),
         }
       : null,
@@ -579,7 +579,7 @@ export function TarefasView({
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Buscar por titulo, servico, responsavel, prioridade ou status"
+                placeholder="Buscar por título, serviço, responsável, prioridade ou status"
                 className={toolbarSearchInputClassName}
               />
             </label>
@@ -602,13 +602,13 @@ export function TarefasView({
               </label>
 
               <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
-                Responsavel
+                Responsável
                 <select
                   value={responsavelFilter}
                   onChange={(event) => setResponsavelFilter(event.target.value)}
                   className={toolbarSelectClassName}
                 >
-                  <option value="">Todos os responsaveis</option>
+                  <option value="">Todos os responsáveis</option>
                   {responsibleOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -680,7 +680,7 @@ export function TarefasView({
                 Nenhuma tarefa cadastrada
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                Quando houver registros na tabela tarefas, eles aparecerao aqui.
+                Quando houver registros na tabela de tarefas, eles aparecerão aqui.
               </p>
             </div>
           ) : filteredTasks.length === 0 ? (
@@ -725,7 +725,7 @@ export function TarefasView({
 
                     <div className="mt-4 space-y-2 text-sm text-slate-600">
                       <div className="flex items-center justify-between gap-3">
-                        <span>Responsavel</span>
+                        <span>Responsável</span>
                         <span className="font-medium text-slate-700">
                           {getTaskResponsibleLabel(task)}
                         </span>

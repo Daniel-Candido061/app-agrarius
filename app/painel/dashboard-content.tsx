@@ -174,7 +174,7 @@ function DashboardSummary({
           value={card.value}
           detail={card.detail}
           tone={card.tone}
-          className="min-h-[220px]"
+          className="min-h-[188px] sm:min-h-[220px]"
         />
       ))}
     </SummaryCardsGrid>
@@ -226,8 +226,8 @@ function SummaryCards({ dashboardData }: { dashboardData: DashboardData }) {
 
 function UrgentServices({ services }: { services: ServiceDashboardEntry[] }) {
   return (
-    <section className="flex h-full min-h-[420px] flex-col overflow-hidden rounded-2xl border border-rose-200 bg-[linear-gradient(135deg,rgba(255,241,242,0.95),rgba(255,255,255,1))] shadow-[0_18px_40px_-24px_rgba(190,24,93,0.35)]">
-      <div className="border-b border-rose-100 px-5 py-5">
+    <section className="flex h-full min-h-[280px] flex-col overflow-hidden rounded-[24px] border border-rose-200 bg-[linear-gradient(135deg,rgba(255,241,242,0.95),rgba(255,255,255,1))] shadow-[0_18px_40px_-24px_rgba(190,24,93,0.35)] sm:min-h-[420px] sm:rounded-2xl">
+      <div className="border-b border-rose-100 px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-rose-900">
@@ -245,8 +245,8 @@ function UrgentServices({ services }: { services: ServiceDashboardEntry[] }) {
       </div>
 
         {services.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center px-5 py-12">
-            <div className="w-full max-w-sm rounded-2xl border border-dashed border-rose-200 bg-white/80 px-5 py-10 text-center shadow-sm">
+          <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-5 sm:py-12">
+            <div className="w-full max-w-sm rounded-2xl border border-dashed border-rose-200 bg-white/80 px-4 py-8 text-center shadow-sm sm:px-5 sm:py-10">
               <p className="text-sm font-medium text-rose-700">
                 Nenhum serviço vencido no momento
               </p>
@@ -256,7 +256,7 @@ function UrgentServices({ services }: { services: ServiceDashboardEntry[] }) {
           </div>
         </div>
       ) : (
-        <div className="grid gap-3 p-5">
+        <div className="grid gap-3 p-4 sm:p-5">
           {services.map((service) => (
             <article
               key={service.id}
@@ -301,8 +301,8 @@ function UpcomingDeadlines({
   services: DashboardData["proximosPrazos"];
 }) {
   return (
-    <section className="flex h-full min-h-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-      <div className="border-b border-slate-200 px-5 py-5">
+    <section className="flex h-full min-h-[280px] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)] sm:min-h-[420px] sm:rounded-2xl">
+      <div className="border-b border-slate-200 px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-[#17352b]">
@@ -316,8 +316,8 @@ function UpcomingDeadlines({
       </div>
 
       {services.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center px-5 py-12 text-center">
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10">
+        <div className="flex flex-1 items-center justify-center px-4 py-8 text-center sm:px-5 sm:py-12">
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 sm:px-5 sm:py-10">
             <p className="text-sm font-medium text-slate-600">
               Nenhum prazo próximo cadastrado
             </p>
@@ -327,7 +327,7 @@ function UpcomingDeadlines({
           </div>
         </div>
       ) : (
-        <div className="grid gap-3 p-5">
+        <div className="grid gap-3 p-4 sm:p-5">
           {services.map((service) => (
             <article
               key={service.id}
@@ -379,8 +379,8 @@ function OpenServices({
   total: number;
 }) {
   return (
-    <section className="flex h-full min-h-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-      <div className="border-b border-slate-200 px-5 py-5">
+    <section className="flex h-full min-h-[280px] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)] sm:min-h-[420px] sm:rounded-2xl">
+      <div className="border-b border-slate-200 px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-[#17352b]">
@@ -398,7 +398,7 @@ function OpenServices({
       </div>
 
       {services.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center px-5 py-12 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center sm:px-5 sm:py-12">
           <p className="text-sm font-medium text-emerald-700">
             Nenhum serviço em aberto no momento
           </p>
@@ -407,7 +407,7 @@ function OpenServices({
           </p>
         </div>
       ) : (
-        <div className="grid gap-3 p-5">
+        <div className="grid gap-3 p-4 sm:p-5">
           {services.map((service) => (
             <article
               key={service.id}
@@ -457,8 +457,8 @@ function ServiceTypeMetrics({
   metrics: DashboardServiceTypeMetric[];
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
-      <div className="border-b border-slate-200 px-5 py-5">
+    <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)] sm:rounded-2xl">
+      <div className="border-b border-slate-200 px-4 py-4 sm:px-5 sm:py-5">
         <h2 className="text-lg font-semibold text-[#17352b]">
           Desempenho por tipo de servico
         </h2>
@@ -468,7 +468,7 @@ function ServiceTypeMetrics({
       </div>
 
       {metrics.length === 0 ? (
-        <div className="px-5 py-12 text-center">
+        <div className="px-4 py-8 text-center sm:px-5 sm:py-12">
           <p className="text-sm font-medium text-slate-600">
             Ainda nao ha base suficiente para as metricas por tipo.
           </p>
@@ -540,7 +540,7 @@ function CommercialConversionList({
   metrics: DashboardCommercialConversionMetric[];
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+    <section className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-4 sm:rounded-2xl sm:p-5">
       <div className="mb-4">
         <h3 className="text-base font-semibold text-[#17352b]">{title}</h3>
         <p className="mt-1 text-sm text-slate-500">{description}</p>
@@ -585,7 +585,7 @@ function ManagementIntelligence({
   dashboardData: DashboardData;
 }) {
   return (
-    <section className="space-y-5">
+    <section className="space-y-4 sm:space-y-5">
       <div>
         <h2 className="text-xl font-semibold text-[#17352b]">
           Inteligência de gestão
@@ -595,7 +595,7 @@ function ManagementIntelligence({
         </p>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.35fr_1fr]">
+      <div className="grid gap-4 sm:gap-5 xl:grid-cols-[1.35fr_1fr]">
         <ServiceTypeMetrics metrics={dashboardData.metricasServicosPorTipo} />
 
         <div className="space-y-5">
@@ -666,7 +666,7 @@ export function DashboardContent({
   }
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6 sm:space-y-7">
       <DashboardTimeFilter
         mode={mode}
         quickPeriod={quickPeriod}
@@ -708,7 +708,7 @@ export function DashboardContent({
         <SummaryCards dashboardData={dashboardData} />
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-3">
+      <section className="grid gap-4 xl:grid-cols-3">
         <UrgentServices services={dashboardData.servicosUrgentes} />
         <UpcomingDeadlines services={dashboardData.proximosPrazos} />
         <OpenServices
