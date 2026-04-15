@@ -238,12 +238,12 @@ export function AppShell({
         />
 
         <aside
-          className={`fixed inset-y-0 left-0 z-50 flex w-[min(88vw,320px)] flex-col border-r border-white/8 bg-[linear-gradient(180deg,#082715_0%,#0d3520_48%,#133f27_100%)] text-white shadow-[0_24px_60px_-30px_rgba(0,0,0,0.7)] transition-transform duration-300 lg:fixed lg:z-auto lg:w-[248px] lg:translate-x-0 lg:shadow-none ${
+          className={`fixed inset-y-0 left-0 z-50 flex h-screen w-[min(88vw,320px)] flex-col border-r border-white/8 bg-[linear-gradient(180deg,#082715_0%,#0d3520_48%,#133f27_100%)] text-white shadow-[0_24px_60px_-30px_rgba(0,0,0,0.7)] transition-transform duration-300 lg:fixed lg:z-auto lg:w-[248px] lg:translate-x-0 lg:shadow-none ${
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
           aria-label="Menu principal"
         >
-          <div className="flex h-full min-h-0 flex-col px-4 py-4 sm:px-5 sm:py-5 lg:min-h-screen lg:px-4 lg:py-6">
+          <div className="flex h-full flex-col px-4 py-4 sm:px-5 sm:py-5 lg:px-4 lg:py-6">
             <div className="flex items-center justify-between border-b border-white/8 pb-4 lg:pb-5">
               <div className="flex min-w-0 items-center gap-3 rounded-[22px] border border-white/8 bg-white/3 px-3 py-3">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#159452] shadow-[0_10px_25px_-14px_rgba(0,0,0,0.6)] ring-1 ring-white/18">
@@ -269,7 +269,7 @@ export function AppShell({
               </button>
             </div>
 
-            <nav className="mt-5 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1">
+            <nav className="mt-5 flex flex-1 flex-col gap-1.5 pr-1 overflow-y-auto lg:overflow-visible lg:pr-0">
               {navigationItems.map((item) => {
                 const isActive = item.href === currentPath;
                 const Icon = item.icon;
@@ -303,7 +303,7 @@ export function AppShell({
               })}
             </nav>
 
-            <div className="mt-5 pt-4">
+            <div className="mt-5 pt-4 lg:mt-auto">
               <div className="rounded-[22px] border border-white/8 bg-white/4 p-3">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
@@ -362,20 +362,20 @@ export function AppShell({
         <section className="min-w-0 flex-1 px-3 py-3 sm:px-4 sm:py-4 lg:ml-[248px] lg:px-6 lg:py-6">
           <div className="mx-auto flex min-w-0 max-w-[1600px] flex-col gap-4 sm:gap-5">
             <div className="sticky top-3 z-30 lg:hidden">
-              <div className="flex items-center gap-3 rounded-[24px] border border-[rgba(21,55,40,0.08)] bg-[rgba(255,253,248,0.92)] px-3 py-3 shadow-[0_18px_38px_-28px_rgba(15,23,42,0.38)] backdrop-blur">
+              <div className="flex items-center gap-3 rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,39,21,0.94)_0%,rgba(13,53,32,0.96)_52%,rgba(19,63,39,0.98)_100%)] px-3 py-3 text-white shadow-[0_18px_38px_-28px_rgba(0,0,0,0.5)] backdrop-blur">
                 <button
                   type="button"
                   onClick={() => setIsMobileMenuOpen(true)}
-                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-[#17352b] transition hover:bg-slate-50"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/12 bg-white/8 text-white transition hover:bg-white/12"
                   aria-label="Abrir menu"
                 >
                   <MenuIcon />
                 </button>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-[#17352b]">
+                  <p className="truncate text-sm font-semibold text-white">
                     {title}
                   </p>
-                  <p className="truncate text-xs text-slate-500">
+                  <p className="truncate text-xs text-emerald-50/70">
                     {currentUserName}
                   </p>
                 </div>
