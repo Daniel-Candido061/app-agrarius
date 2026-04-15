@@ -1,6 +1,10 @@
 import { connection } from "next/server";
 import { requireAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
+import {
+  getCurrentUserShellProfile,
+  getUserDisplayMap,
+} from "../../lib/user-profiles";
 import { ServicosView } from "./servicos-view";
 import type { ClienteOption, Servico, ServicoFinanceiro } from "./types";
 
@@ -8,7 +12,7 @@ async function getServicos() {
   const { data, error } = await supabase
     .from("servicos")
     .select(
-      "id, cliente_id, created_at, data_entrada, nome_servico, tipo_servico, situacao_operacional, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
+      "id, cliente_id, created_at, criado_por, atualizado_por, responsavel_id, data_entrada, nome_servico, tipo_servico, situacao_operacional, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
     )
     .order("data_entrada", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -39,7 +43,7 @@ async function getClientes() {
 async function getFinanceiroPorServico() {
   const { data, error } = await supabase
     .from("financeiro")
-    .select("id, tipo, categoria, descricao, valor, data, servico_id, status")
+    .select("id, tipo, categoria, descricao, valor, data, servico_id, status, criado_por, atualizado_por, responsavel_id")
     .order("data", { ascending: false })
     .order("created_at", { ascending: false });
 
@@ -56,19 +60,35 @@ async function getFinanceiroPorServico() {
 
 export default async function ServicosPage() {
   await connection();
-  await requireAuth();
+  const authenticatedUser = await requireAuth();
 
   const [services, clients, financialEntries] = await Promise.all([
     getServicos(),
     getClientes(),
     getFinanceiroPorServico(),
   ]);
+  const userDisplayNames = await getUserDisplayMap(
+    services.flatMap((service) => [
+      service.responsavel_id,
+      service.criado_por,
+      service.atualizado_por,
+    ])
+  );
+  const currentUserProfile = await getCurrentUserShellProfile({
+    userId: authenticatedUser.id,
+    email: authenticatedUser.email,
+  });
 
   return (
     <ServicosView
       services={services}
       clients={clients}
       financialEntries={financialEntries}
+      currentUserId={authenticatedUser.id}
+      userDisplayNames={userDisplayNames}
+      currentUserName={currentUserProfile.displayName}
+      currentUserDetail={currentUserProfile.secondaryLabel}
+      currentUserInitials={currentUserProfile.initials}
     />
   );
 }

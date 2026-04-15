@@ -4,11 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatSimpleDate } from "../../../lib/date-utils";
 import { supabase } from "../../../lib/supabase";
+import { getUserLabel, type UserDisplayMap } from "../../../lib/user-profiles";
 import type { ServicoEvento } from "../types";
 
 type ServiceTimelineSectionProps = {
   serviceId: number;
   events: ServicoEvento[];
+  currentUserId?: string | null;
+  userDisplayNames?: UserDisplayMap;
 };
 
 function getEventBadgeClassName(type: string | null) {
@@ -29,6 +32,8 @@ function getEventBadgeClassName(type: string | null) {
 export function ServiceTimelineSection({
   serviceId,
   events,
+  currentUserId = null,
+  userDisplayNames = {},
 }: ServiceTimelineSectionProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -55,6 +60,7 @@ export function ServiceTimelineSection({
       tipo: "manual",
       titulo: trimmedTitle,
       descricao: trimmedDescription || null,
+      criado_por: currentUserId || null,
     });
 
     setIsSaving(false);
@@ -140,6 +146,9 @@ export function ServiceTimelineSection({
                     </span>
                     <span className="text-xs text-slate-400">
                       {formatSimpleDate(event.created_at)}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {getUserLabel(userDisplayNames, event.criado_por)}
                     </span>
                   </div>
                   <h4 className="mt-3 text-sm font-semibold text-[#17352b]">

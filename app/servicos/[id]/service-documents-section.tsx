@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { ActionsMenu } from "../../components/actions-menu";
 import { formatSimpleDateTime } from "../../../lib/date-utils";
 import { supabase } from "../../../lib/supabase";
+import { getUserLabel, type UserDisplayMap } from "../../../lib/user-profiles";
 import type { ServicoDocumento } from "../types";
 
 type ServiceDocumentsSectionProps = {
   serviceId: number;
   documents: ServicoDocumento[];
   currentUserId?: string | null;
+  userDisplayNames?: UserDisplayMap;
 };
 
 const STORAGE_BUCKET = "servico-documentos";
@@ -94,6 +96,7 @@ export function ServiceDocumentsSection({
   serviceId,
   documents,
   currentUserId = null,
+  userDisplayNames = {},
 }: ServiceDocumentsSectionProps) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -169,6 +172,7 @@ export function ServiceDocumentsSection({
       tamanho_bytes: selectedFile.size,
       observacao: observation.trim() || null,
       criado_por: currentUserId || null,
+      atualizado_por: currentUserId || null,
     };
 
     const [{ error: documentError }, { error: eventError }] = await Promise.all([
@@ -178,6 +182,7 @@ export function ServiceDocumentsSection({
         tipo: "documento",
         titulo: "Documento anexado",
         descricao: selectedFile.name,
+        criado_por: currentUserId || null,
       }),
     ]);
 
@@ -227,6 +232,7 @@ export function ServiceDocumentsSection({
         tipo: "documento",
         titulo: "Documento removido",
         descricao: document.nome_original ?? document.nome_arquivo ?? "Anexo",
+        criado_por: currentUserId || null,
       }),
     ]);
 
@@ -368,6 +374,20 @@ export function ServiceDocumentsSection({
                     {formatSimpleDateTime(document.criado_em)}
                   </span>
                 </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span>Autor</span>
+                  <span className="font-medium text-slate-700">
+                    {getUserLabel(userDisplayNames, document.criado_por)}
+                  </span>
+                </div>
+                {document.atualizado_por ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <span>Atualizado por</span>
+                    <span className="font-medium text-slate-700">
+                      {getUserLabel(userDisplayNames, document.atualizado_por)}
+                    </span>
+                  </div>
+                ) : null}
               </div>
 
               <p className="mt-3 rounded-xl bg-white px-3 py-2 text-sm text-slate-500">

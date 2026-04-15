@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { AppShell } from "../components/app-shell";
 import { requireAuth } from "../../lib/auth";
 import { getDashboardData } from "../../lib/dashboard-data";
+import { getCurrentUserShellProfile } from "../../lib/user-profiles";
 import {
   getQuickPeriodValue,
   type QuickPeriodValue,
@@ -28,7 +29,7 @@ function getTimeFilterMode(value: string | string[] | undefined): TimeFilterMode
 
 export default async function Home({ searchParams }: DashboardPageProps) {
   await connection();
-  await requireAuth();
+  const authenticatedUser = await requireAuth();
 
   const { modoTempo, periodo, dataInicial, dataFinal } = await searchParams;
   const timeFilterMode = getTimeFilterMode(modoTempo);
@@ -48,12 +49,19 @@ export default async function Home({ searchParams }: DashboardPageProps) {
     customStartDate,
     customEndDate
   );
+  const currentUserProfile = await getCurrentUserShellProfile({
+    userId: authenticatedUser.id,
+    email: authenticatedUser.email,
+  });
 
   return (
     <AppShell
       title="Painel de Gestao"
       description="Visao geral com dados reais sincronizados com o Supabase."
       currentPath="/painel"
+      currentUserName={currentUserProfile.displayName}
+      currentUserDetail={currentUserProfile.secondaryLabel}
+      currentUserInitials={currentUserProfile.initials}
     >
       <DashboardContent
         initialData={dashboardData}

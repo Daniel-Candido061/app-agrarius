@@ -27,6 +27,7 @@ import {
   isBeforeTodayDateOnly,
 } from "../../lib/date-utils";
 import { supabase } from "../../lib/supabase";
+import { getUserLabel, type UserDisplayMap } from "../../lib/user-profiles";
 import { TASK_PRIORITY_OPTIONS } from "./priority-options";
 import { TASK_STATUS_OPTIONS } from "./status-options";
 import type { ServicoOption, Tarefa } from "./types";
@@ -34,11 +35,16 @@ import type { ServicoOption, Tarefa } from "./types";
 type TarefasViewProps = {
   tasks: Tarefa[];
   services: ServicoOption[];
+  currentUserId?: string | null;
+  userDisplayNames?: UserDisplayMap;
+  currentUserName?: string;
+  currentUserDetail?: string;
+  currentUserInitials?: string;
 };
 
 type ModalMode = "create" | "edit";
 type ViewMode = "list" | "kanban";
-type TaskFilter = "all" | "todo" | "overdue";
+type TaskFilter = "all" | "todo" | "overdue" | "done";
 
 type FormData = {
   titulo: string;
@@ -122,6 +128,12 @@ function isTodoTask(task: Tarefa) {
   return normalizedStatus !== "concluida" && normalizedStatus !== "concluido";
 }
 
+function isDoneTask(task: Tarefa) {
+  const normalizedStatus = normalizeStatusText(task.status);
+
+  return normalizedStatus === "concluida" || normalizedStatus === "concluido";
+}
+
 function getServiceClientName(service: ServicoOption) {
   if (Array.isArray(service.cliente)) {
     return service.cliente[0]?.nome ?? "Cliente não encontrado";
@@ -151,7 +163,15 @@ function getTaskTone(status: string | null) {
   return "warning" as const;
 }
 
-export function TarefasView({ tasks, services }: TarefasViewProps) {
+export function TarefasView({
+  tasks,
+  services,
+  currentUserId = null,
+  userDisplayNames = {},
+  currentUserName,
+  currentUserDetail,
+  currentUserInitials,
+}: TarefasViewProps) {
   const router = useRouter();
   const [taskList, setTaskList] = useState(tasks);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -162,6 +182,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const [statusFilter, setStatusFilter] = useState("");
+  const [responsavelFilter, setResponsavelFilter] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -187,9 +208,14 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
     return serviceNameById.get(String(task.servico_id)) ?? "Serviço não encontrado";
   }
 
+  function getTaskResponsibleLabel(task: Tarefa) {
+    return getUserLabel(userDisplayNames, task.responsavel_id, task.responsavel);
+  }
+
   const normalizedSearchTerm = normalizeText(searchTerm);
   const overdueTasks = taskList.filter(isOverdueTask);
   const todoTasks = taskList.filter(isTodoTask);
+  const doneTasks = taskList.filter(isDoneTask);
   const filteredTasks = taskList.filter((task) => {
     if (taskFilter === "overdue" && !isOverdueTask(task)) {
       return false;
@@ -199,7 +225,18 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       return false;
     }
 
+    if (taskFilter === "done" && !isDoneTask(task)) {
+      return false;
+    }
+
     if (statusFilter && task.status !== statusFilter) {
+      return false;
+    }
+
+    if (
+      responsavelFilter &&
+      getTaskResponsibleLabel(task) !== responsavelFilter
+    ) {
       return false;
     }
 
@@ -209,7 +246,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
 
     const searchableFields = [
       task.titulo,
-      task.responsavel,
+      getTaskResponsibleLabel(task),
       getTaskStatusLabel(task),
       task.prioridade,
       getTaskServiceName(task),
@@ -239,6 +276,12 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       detail: 'Prazo vencido e status diferente de "Concluído"',
       filter: "overdue" as TaskFilter,
     },
+    {
+      title: "Concluidas",
+      value: String(doneTasks.length),
+      detail: "Tarefas finalizadas dentro do fluxo atual",
+      filter: "done" as TaskFilter,
+    },
   ];
   const activeFilterChips = [
     searchTerm
@@ -265,7 +308,21 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
           onRemove: () => setStatusFilter(""),
         }
       : null,
+    responsavelFilter
+      ? {
+          key: "responsavel",
+          label: `Responsavel: ${responsavelFilter}`,
+          onRemove: () => setResponsavelFilter(""),
+        }
+      : null,
   ].filter((chip) => chip !== null);
+  const responsibleOptions = Array.from(
+    new Set(
+      taskList
+        .map((task) => getTaskResponsibleLabel(task))
+        .filter((value) => value && value !== "-")
+    )
+  ).sort((left, right) => left.localeCompare(right, "pt-BR"));
   const kanbanColumns: KanbanColumn<Tarefa>[] = TASK_STATUS_OPTIONS.map(
     (statusOption) => ({
       id: statusOption,
@@ -372,6 +429,16 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
       prioridade,
       status,
       observacao: observacao || null,
+      ...(isEditing
+        ? {
+            updated_at: new Date().toISOString(),
+            atualizado_por: currentUserId || null,
+          }
+        : {
+            criado_por: currentUserId || null,
+            atualizado_por: currentUserId || null,
+            responsavel_id: currentUserId || null,
+          }),
     };
 
     const response = isEditing
@@ -442,7 +509,11 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
 
     const { error } = await supabase
       .from("tarefas")
-      .update({ status: trimmedStatus })
+      .update({
+        status: trimmedStatus,
+        updated_at: new Date().toISOString(),
+        atualizado_por: currentUserId || null,
+      })
       .eq("id", task.id);
 
     setUpdatingTaskId(null);
@@ -481,6 +552,9 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
         title="Tarefas"
         description="Atividades da empresa, com ou sem serviço vinculado, sincronizadas com o Supabase."
         currentPath="/tarefas"
+        currentUserName={currentUserName}
+        currentUserDetail={currentUserDetail}
+        currentUserInitials={currentUserInitials}
         action={
           <button
             type="button"
@@ -527,6 +601,22 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                 </select>
               </label>
 
+              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+                Responsavel
+                <select
+                  value={responsavelFilter}
+                  onChange={(event) => setResponsavelFilter(event.target.value)}
+                  className={toolbarSelectClassName}
+                >
+                  <option value="">Todos os responsaveis</option>
+                  {responsibleOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
               <ViewModeToggle value={viewMode} onChange={setViewMode} />
             </div>
           </div>
@@ -540,19 +630,20 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
               setSearchTerm("");
               setTaskFilter("all");
               setStatusFilter("");
+              setResponsavelFilter("");
             }}
           />
         </PageToolbar>
 
         <section className="mb-6">
-          <SummaryCardsGrid className="xl:grid-cols-3 2xl:grid-cols-3">
+          <SummaryCardsGrid className="xl:grid-cols-4 2xl:grid-cols-4">
             {summaryCards.map((card) => (
               <button
                 key={card.title}
                 type="button"
                 onClick={() => setTaskFilter(card.filter)}
                 aria-pressed={taskFilter === card.filter}
-                className={`text-left ${
+                className={`h-full w-full text-left ${
                   taskFilter === card.filter
                     ? "rounded-[28px] ring-2 ring-[#1e6b41]/18"
                     : ""
@@ -567,6 +658,8 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       ? "danger"
                       : card.filter === "todo"
                         ? "warning"
+                        : card.filter === "done"
+                          ? "success"
                         : "neutral"
                   }
                   className={
@@ -634,7 +727,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       <div className="flex items-center justify-between gap-3">
                         <span>Responsavel</span>
                         <span className="font-medium text-slate-700">
-                          {task.responsavel ?? "-"}
+                          {getTaskResponsibleLabel(task)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3">
@@ -741,7 +834,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                         {getTaskServiceName(task)}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {task.responsavel ?? "-"}
+                        {getTaskResponsibleLabel(task)}
                       </td>
                       <td
                         className={`px-6 py-4 text-sm ${

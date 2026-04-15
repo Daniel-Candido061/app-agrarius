@@ -35,12 +35,18 @@ import {
 import { SERVICE_STATUS_OPTIONS } from "../servicos/status-options";
 import { SERVICE_TYPE_OPTIONS } from "../servicos/type-options";
 import type { ClienteOption } from "../servicos/types";
+import { getUserLabel, type UserDisplayMap } from "../../lib/user-profiles";
 import { COMMERCIAL_STATUS_OPTIONS } from "./status-options";
 import type { PropostaComercial } from "./types";
 
 type ComercialViewProps = {
   proposals: PropostaComercial[];
   clients: ClienteOption[];
+  currentUserId?: string | null;
+  currentUserName?: string;
+  currentUserDetail?: string;
+  currentUserInitials?: string;
+  userDisplayNames?: UserDisplayMap;
 };
 
 type ModalMode = "create" | "edit";
@@ -249,7 +255,22 @@ function getProposalContactName(proposal: PropostaComercial) {
   return proposal.nome_contato?.trim() || proposal.empresa?.trim() || "";
 }
 
-export function ComercialView({ proposals, clients }: ComercialViewProps) {
+function getProposalResponsibleLabel(
+  proposal: PropostaComercial,
+  userDisplayNames: UserDisplayMap
+) {
+  return getUserLabel(userDisplayNames, proposal.responsavel_id);
+}
+
+export function ComercialView({
+  proposals,
+  clients,
+  currentUserId = null,
+  currentUserName,
+  currentUserDetail,
+  currentUserInitials,
+  userDisplayNames = {},
+}: ComercialViewProps) {
   const router = useRouter();
   const [proposalList, setProposalList] = useState(proposals);
   const [modalMode, setModalMode] = useState<ModalMode>("create");
@@ -263,6 +284,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [responsavelFilter, setResponsavelFilter] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -285,6 +307,13 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
   const normalizedSearchTerm = normalizeText(searchTerm);
   const filteredProposals = proposalList.filter((proposal) => {
     if (statusFilter && proposal.status !== statusFilter) {
+      return false;
+    }
+
+    if (
+      responsavelFilter &&
+      getProposalResponsibleLabel(proposal, userDisplayNames) !== responsavelFilter
+    ) {
       return false;
     }
 
@@ -317,6 +346,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
       proposal.origem,
       proposal.tipo_servico,
       proposal.status,
+      getProposalResponsibleLabel(proposal, userDisplayNames),
     ];
 
     return searchableFields.some((field) =>
@@ -383,7 +413,23 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
           onRemove: () => setStatusFilter(""),
         }
       : null,
+    responsavelFilter
+      ? {
+          key: "responsavel",
+          label: `Responsavel: ${responsavelFilter}`,
+          onRemove: () => setResponsavelFilter(""),
+        }
+      : null,
   ].filter((chip) => chip !== null);
+  const responsibleOptions = Array.from(
+    new Set(
+      proposalList
+        .map((proposal) =>
+          getProposalResponsibleLabel(proposal, userDisplayNames)
+        )
+        .filter((value) => value && value !== "-")
+    )
+  ).sort((left, right) => left.localeCompare(right, "pt-BR"));
 
   const quickFilterCounts = {
     all: proposalList.length,
@@ -554,7 +600,16 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
       status,
       motivo_perda: status === "Perdido" ? motivoPerda || null : null,
       observacoes: observacoes || null,
-      ...(isEditing ? { updated_at: new Date().toISOString() } : {}),
+      ...(isEditing
+        ? {
+            updated_at: new Date().toISOString(),
+            atualizado_por: currentUserId || null,
+          }
+        : {
+            criado_por: currentUserId || null,
+            atualizado_por: currentUserId || null,
+            responsavel_id: currentUserId || null,
+          }),
     };
 
     const response =
@@ -732,6 +787,9 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
       prazo_final: serviceDeadline.trim() || null,
       observacoes: serviceNotes.trim() || null,
       status: trimmedServiceStatus,
+      criado_por: currentUserId || null,
+      atualizado_por: currentUserId || null,
+      responsavel_id: currentUserId || null,
     };
 
     const serviceResponse = await supabase
@@ -769,6 +827,9 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
           origem: pendingTemplate.origem,
           prioridade: pendingTemplate.prioridade ?? "media",
           status: "Aberta",
+          criado_por: currentUserId || null,
+          atualizado_por: currentUserId || null,
+          responsavel_id: currentUserId || null,
         }))
       );
     }
@@ -779,18 +840,21 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
         tipo: "sistema",
         titulo: "Servico criado",
         descricao: `Servico originado da proposta comercial ${convertingProposal.nome_oportunidade ?? convertingProposal.id}.`,
+        criado_por: currentUserId || null,
       },
       {
         servico_id: serviceId,
         tipo: "sistema",
         titulo: "Etapas iniciais geradas",
         descricao: `${stageTitles.length} etapas padrao foram criadas automaticamente.`,
+        criado_por: currentUserId || null,
       },
       {
         servico_id: serviceId,
         tipo: "sistema",
         titulo: "Pendencias iniciais sugeridas",
         descricao: `${pendingTemplates.length} pendencia(s) padrao foram criadas automaticamente.`,
+        criado_por: currentUserId || null,
       },
     ]);
 
@@ -802,6 +866,8 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
         servico_id: serviceId,
         convertido_em: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        atualizado_por: currentUserId || null,
+        responsavel_id: currentUserId || null,
       })
       .eq("id", convertingProposal.id);
 
@@ -857,6 +923,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
         convertido_em: trimmedStatus === "Ganho" ? proposal.convertido_em : null,
         motivo_perda: trimmedStatus === "Perdido" ? proposal.motivo_perda : null,
         updated_at: new Date().toISOString(),
+        atualizado_por: currentUserId || null,
       })
       .eq("id", proposal.id);
 
@@ -896,6 +963,9 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
         title="Comercial"
         description="Funil comercial com propostas, negociacoes e historico de conversao."
         currentPath="/comercial"
+        currentUserName={currentUserName}
+        currentUserDetail={currentUserDetail}
+        currentUserInitials={currentUserInitials}
         action={
           <button
             type="button"
@@ -942,6 +1012,22 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                 </select>
               </label>
 
+              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+                Responsavel
+                <select
+                  value={responsavelFilter}
+                  onChange={(event) => setResponsavelFilter(event.target.value)}
+                  className={toolbarSelectClassName}
+                >
+                  <option value="">Todos os responsaveis</option>
+                  {responsibleOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
               <ViewModeToggle value={viewMode} onChange={setViewMode} />
             </div>
           </div>
@@ -982,6 +1068,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
               setSearchTerm("");
               setQuickFilter("all");
               setStatusFilter("");
+              setResponsavelFilter("");
             }}
           />
         </PageToolbar>
@@ -1038,6 +1125,10 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                         </p>
                         <p className="mt-1 truncate text-xs text-slate-500">
                           {getProposalDisplayName(proposal)}
+                        </p>
+                        <p className="mt-2 truncate text-xs text-slate-400">
+                          Responsavel:{" "}
+                          {getProposalResponsibleLabel(proposal, userDisplayNames)}
                         </p>
                       </div>
 
@@ -1192,6 +1283,10 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                         <span className="mt-1 block text-xs text-slate-400">
                           {proposal.empresa ?? "Sem empresa"} •{" "}
                           {proposal.cidade ?? "Sem cidade"}
+                        </span>
+                        <span className="mt-1 block text-xs text-slate-400">
+                          Responsavel:{" "}
+                          {getProposalResponsibleLabel(proposal, userDisplayNames)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">

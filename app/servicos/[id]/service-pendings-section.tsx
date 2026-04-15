@@ -17,11 +17,14 @@ import {
 } from "../operational-utils";
 import { getPendingTemplateByServiceType } from "../service-templates";
 import type { ServicoPendencia } from "../types";
+import { getUserLabel, type UserDisplayMap } from "../../../lib/user-profiles";
 
 type ServicePendingsSectionProps = {
   serviceId: number;
   serviceType: string | null;
   pendings: ServicoPendencia[];
+  currentUserId?: string | null;
+  userDisplayNames?: UserDisplayMap;
 };
 
 type ModalMode = "create" | "edit";
@@ -108,6 +111,8 @@ export function ServicePendingsSection({
   serviceId,
   serviceType,
   pendings,
+  currentUserId = null,
+  userDisplayNames = {},
 }: ServicePendingsSectionProps) {
   const router = useRouter();
   const [modalMode, setModalMode] = useState<ModalMode>("create");
@@ -191,7 +196,15 @@ export function ServicePendingsSection({
       prazo_resposta: prazoResposta || null,
       status,
       observacao: observacao || null,
-      ...(isEditing ? { updated_at: new Date().toISOString() } : {}),
+      ...(isEditing
+        ? {
+            updated_at: new Date().toISOString(),
+            atualizado_por: currentUserId || null,
+          }
+        : {
+            criado_por: currentUserId || null,
+            atualizado_por: currentUserId || null,
+          }),
     };
 
     const [{ error: pendingError }, { error: eventError }] = await Promise.all([
@@ -205,6 +218,7 @@ export function ServicePendingsSection({
           ? "Pendencia atualizada"
           : "Nova pendencia registrada",
         descricao: `${titulo} - ${status}${prazoResposta ? ` - prazo ${prazoResposta}` : ""}`,
+        criado_por: currentUserId || null,
       }),
     ]);
 
@@ -239,6 +253,7 @@ export function ServicePendingsSection({
         .update({
           status: nextStatus,
           updated_at: new Date().toISOString(),
+          atualizado_por: currentUserId || null,
         })
         .eq("id", pending.id),
       supabase.from("servico_eventos").insert({
@@ -246,6 +261,7 @@ export function ServicePendingsSection({
         tipo: "pendencia",
         titulo: "Pendencia atualizada",
         descricao: `${pending.titulo ?? "Pendencia"} alterada para ${nextStatus}.`,
+        criado_por: currentUserId || null,
       }),
     ]);
 
@@ -274,6 +290,7 @@ export function ServicePendingsSection({
         tipo: "pendencia",
         titulo: "Pendencia removida",
         descricao: pending.titulo ?? "Pendencia sem titulo",
+        criado_por: currentUserId || null,
       }),
     ]);
 
@@ -318,6 +335,8 @@ export function ServicePendingsSection({
           origem: pendingTemplate.origem,
           prioridade: pendingTemplate.prioridade ?? "media",
           status: "Aberta",
+          criado_por: currentUserId || null,
+          atualizado_por: currentUserId || null,
         }))
       ),
       supabase.from("servico_eventos").insert({
@@ -325,6 +344,7 @@ export function ServicePendingsSection({
         tipo: "pendencia",
         titulo: "Pendencias sugeridas aplicadas",
         descricao: `${pendingsToInsert.length} pendencia(s) padrao foram adicionadas ao servico.`,
+        criado_por: currentUserId || null,
       }),
     ]);
 
@@ -456,13 +476,36 @@ export function ServicePendingsSection({
                   ) : null}
                 </div>
 
-                {pending.observacao ? (
+                  {pending.observacao ? (
                   <p className="mt-3 text-sm text-slate-500">{pending.observacao}</p>
                 ) : (
                   <p className="mt-3 text-sm text-slate-400">
                     Sem observacoes adicionais.
                   </p>
                 )}
+
+                <div className="mt-3 grid gap-2 rounded-xl bg-white px-3 py-2 text-xs text-slate-500">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>Responsavel</span>
+                    <span className="font-medium text-slate-700">
+                      {getUserLabel(
+                        userDisplayNames,
+                        pending.responsavel_id,
+                        null
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span>Ultima atualizacao</span>
+                    <span className="font-medium text-slate-700">
+                      {getUserLabel(
+                        userDisplayNames,
+                        pending.atualizado_por ?? pending.criado_por,
+                        null
+                      )}
+                    </span>
+                  </div>
+                </div>
 
                 <div className="mt-4">
                   <select

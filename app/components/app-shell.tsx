@@ -155,6 +155,9 @@ type AppShellProps = {
   currentPath: string;
   action?: ReactNode;
   children: ReactNode;
+  currentUserName?: string;
+  currentUserDetail?: string;
+  currentUserInitials?: string;
 };
 
 export function AppShell({
@@ -163,16 +166,15 @@ export function AppShell({
   currentPath,
   action,
   children,
+  currentUserName = "Sessao ativa",
+  currentUserDetail = "Agrarius Gestao",
+  currentUserInitials = "AG",
 }: AppShellProps) {
-  const currentSection = navigationItems.find(
-    (item) => item.href === currentPath
-  )?.label;
-
   return (
     <main className="min-h-screen bg-transparent text-slate-800">
       <div className="flex min-h-screen flex-col lg:flex-row">
-        <aside className="w-full border-b border-white/10 bg-[linear-gradient(180deg,#082715_0%,#0d3520_48%,#133f27_100%)] text-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-[248px] lg:border-b-0 lg:border-r lg:border-r-white/8">
-          <div className="flex h-full flex-col px-4 py-4 sm:px-5 sm:py-5 lg:px-4 lg:py-6">
+        <aside className="w-full border-b border-white/10 bg-[linear-gradient(180deg,#082715_0%,#0d3520_48%,#133f27_100%)] text-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-[248px] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:border-r-white/8">
+          <div className="flex h-full min-h-full flex-col px-4 py-4 sm:px-5 sm:py-5 lg:min-h-screen lg:px-4 lg:py-6">
             <div className="border-b border-white/8 pb-4 lg:pb-5">
               <div className="flex items-center gap-3 rounded-[22px] border border-white/8 bg-white/3 px-3 py-3">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#159452] shadow-[0_10px_25px_-14px_rgba(0,0,0,0.6)] ring-1 ring-white/18">
@@ -226,18 +228,18 @@ export function AppShell({
               <div className="rounded-[22px] border border-white/8 bg-white/4 p-3">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
-                    AG
+                    {currentUserInitials}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-white">
-                      Sessao ativa
+                      {currentUserName}
                     </p>
                     <p className="truncate text-xs text-emerald-50/68">
-                      Agrarius Gestao
+                      {currentUserDetail}
                     </p>
                   </div>
-                  <button
-                    type="button"
+                  <Link
+                    href="/conta"
                     aria-label="Abrir configuracoes da conta"
                     title="Configuracoes da conta"
                     className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/5 text-emerald-50/80 transition hover:bg-white/10 hover:text-white"
@@ -261,13 +263,8 @@ export function AppShell({
                         strokeLinejoin="round"
                       />
                     </svg>
-                  </button>
+                  </Link>
                 </div>
-
-                <p className="mt-3 text-xs text-emerald-50/60">
-                  Espaco preparado para conta, perfil e preferencias futuras.
-                </p>
-
                 <form action="/auth/logout" method="post" className="mt-3">
                   <button
                     type="submit"
@@ -287,21 +284,7 @@ export function AppShell({
               <header className="border-b border-[rgba(21,55,40,0.08)] px-5 py-5 sm:px-7 sm:py-6 lg:px-8 lg:py-7">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 text-[0.82rem] font-medium text-slate-400 sm:text-sm">
-                      <Link href="/painel" className="transition hover:text-[#163728]">
-                        Painel
-                      </Link>
-                      <span className="text-slate-300">/</span>
-                      <span className="text-slate-500">{currentSection ?? title}</span>
-                      {currentSection && currentSection !== title ? (
-                        <>
-                          <span className="text-slate-300">/</span>
-                          <span className="text-slate-500">{title}</span>
-                        </>
-                      ) : null}
-                    </div>
-
-                    <h1 className="mt-3 text-[1.85rem] font-semibold tracking-[-0.05em] text-[#163728] sm:text-[2.15rem] lg:text-[2.3rem]">
+                    <h1 className="text-[1.85rem] font-semibold tracking-[-0.05em] text-[#163728] sm:text-[2.15rem] lg:text-[2.3rem]">
                       {title}
                     </h1>
                     <p className="mt-2.5 max-w-3xl text-[0.92rem] leading-6 text-slate-500 sm:text-[0.97rem] sm:leading-7">

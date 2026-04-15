@@ -1,6 +1,10 @@
 import { connection } from "next/server";
 import { requireAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
+import {
+  getCurrentUserShellProfile,
+  getUserDisplayMap,
+} from "../../lib/user-profiles";
 import { TarefasView } from "./tarefas-view";
 import type { ServicoOption, Tarefa } from "./types";
 
@@ -8,7 +12,7 @@ async function getTarefas() {
   const { data, error } = await supabase
     .from("tarefas")
     .select(
-      "id, titulo, servico_id, responsavel, data_limite, prioridade, status, observacao"
+      "id, titulo, servico_id, responsavel, responsavel_id, data_limite, prioridade, status, observacao, criado_por, atualizado_por"
     )
     .order("data_limite", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
@@ -37,9 +41,30 @@ async function getServicos() {
 
 export default async function TarefasPage() {
   await connection();
-  await requireAuth();
+  const authenticatedUser = await requireAuth();
 
   const [tasks, services] = await Promise.all([getTarefas(), getServicos()]);
+  const userDisplayNames = await getUserDisplayMap(
+    tasks.flatMap((task) => [
+      task.responsavel_id,
+      task.criado_por,
+      task.atualizado_por,
+    ])
+  );
+  const currentUserProfile = await getCurrentUserShellProfile({
+    userId: authenticatedUser.id,
+    email: authenticatedUser.email,
+  });
 
-  return <TarefasView tasks={tasks} services={services} />;
+  return (
+    <TarefasView
+      tasks={tasks}
+      services={services}
+      currentUserId={authenticatedUser.id}
+      userDisplayNames={userDisplayNames}
+      currentUserName={currentUserProfile.displayName}
+      currentUserDetail={currentUserProfile.secondaryLabel}
+      currentUserInitials={currentUserProfile.initials}
+    />
+  );
 }

@@ -26,10 +26,13 @@ type ClientesViewProps = {
   clients: Cliente[];
   services: ClientePortfolioServico[];
   financialEntries: ClientePortfolioFinanceiro[];
+  currentUserName?: string;
+  currentUserDetail?: string;
+  currentUserInitials?: string;
 };
 
 type ModalMode = "create" | "edit";
-type PortfolioFilter = "all" | "inProgress" | "openBalance";
+type PortfolioFilter = "all" | "inProgress" | "openBalance" | "active";
 
 type FormData = {
   nome: string;
@@ -123,6 +126,9 @@ export function ClientesView({
   clients,
   services,
   financialEntries,
+  currentUserName,
+  currentUserDetail,
+  currentUserInitials,
 }: ClientesViewProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -226,6 +232,14 @@ export function ClientesView({
       detail: "Clientes com saldo a receber.",
       filter: "openBalance" as PortfolioFilter,
     },
+    {
+      title: "Clientes ativos",
+      value: String(
+        clients.filter((client) => normalizeText(client.status) === "ativo").length
+      ),
+      detail: "Base ativa para relacionamento e continuidade operacional.",
+      filter: "active" as PortfolioFilter,
+    },
   ];
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
   const filteredClients = clients.filter((client) => {
@@ -238,6 +252,13 @@ export function ClientesView({
     if (
       portfolioFilter === "openBalance" &&
       (metrics?.valorEmAberto ?? 0) <= 0
+    ) {
+      return false;
+    }
+
+    if (
+      portfolioFilter === "active" &&
+      normalizeText(client.status) !== "ativo"
     ) {
       return false;
     }
@@ -430,6 +451,9 @@ export function ClientesView({
         title="Clientes"
         description="Lista de clientes sincronizada com os dados reais do Supabase."
         currentPath="/clientes"
+        currentUserName={currentUserName}
+        currentUserDetail={currentUserDetail}
+        currentUserInitials={currentUserInitials}
         action={
           <button
             type="button"
@@ -460,14 +484,14 @@ export function ClientesView({
         </PageToolbar>
 
         <section className="mb-6">
-          <SummaryCardsGrid className="xl:grid-cols-3 2xl:grid-cols-3">
+          <SummaryCardsGrid className="xl:grid-cols-4 2xl:grid-cols-4">
           {portfolioCards.map((card) => (
             <button
               key={card.title}
               type="button"
               onClick={() => applyPortfolioFilter(card.filter)}
               aria-pressed={portfolioFilter === card.filter}
-              className={`text-left ${
+              className={`h-full w-full text-left ${
                 portfolioFilter === card.filter
                   ? "rounded-[28px] ring-2 ring-[#1e6b41]/18"
                   : ""
@@ -482,6 +506,8 @@ export function ClientesView({
                     ? "warning"
                     : card.filter === "inProgress"
                       ? "success"
+                      : card.filter === "active"
+                        ? "info"
                       : "neutral"
                 }
                 className={

@@ -11,6 +11,11 @@ import {
 } from "../../../lib/date-utils";
 import { requireAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
+import {
+  getCurrentUserShellProfile,
+  getUserDisplayMap,
+  getUserLabel,
+} from "../../../lib/user-profiles";
 import type {
   Servico,
   ServicoDocumento,
@@ -213,7 +218,7 @@ async function getServico(id: number) {
   const { data, error } = await supabase
     .from("servicos")
     .select(
-      "id, cliente_id, created_at, data_entrada, nome_servico, tipo_servico, situacao_operacional, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
+      "id, cliente_id, created_at, criado_por, atualizado_por, responsavel_id, data_entrada, nome_servico, tipo_servico, situacao_operacional, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
     )
     .eq("id", id)
     .maybeSingle();
@@ -245,7 +250,7 @@ async function getEtapasDoServico(id: number) {
 async function getPendenciasDoServico(id: number) {
   const { data, error } = await supabase
     .from("servico_pendencias")
-    .select("id, servico_id, titulo, origem, prioridade, prazo_resposta, status, observacao, created_at, updated_at")
+    .select("id, servico_id, titulo, origem, prioridade, prazo_resposta, status, observacao, created_at, updated_at, criado_por, atualizado_por, responsavel_id")
     .eq("servico_id", id)
     .order("created_at", { ascending: false });
 
@@ -260,7 +265,7 @@ async function getPendenciasDoServico(id: number) {
 async function getEventosDoServico(id: number) {
   const { data, error } = await supabase
     .from("servico_eventos")
-    .select("id, servico_id, tipo, titulo, descricao, created_at")
+    .select("id, servico_id, tipo, titulo, descricao, created_at, criado_por")
     .eq("servico_id", id)
     .order("created_at", { ascending: false });
 
@@ -276,7 +281,7 @@ async function getDocumentosDoServico(id: number) {
   const { data, error } = await supabase
     .from("servico_documentos")
     .select(
-      "id, servico_id, nome_original, nome_arquivo, caminho_storage, tipo_mime, tamanho_bytes, observacao, criado_em, criado_por"
+      "id, servico_id, nome_original, nome_arquivo, caminho_storage, tipo_mime, tamanho_bytes, observacao, criado_em, criado_por, atualizado_por"
     )
     .eq("servico_id", id)
     .order("criado_em", { ascending: false });
@@ -292,7 +297,7 @@ async function getDocumentosDoServico(id: number) {
 async function getLancamentosDoServico(id: number) {
   const { data, error } = await supabase
     .from("financeiro")
-    .select("id, tipo, categoria, descricao, valor, data, servico_id, status")
+    .select("id, tipo, categoria, descricao, valor, data, servico_id, status, criado_por, atualizado_por, responsavel_id")
     .eq("servico_id", id)
     .order("data", { ascending: false })
     .order("created_at", { ascending: false });
@@ -308,7 +313,7 @@ async function getLancamentosDoServico(id: number) {
 async function getTarefasDoServico(id: number) {
   const { data, error } = await supabase
     .from("tarefas")
-    .select("id, titulo, servico_id, responsavel, data_limite, prioridade, status, observacao")
+    .select("id, titulo, servico_id, responsavel, responsavel_id, data_limite, prioridade, status, observacao, criado_por, atualizado_por")
     .eq("servico_id", id)
     .order("data_limite", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
@@ -328,6 +333,10 @@ export default async function ServicoDetalhesPage({
 }) {
   await connection();
   const authenticatedUser = await requireAuth();
+  const currentUserProfile = await getCurrentUserShellProfile({
+    userId: authenticatedUser.id,
+    email: authenticatedUser.email,
+  });
 
   const { id } = await params;
   const serviceId = Number(id);
@@ -349,6 +358,31 @@ export default async function ServicoDetalhesPage({
   if (!service) {
     notFound();
   }
+  const userDisplayNames = await getUserDisplayMap([
+    service.responsavel_id,
+    service.criado_por,
+    service.atualizado_por,
+    ...tasks.flatMap((task) => [task.responsavel_id, task.criado_por, task.atualizado_por]),
+    ...pendings.flatMap((pending) => [
+      pending.responsavel_id,
+      pending.criado_por,
+      pending.atualizado_por,
+    ]),
+    ...events.map((event) => event.criado_por),
+    ...documents.flatMap((document) => [document.criado_por, document.atualizado_por]),
+  ]);
+  const serviceResponsibleLabel = getUserLabel(
+    userDisplayNames,
+    service.responsavel_id
+  );
+  const serviceCreatedByLabel = getUserLabel(
+    userDisplayNames,
+    service.criado_por
+  );
+  const serviceUpdatedByLabel = getUserLabel(
+    userDisplayNames,
+    service.atualizado_por
+  );
 
   const valorContratado = getNumericValue(service.valor);
 
@@ -513,6 +547,9 @@ export default async function ServicoDetalhesPage({
       title="Detalhes do servico"
       description="Resumo do servico, do cliente vinculado e do financeiro relacionado."
       currentPath="/servicos"
+      currentUserName={currentUserProfile.displayName}
+      currentUserDetail={currentUserProfile.secondaryLabel}
+      currentUserInitials={currentUserProfile.initials}
       action={
         <Link
           href="/servicos"
@@ -605,6 +642,15 @@ export default async function ServicoDetalhesPage({
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Responsavel
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {serviceResponsibleLabel}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Prazo de entrega
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
@@ -648,6 +694,24 @@ export default async function ServicoDetalhesPage({
                       {service.prazo_final
                         ? `Entrega prevista em ${formatSimpleDate(service.prazo_final)}`
                         : "Prazo de entrega nao informado"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Criado por
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {serviceCreatedByLabel}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Atualizado por
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {serviceUpdatedByLabel}
                     </p>
                   </div>
                 </div>
@@ -722,23 +786,40 @@ export default async function ServicoDetalhesPage({
           </SummaryCardsGrid>
         </section>
 
-        <ServiceStagesSection serviceId={serviceId} stages={stages} />
+        <ServiceStagesSection
+          serviceId={serviceId}
+          stages={stages}
+          currentUserId={authenticatedUser.id}
+        />
 
         <ServiceDocumentsSection
           serviceId={serviceId}
           documents={documents}
           currentUserId={authenticatedUser.id}
+          userDisplayNames={userDisplayNames}
         />
 
         <ServicePendingsSection
           serviceId={serviceId}
           serviceType={service.tipo_servico}
           pendings={pendings}
+          currentUserId={authenticatedUser.id}
+          userDisplayNames={userDisplayNames}
         />
 
-        <ServiceTasksSection serviceId={serviceId} tasks={tasks} />
+        <ServiceTasksSection
+          serviceId={serviceId}
+          tasks={tasks}
+          currentUserId={authenticatedUser.id}
+          userDisplayNames={userDisplayNames}
+        />
 
-        <ServiceTimelineSection serviceId={serviceId} events={events} />
+        <ServiceTimelineSection
+          serviceId={serviceId}
+          events={events}
+          currentUserId={authenticatedUser.id}
+          userDisplayNames={userDisplayNames}
+        />
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]">
           <div className="border-b border-slate-200 px-6 py-5">

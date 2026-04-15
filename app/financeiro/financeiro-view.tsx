@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
+import { ActiveFilterChips } from "../components/active-filter-chips";
 import { ActionsMenu } from "../components/actions-menu";
 import { PageTable } from "../components/page-table";
 import { SearchableSelect } from "../components/searchable-select";
@@ -13,6 +14,7 @@ import {
   primaryButtonClassName,
   secondaryButtonClassName,
   toolbarSearchInputClassName,
+  toolbarSelectClassName,
 } from "../components/ui-patterns";
 import { formatSimpleDate, getDateInputValue } from "../../lib/date-utils";
 import {
@@ -24,12 +26,18 @@ import {
   type PeriodValue,
 } from "../../lib/period-utils";
 import { supabase } from "../../lib/supabase";
+import { getUserLabel, type UserDisplayMap } from "../../lib/user-profiles";
 import { getCategoryOptionsByType } from "./category-options";
 import type { LancamentoFinanceiro, ServicoOption } from "./types";
 
 type FinanceiroViewProps = {
   entries: LancamentoFinanceiro[];
   services: ServicoOption[];
+  currentUserId?: string | null;
+  currentUserName?: string;
+  currentUserDetail?: string;
+  currentUserInitials?: string;
+  userDisplayNames?: UserDisplayMap;
 };
 
 type ModalMode = "create" | "edit";
@@ -123,6 +131,7 @@ function entryMatchesSearch(
   entry: LancamentoFinanceiro,
   serviceDetails: ServiceDetails | undefined,
   serviceFallbackLabel: string,
+  responsibleLabel: string,
   normalizedSearchTerm: string
 ) {
   if (!normalizedSearchTerm) {
@@ -137,6 +146,7 @@ function entryMatchesSearch(
     financialDateLabel,
     serviceDetails?.serviceName ?? serviceFallbackLabel,
     serviceDetails?.clientName,
+    responsibleLabel,
     entry.valor === null || entry.valor === undefined
       ? null
       : String(entry.valor),
@@ -295,6 +305,11 @@ function formatSignedCurrency(
 export function FinanceiroView({
   entries,
   services,
+  currentUserId = null,
+  currentUserName,
+  currentUserDetail,
+  currentUserInitials,
+  userDisplayNames = {},
 }: FinanceiroViewProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -311,6 +326,7 @@ export function FinanceiroView({
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
+  const [responsavelFilter, setResponsavelFilter] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
@@ -342,6 +358,10 @@ export function FinanceiroView({
   const normalizedSearchTerm = normalizeText(searchTerm);
   const filteredEntries = periodEntries.filter((entry) => {
     const serviceDetails = serviceDetailsById.get(String(entry.servico_id));
+    const responsibleLabel = getUserLabel(
+      userDisplayNames,
+      entry.responsavel_id
+    );
 
     if (typeFilter && normalizeText(entry.tipo) !== normalizeText(typeFilter)) {
       return false;
@@ -365,13 +385,67 @@ export function FinanceiroView({
       return false;
     }
 
+    if (responsavelFilter && responsibleLabel !== responsavelFilter) {
+      return false;
+    }
+
     return entryMatchesSearch(
       entry,
       serviceDetails,
       serviceFallbackLabel,
+      responsibleLabel,
       normalizedSearchTerm
     );
   });
+  const responsibleOptions = Array.from(
+    new Set(
+      periodEntries
+        .map((entry) => getUserLabel(userDisplayNames, entry.responsavel_id))
+        .filter((value) => value && value !== "-")
+    )
+  ).sort((left, right) => left.localeCompare(right, "pt-BR"));
+  const activeFilterChips = [
+    searchTerm
+      ? {
+          key: "search",
+          label: `Busca: ${searchTerm}`,
+          onRemove: () => setSearchTerm(""),
+        }
+      : null,
+    typeFilter
+      ? {
+          key: "tipo",
+          label: `Tipo: ${typeFilter}`,
+          onRemove: () => setTypeFilter(""),
+        }
+      : null,
+    statusFilter
+      ? {
+          key: "status",
+          label: `Status: ${statusFilter}`,
+          onRemove: () => setStatusFilter(""),
+        }
+      : null,
+    serviceFilter
+      ? {
+          key: "servico",
+          label:
+            serviceFilter === "general"
+              ? `Servico: ${serviceFallbackLabel}`
+              : `Servico: ${
+                  serviceDetailsById.get(serviceFilter)?.serviceName ?? serviceFilter
+                }`,
+          onRemove: () => setServiceFilter(""),
+        }
+      : null,
+    responsavelFilter
+      ? {
+          key: "responsavel",
+          label: `Responsavel: ${responsavelFilter}`,
+          onRemove: () => setResponsavelFilter(""),
+        }
+      : null,
+  ].filter((chip) => chip !== null);
   const tableEntries = filteredEntries;
   const summaryCards = buildSummaryCards(tableEntries);
   const selectedTimeLabel =
@@ -528,7 +602,16 @@ export function FinanceiroView({
       data,
       servico_id: parsedServiceId,
       status,
-      ...(isEditing ? { updated_at: new Date().toISOString() } : {}),
+      ...(isEditing
+        ? {
+            updated_at: new Date().toISOString(),
+            atualizado_por: currentUserId || null,
+          }
+        : {
+            criado_por: currentUserId || null,
+            atualizado_por: currentUserId || null,
+            responsavel_id: currentUserId || null,
+          }),
     };
 
     const response =
@@ -569,6 +652,7 @@ export function FinanceiroView({
           ? "Lancamento financeiro atualizado"
           : "Novo lancamento financeiro",
         descricao: `${tipo}: ${descricao} (${status}).`,
+        criado_por: currentUserId || null,
       });
     }
 
@@ -594,6 +678,7 @@ export function FinanceiroView({
             tipo: "financeiro",
             titulo: "Lancamento financeiro removido",
             descricao: entry.descricao ?? "Lancamento sem descricao",
+            criado_por: currentUserId || null,
           })
         : Promise.resolve({ error: null }),
     ]);
@@ -616,6 +701,9 @@ export function FinanceiroView({
         title="Financeiro"
         description="LanÃ§amentos reais sincronizados com a tabela financeiro do Supabase."
         currentPath="/financeiro"
+        currentUserName={currentUserName}
+        currentUserDetail={currentUserDetail}
+        currentUserInitials={currentUserInitials}
         action={
           <button
             type="button"
@@ -783,14 +871,46 @@ export function FinanceiroView({
                         ))}
                       </select>
                     </label>
+
+                    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+                      Responsavel
+                      <select
+                        value={responsavelFilter}
+                        onChange={(event) =>
+                          setResponsavelFilter(event.target.value)
+                        }
+                        className={toolbarSelectClassName}
+                      >
+                        <option value="">Todos os responsaveis</option>
+                        {responsibleOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
                 </div>
               </div>
             </div>
           </details>
 
+          <ActiveFilterChips
+            chips={activeFilterChips}
+            totalLabel={`${filteredEntries.length} resultado${
+              filteredEntries.length === 1 ? "" : "s"
+            }`}
+            onClearAll={() => {
+              setSearchTerm("");
+              setTypeFilter("");
+              setStatusFilter("");
+              setServiceFilter("");
+              setResponsavelFilter("");
+            }}
+          />
+
           <section>
-            <SummaryCardsGrid className="md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3">
+            <SummaryCardsGrid className="md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4">
               {summaryCards.map((card) => (
                 <SummaryCard
                   key={card.title}
@@ -887,6 +1007,14 @@ export function FinanceiroView({
                         String(entry.servico_id)
                       );
                       const entryTypeMeta = getEntryTypeMeta(entry.tipo);
+                      const responsavelLabel = getUserLabel(
+                        userDisplayNames,
+                        entry.responsavel_id
+                      );
+                      const autoriaLabel = getUserLabel(
+                        userDisplayNames,
+                        entry.atualizado_por ?? entry.criado_por
+                      );
 
                       return (
                         <tr key={entry.id} className="hover:bg-slate-50/80">
@@ -899,6 +1027,9 @@ export function FinanceiroView({
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-500">
                             {entry.descricao ?? "-"}
+                            <span className="mt-1 block text-xs text-slate-400">
+                              Responsavel: {responsavelLabel}
+                            </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-500">
                             {serviceDetails?.clientName ?? "-"}
@@ -925,6 +1056,9 @@ export function FinanceiroView({
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-500">
                             {formatSimpleDate(entry.data)}
+                            <span className="mt-1 block text-xs text-slate-400">
+                              Autor: {autoriaLabel}
+                            </span>
                           </td>
                           <td className="px-6 py-4 text-right text-sm">
                             <ActionsMenu

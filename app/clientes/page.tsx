@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { ClientesView } from "./clientes-view";
 import { requireAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
+import { getCurrentUserShellProfile } from "../../lib/user-profiles";
 import type {
   Cliente,
   ClientePortfolioFinanceiro,
@@ -50,19 +51,26 @@ async function getFinanceiroDosServicos() {
 
 export default async function ClientesPage() {
   await connection();
-  await requireAuth();
+  const authenticatedUser = await requireAuth();
 
   const [clients, services, financialEntries] = await Promise.all([
     getClientes(),
     getServicosDosClientes(),
     getFinanceiroDosServicos(),
   ]);
+  const currentUserProfile = await getCurrentUserShellProfile({
+    userId: authenticatedUser.id,
+    email: authenticatedUser.email,
+  });
 
   return (
     <ClientesView
       clients={clients}
       services={services}
       financialEntries={financialEntries}
+      currentUserName={currentUserProfile.displayName}
+      currentUserDetail={currentUserProfile.secondaryLabel}
+      currentUserInitials={currentUserProfile.initials}
     />
   );
 }

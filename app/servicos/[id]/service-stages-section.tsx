@@ -9,6 +9,7 @@ import type { ServicoEtapa } from "../types";
 type ServiceStagesSectionProps = {
   serviceId: number;
   stages: ServicoEtapa[];
+  currentUserId?: string | null;
 };
 
 type ModalMode = "create" | "edit";
@@ -52,6 +53,7 @@ function getStageStatusClassName(status: string | null) {
 export function ServiceStagesSection({
   serviceId,
   stages,
+  currentUserId = null,
 }: ServiceStagesSectionProps) {
   const router = useRouter();
   const orderedStages = [...stages].sort((leftStage, rightStage) => {
@@ -152,6 +154,7 @@ export function ServiceStagesSection({
         descricao: isEditing
           ? `${titulo}${formData.opcional ? " (opcional)" : ""}`
           : `${titulo}${formData.opcional ? " (opcional)" : ""}`,
+        criado_por: currentUserId || null,
       }),
     ]);
 
@@ -191,6 +194,7 @@ export function ServiceStagesSection({
         tipo: "etapa",
         titulo: "Etapa atualizada",
         descricao: `${stage.titulo ?? "Etapa"} alterada para ${nextStatus}.`,
+        criado_por: currentUserId || null,
       }),
     ]);
 
@@ -227,6 +231,7 @@ export function ServiceStagesSection({
         descricao: `${stage.titulo ?? "Etapa"} marcada como ${
           nextOptional ? "opcional" : "obrigatoria"
         }.`,
+        criado_por: currentUserId || null,
       }),
     ]);
 
@@ -284,6 +289,7 @@ export function ServiceStagesSection({
       descricao: `${stage.titulo ?? "Etapa"} movida para ${
         direction === "up" ? "cima" : "baixo"
       }.`,
+      criado_por: currentUserId || null,
     });
 
     setReorderingStageId(null);

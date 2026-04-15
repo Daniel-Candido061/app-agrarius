@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatSimpleDate, isBeforeTodayDateOnly } from "../../../lib/date-utils";
 import { supabase } from "../../../lib/supabase";
+import { getUserLabel, type UserDisplayMap } from "../../../lib/user-profiles";
 import { TASK_PRIORITY_OPTIONS } from "../../tarefas/priority-options";
 import { TASK_STATUS_OPTIONS } from "../../tarefas/status-options";
 import type { Tarefa } from "../../tarefas/types";
@@ -11,6 +12,8 @@ import type { Tarefa } from "../../tarefas/types";
 type ServiceTasksSectionProps = {
   serviceId: number;
   tasks: Tarefa[];
+  currentUserId?: string | null;
+  userDisplayNames?: UserDisplayMap;
 };
 
 type FormData = {
@@ -91,9 +94,18 @@ function isOverdueTask(task: Tarefa) {
   return isBeforeTodayDateOnly(task.data_limite);
 }
 
+function getTaskResponsibleLabel(
+  task: Tarefa,
+  userDisplayNames: UserDisplayMap
+) {
+  return getUserLabel(userDisplayNames, task.responsavel_id, task.responsavel);
+}
+
 export function ServiceTasksSection({
   serviceId,
   tasks,
+  currentUserId = null,
+  userDisplayNames = {},
 }: ServiceTasksSectionProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -157,12 +169,16 @@ export function ServiceTasksSection({
         prioridade,
         status,
         observacao: observacao || null,
+        criado_por: currentUserId || null,
+        atualizado_por: currentUserId || null,
+        responsavel_id: currentUserId || null,
       }),
       supabase.from("servico_eventos").insert({
         servico_id: serviceId,
         tipo: "tarefa",
         titulo: "Nova tarefa vinculada",
         descricao: titulo,
+        criado_por: currentUserId || null,
       }),
     ]);
 
@@ -251,7 +267,7 @@ export function ServiceTasksSection({
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-500">
-                      {task.responsavel ?? "-"}
+                      {getTaskResponsibleLabel(task, userDisplayNames)}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span

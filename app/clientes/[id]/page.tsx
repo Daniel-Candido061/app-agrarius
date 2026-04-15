@@ -6,6 +6,7 @@ import { SummaryCard, SummaryCardsGrid } from "../../components/summary-card";
 import { formatSimpleDate, isBeforeTodayDateOnly } from "../../../lib/date-utils";
 import { requireAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
+import { getCurrentUserShellProfile } from "../../../lib/user-profiles";
 import type {
   Cliente,
   ClienteFinanceiro,
@@ -214,7 +215,7 @@ export default async function ClienteDetalhesPage({
   params: Promise<{ id: string }>;
 }) {
   await connection();
-  await requireAuth();
+  const authenticatedUser = await requireAuth();
 
   const { id } = await params;
   const clientId = Number(id);
@@ -232,6 +233,10 @@ export default async function ClienteDetalhesPage({
   if (!client) {
     notFound();
   }
+  const currentUserProfile = await getCurrentUserShellProfile({
+    userId: authenticatedUser.id,
+    email: authenticatedUser.email,
+  });
 
   const serviceIds = services.map((service) => service.id);
   const [financialEntries, pendings] = await Promise.all([
@@ -349,6 +354,9 @@ export default async function ClienteDetalhesPage({
       title="Detalhes do cliente"
       description="Resumo do cliente, da carteira ativa e do historico comercial vinculado."
       currentPath="/clientes"
+      currentUserName={currentUserProfile.displayName}
+      currentUserDetail={currentUserProfile.secondaryLabel}
+      currentUserInitials={currentUserProfile.initials}
       action={
         <Link
           href="/clientes"

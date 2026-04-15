@@ -7,6 +7,9 @@ export type LancamentoFinanceiro = {
   data: string | null;
   servico_id: number | string | null;
   status: string | null;
+  criado_por?: string | null;
+  atualizado_por?: string | null;
+  responsavel_id?: string | null;
 };
 
 export type ClienteDoServico = {

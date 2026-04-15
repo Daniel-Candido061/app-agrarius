@@ -16,4 +16,7 @@ export type PropostaComercial = {
   servico_id: number | string | null;
   convertido_em: string | null;
   created_at: string | null;
+  criado_por?: string | null;
+  atualizado_por?: string | null;
+  responsavel_id?: string | null;
 };

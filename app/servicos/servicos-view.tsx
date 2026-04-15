@@ -31,6 +31,7 @@ import {
   isBeforeTodayDateOnly,
 } from "../../lib/date-utils";
 import { supabase } from "../../lib/supabase";
+import { getUserLabel, type UserDisplayMap } from "../../lib/user-profiles";
 import {
   getSituacaoOperacionalClassName,
   getSituacaoOperacionalLabel,
@@ -49,6 +50,11 @@ type ServicosViewProps = {
   services: Servico[];
   clients: ClienteOption[];
   financialEntries: ServicoFinanceiro[];
+  currentUserId?: string | null;
+  userDisplayNames?: UserDisplayMap;
+  currentUserName?: string;
+  currentUserDetail?: string;
+  currentUserInitials?: string;
 };
 
 type ModalMode = "create" | "edit";
@@ -213,10 +219,22 @@ function getOperationalSearchValue(value: string | null) {
   return value ? getSituacaoOperacionalLabel(value) : "";
 }
 
+function getServiceResponsibleLabel(
+  service: Servico,
+  userDisplayNames: UserDisplayMap
+) {
+  return getUserLabel(userDisplayNames, service.responsavel_id);
+}
+
 export function ServicosView({
   services,
   clients,
   financialEntries,
+  currentUserId = null,
+  userDisplayNames = {},
+  currentUserName,
+  currentUserDetail,
+  currentUserInitials,
 }: ServicosViewProps) {
   const router = useRouter();
   const [serviceList, setServiceList] = useState(services);
@@ -230,6 +248,7 @@ export function ServicosView({
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [quickFilter, setQuickFilter] = useState<ServiceQuickFilter>("all");
   const [statusFilter, setStatusFilter] = useState("");
+  const [responsavelFilter, setResponsavelFilter] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [deletingServiceId, setDeletingServiceId] = useState<number | null>(
@@ -282,8 +301,11 @@ export function ServicosView({
   const filteredServices = serviceList.filter((service) => {
     const summary = balanceByServiceId.get(String(service.id));
     const matchesStatus = !statusFilter || service.status === statusFilter;
+    const matchesResponsible =
+      !responsavelFilter ||
+      getServiceResponsibleLabel(service, userDisplayNames) === responsavelFilter;
 
-    if (!matchesStatus) {
+    if (!matchesStatus || !matchesResponsible) {
       return false;
     }
 
@@ -319,6 +341,7 @@ export function ServicosView({
       getClientName(service),
       service.nome_servico,
       service.tipo_servico,
+      getServiceResponsibleLabel(service, userDisplayNames),
       getOperationalSearchValue(service.situacao_operacional),
       service.cidade,
       service.status,
@@ -410,7 +433,21 @@ export function ServicosView({
           onRemove: () => setStatusFilter(""),
         }
       : null,
+    responsavelFilter
+      ? {
+          key: "responsavel",
+          label: `Responsavel: ${responsavelFilter}`,
+          onRemove: () => setResponsavelFilter(""),
+        }
+      : null,
   ].filter((chip) => chip !== null);
+  const responsibleOptions = Array.from(
+    new Set(
+      serviceList
+        .map((service) => getServiceResponsibleLabel(service, userDisplayNames))
+        .filter((value) => value && value !== "-")
+    )
+  ).sort((left, right) => left.localeCompare(right, "pt-BR"));
   const kanbanColumns: KanbanColumn<Servico>[] = SERVICE_STATUS_OPTIONS.map(
     (statusOption) => ({
       id: statusOption,
@@ -583,7 +620,16 @@ export function ServicosView({
       prazo_final: prazoFinal || null,
       observacoes: observacoes || null,
       status,
-      ...(isEditing ? { updated_at: new Date().toISOString() } : {}),
+      ...(isEditing
+        ? {
+            updated_at: new Date().toISOString(),
+            atualizado_por: currentUserId || null,
+          }
+        : {
+            criado_por: currentUserId || null,
+            atualizado_por: currentUserId || null,
+            responsavel_id: currentUserId || null,
+          }),
     };
 
     const response =
@@ -638,6 +684,9 @@ export function ServicosView({
             origem: pendingTemplate.origem,
             prioridade: pendingTemplate.prioridade ?? "media",
             status: "Aberta",
+            criado_por: currentUserId || null,
+            atualizado_por: currentUserId || null,
+            responsavel_id: currentUserId || null,
           }))
         );
       }
@@ -648,18 +697,21 @@ export function ServicosView({
           tipo: "sistema",
           titulo: "Servico criado",
           descricao: `Servico iniciado como ${tipoServico}.`,
+          criado_por: currentUserId || null,
         },
         {
           servico_id: serviceId,
           tipo: "sistema",
           titulo: "Etapas iniciais geradas",
           descricao: `${stageTitles.length} etapas padrao foram criadas automaticamente.`,
+          criado_por: currentUserId || null,
         },
         {
           servico_id: serviceId,
           tipo: "sistema",
           titulo: "Pendencias iniciais sugeridas",
           descricao: `${pendingTemplates.length} pendencia(s) padrao foram criadas automaticamente.`,
+          criado_por: currentUserId || null,
         },
       ]);
     }
@@ -734,6 +786,7 @@ export function ServicosView({
       .update({
         status: trimmedStatus,
         updated_at: new Date().toISOString(),
+        atualizado_por: currentUserId || null,
       })
       .eq("id", service.id);
 
@@ -774,6 +827,9 @@ export function ServicosView({
         title="Serviços"
         description="Lista de serviços sincronizada com os dados reais do Supabase."
         currentPath="/servicos"
+        currentUserName={currentUserName}
+        currentUserDetail={currentUserDetail}
+        currentUserInitials={currentUserInitials}
         action={
           <button
             type="button"
@@ -809,6 +865,22 @@ export function ServicosView({
                   {SERVICE_STATUS_OPTIONS.map((statusOption) => (
                     <option key={statusOption} value={statusOption}>
                       {statusOption}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
+                Responsavel
+                <select
+                  value={responsavelFilter}
+                  onChange={(event) => setResponsavelFilter(event.target.value)}
+                  className={toolbarSelectClassName}
+                >
+                  <option value="">Todos os responsaveis</option>
+                  {responsibleOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
                     </option>
                   ))}
                 </select>
@@ -854,6 +926,7 @@ export function ServicosView({
               setSearchTerm("");
               setQuickFilter("all");
               setStatusFilter("");
+              setResponsavelFilter("");
             }}
           />
         </PageToolbar>
@@ -923,6 +996,10 @@ export function ServicosView({
                           <p className="mt-1 truncate text-xs text-slate-500">
                             {getClientName(service)}
                           </p>
+                          <p className="mt-2 truncate text-xs text-slate-400">
+                            Responsavel:{" "}
+                            {getServiceResponsibleLabel(service, userDisplayNames)}
+                          </p>
                           <span
                             className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${getSituacaoOperacionalClassName(
                               service.situacao_operacional
@@ -973,6 +1050,12 @@ export function ServicosView({
                             {getSituacaoOperacionalLabel(
                               service.situacao_operacional
                             )}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Responsavel</span>
+                          <span className="font-medium text-slate-700">
+                            {getServiceResponsibleLabel(service, userDisplayNames)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-3">
@@ -1108,6 +1191,10 @@ export function ServicosView({
                         </Link>
                         <span className="mt-1 block text-xs text-slate-500">
                           {service.tipo_servico ?? "Sem tipo"}
+                        </span>
+                        <span className="mt-1 block text-xs text-slate-400">
+                          Responsavel:{" "}
+                          {getServiceResponsibleLabel(service, userDisplayNames)}
                         </span>
                         <span className="mt-1 block text-xs text-slate-400">
                           Entrada: {formatSimpleDate(service.data_entrada ?? service.created_at)}

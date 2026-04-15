@@ -2,6 +2,9 @@ export type Servico = {
   id: number;
   cliente_id: number | string | null;
   created_at: string | null;
+  criado_por?: string | null;
+  atualizado_por?: string | null;
+  responsavel_id?: string | null;
   data_entrada: string | null;
   nome_servico: string | null;
   tipo_servico: string | null;
@@ -38,6 +41,9 @@ export type ServicoFinanceiro = {
   data: string | null;
   servico_id: number | string | null;
   status: string | null;
+  criado_por?: string | null;
+  atualizado_por?: string | null;
+  responsavel_id?: string | null;
 };
 
 export type ServicoEtapa = {
@@ -61,6 +67,9 @@ export type ServicoPendencia = {
   observacao: string | null;
   created_at: string | null;
   updated_at?: string | null;
+  criado_por?: string | null;
+  atualizado_por?: string | null;
+  responsavel_id?: string | null;
 };
 
 export type ServicoEvento = {
@@ -70,6 +79,7 @@ export type ServicoEvento = {
   titulo: string | null;
   descricao: string | null;
   created_at: string | null;
+  criado_por?: string | null;
 };
 
 export type ServicoDocumento = {
@@ -83,4 +93,5 @@ export type ServicoDocumento = {
   observacao: string | null;
   criado_em: string | null;
   criado_por: string | null;
+  atualizado_por?: string | null;
 };
