@@ -5,6 +5,11 @@ import {
   quickPeriodOptions,
   type QuickPeriodValue,
 } from "../../lib/period-utils";
+import {
+  fieldInputClassName,
+  fieldSelectClassName,
+  primaryButtonClassName,
+} from "../components/ui-patterns";
 
 type TimeFilterMode = "rapido" | "personalizado";
 
@@ -96,7 +101,7 @@ export function DashboardTimeFilter({
                 onModeChange(event.target.value as TimeFilterMode)
               }
               disabled={isPending}
-              className="min-h-11 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
+              className={`${fieldSelectClassName} disabled:cursor-not-allowed disabled:opacity-70`}
             >
               <option value="rapido">Periodo rapido</option>
               <option value="personalizado">Intervalo personalizado</option>
@@ -113,7 +118,7 @@ export function DashboardTimeFilter({
                   onQuickPeriodChange(event.target.value as QuickPeriodValue)
                 }
                 disabled={isPending}
-                className="min-h-11 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
+                className={`${fieldSelectClassName} disabled:cursor-not-allowed disabled:opacity-70`}
               >
                 {quickPeriodOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -132,7 +137,7 @@ export function DashboardTimeFilter({
                   value={startDate}
                   onChange={(event) => onStartDateChange(event.target.value)}
                   disabled={isPending}
-                  className="min-h-11 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
+                  className={`${fieldInputClassName} disabled:cursor-not-allowed disabled:opacity-70`}
                 />
               </label>
 
@@ -144,7 +149,7 @@ export function DashboardTimeFilter({
                   value={endDate}
                   onChange={(event) => onEndDateChange(event.target.value)}
                   disabled={isPending}
-                  className="min-h-11 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 disabled:cursor-not-allowed disabled:opacity-70"
+                  className={`${fieldInputClassName} disabled:cursor-not-allowed disabled:opacity-70`}
                 />
               </label>
             </div>
@@ -153,7 +158,7 @@ export function DashboardTimeFilter({
           <button
             type="submit"
             disabled={isPending}
-            className="inline-flex min-h-11 items-center justify-center self-end rounded-xl bg-[#17352b] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638] disabled:cursor-not-allowed disabled:opacity-70"
+            className={`${primaryButtonClassName} self-end px-5 py-2.5`}
           >
             {isPending ? "Atualizando..." : "Aplicar"}
           </button>

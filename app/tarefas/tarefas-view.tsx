@@ -6,8 +6,19 @@ import { AppShell } from "../components/app-shell";
 import { ActiveFilterChips } from "../components/active-filter-chips";
 import { ActionsMenu } from "../components/actions-menu";
 import { KanbanBoard, type KanbanColumn } from "../components/kanban-board";
+import { PageTable } from "../components/page-table";
+import { PageToolbar } from "../components/page-toolbar";
 import { SearchableSelect } from "../components/searchable-select";
 import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
+import {
+  fieldInputClassName,
+  fieldSelectClassName,
+  fieldTextareaClassName,
+  primaryButtonClassName,
+  secondaryButtonClassName,
+  toolbarSearchInputClassName,
+  toolbarSelectClassName,
+} from "../components/ui-patterns";
 import { ViewModeToggle } from "../components/view-mode-toggle";
 import { getStatusClassName, normalizeStatusText } from "../components/status-utils";
 import {
@@ -474,7 +485,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
           <button
             type="button"
             onClick={openModal}
-            className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+            className={primaryButtonClassName}
           >
             Nova tarefa
           </button>
@@ -486,7 +497,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
           </div>
         ) : null}
 
-        <section className="mb-6 space-y-4 rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.28)] sm:p-5">
+        <PageToolbar>
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-sm font-medium text-slate-700">
               Busca
@@ -495,7 +506,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Buscar por titulo, servico, responsavel, prioridade ou status"
-                className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                className={toolbarSearchInputClassName}
               />
             </label>
 
@@ -505,7 +516,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                 <select
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
-                  className="min-h-11 min-w-[220px] rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                  className={toolbarSelectClassName}
                 >
                   <option value="">Todos os status</option>
                   {TASK_STATUS_OPTIONS.map((statusOption) => (
@@ -531,7 +542,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
               setStatusFilter("");
             }}
           />
-        </section>
+        </PageToolbar>
 
         <section className="mb-6">
           <SummaryCardsGrid className="xl:grid-cols-3 2xl:grid-cols-3">
@@ -569,7 +580,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
           </SummaryCardsGrid>
         </section>
 
-        <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
+        <PageTable>
           {taskList.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">
@@ -812,7 +823,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
               </table>
             </div>
           )}
-        </section>
+        </PageTable>
       </AppShell>
 
       {isModalOpen ? (
@@ -842,7 +853,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       value={formData.titulo}
                       onChange={(event) => updateField("titulo", event.target.value)}
                       placeholder="Digite o título da tarefa"
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className={fieldInputClassName}
                     />
                   </label>
 
@@ -869,7 +880,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                         updateField("responsavel", event.target.value)
                       }
                       placeholder="Nome do responsável"
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className={fieldInputClassName}
                     />
                   </label>
 
@@ -881,7 +892,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       onChange={(event) =>
                         updateField("data_limite", event.target.value)
                       }
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className={fieldInputClassName}
                     />
                   </label>
 
@@ -892,7 +903,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                       onChange={(event) =>
                         updateField("prioridade", event.target.value)
                       }
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className={fieldSelectClassName}
                     >
                       {TASK_PRIORITY_OPTIONS.map((priorityOption) => (
                         <option key={priorityOption} value={priorityOption}>
@@ -907,7 +918,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                     <select
                       value={formData.status}
                       onChange={(event) => updateField("status", event.target.value)}
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className={fieldSelectClassName}
                     >
                       {TASK_STATUS_OPTIONS.map((statusOption) => (
                         <option key={statusOption} value={statusOption}>
@@ -926,7 +937,7 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                         updateField("observacao", event.target.value)
                       }
                       placeholder="Detalhes importantes da tarefa"
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className={fieldTextareaClassName}
                     />
                   </label>
                 </div>
@@ -944,14 +955,14 @@ export function TarefasView({ tasks, services }: TarefasViewProps) {
                     type="button"
                     onClick={closeModal}
                     disabled={isSaving}
-                    className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                    className={secondaryButtonClassName}
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+                    className={primaryButtonClassName}
                   >
                     {isSaving ? "Salvando..." : "Salvar"}
                   </button>

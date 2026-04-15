@@ -4,8 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import { ActionsMenu } from "../components/actions-menu";
+import { PageTable } from "../components/page-table";
 import { SearchableSelect } from "../components/searchable-select";
 import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
+import {
+  fieldInputClassName,
+  fieldSelectClassName,
+  primaryButtonClassName,
+  secondaryButtonClassName,
+  toolbarSearchInputClassName,
+} from "../components/ui-patterns";
 import { formatSimpleDate, getDateInputValue } from "../../lib/date-utils";
 import {
   defaultPeriodValue,
@@ -612,7 +620,7 @@ export function FinanceiroView({
           <button
             type="button"
             onClick={openModal}
-            className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+            className={primaryButtonClassName}
           >
             Novo lanÃ§amento
           </button>
@@ -814,12 +822,12 @@ export function FinanceiroView({
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Digite cliente, serviÃ§o, descriÃ§Ã£o, categoria ou valor"
-                className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                className={toolbarSearchInputClassName}
               />
             </label>
           </div>
 
-          <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
+          <PageTable>
             {entries.length === 0 ? (
               <div className="px-6 py-16 text-center">
                 <h2 className="text-lg font-semibold text-[#17352b]">
@@ -944,7 +952,7 @@ export function FinanceiroView({
                 </table>
               </div>
             )}
-          </section>
+          </PageTable>
         </div>
       </AppShell>
 
@@ -973,7 +981,7 @@ export function FinanceiroView({
                   <select
                     value={formData.tipo}
                     onChange={(event) => updateField("tipo", event.target.value)}
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldSelectClassName}
                   >
                     <option value="Receita">Receita</option>
                     <option value="Despesa">Despesa</option>
@@ -1013,7 +1021,7 @@ export function FinanceiroView({
                     onChange={(event) =>
                       updateField("categoria", event.target.value)
                     }
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldSelectClassName}
                   >
                     {categoryOptions.map((categoryOption) => (
                       <option key={categoryOption} value={categoryOption}>
@@ -1032,7 +1040,7 @@ export function FinanceiroView({
                       updateField("descricao", event.target.value)
                     }
                     placeholder="Digite a descriÃ§Ã£o do lanÃ§amento"
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                 </label>
 
@@ -1044,7 +1052,7 @@ export function FinanceiroView({
                     value={formData.valor}
                     onChange={(event) => updateField("valor", event.target.value)}
                     placeholder="0,00"
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                 </label>
 
@@ -1054,7 +1062,7 @@ export function FinanceiroView({
                     type="date"
                     value={formData.data}
                     onChange={(event) => updateField("data", event.target.value)}
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                   <span className="text-xs font-normal text-slate-500">
                     Para parcelas, cadastre cada data como um lanÃ§amento separado.
@@ -1066,7 +1074,7 @@ export function FinanceiroView({
                     <select
                       value={formData.status}
                       onChange={(event) => updateField("status", event.target.value)}
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className={fieldSelectClassName}
                     >
                       {statusOptions.map((statusOption) => (
                         <option key={statusOption} value={statusOption}>
@@ -1090,14 +1098,14 @@ export function FinanceiroView({
                   type="button"
                   onClick={closeModal}
                   disabled={isSaving}
-                  className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                  className={secondaryButtonClassName}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+                  className={primaryButtonClassName}
                 >
                   {isSaving ? "Salvando..." : "Salvar"}
                 </button>

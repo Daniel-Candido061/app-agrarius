@@ -236,7 +236,37 @@ export function AppShell({
                       Agrarius Gestao
                     </p>
                   </div>
+                  <button
+                    type="button"
+                    aria-label="Abrir configuracoes da conta"
+                    title="Configuracoes da conta"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/5 text-emerald-50/80 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-4.5 w-4.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    >
+                      <path
+                        d="M12 8.75a3.25 3.25 0 1 0 0 6.5a3.25 3.25 0 0 0 0-6.5Z"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M19.4 15a1 1 0 0 0 .2 1.1l.05.06a1 1 0 0 1 0 1.42l-1.23 1.23a1 1 0 0 1-1.42 0l-.06-.05a1 1 0 0 0-1.1-.2a1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-1.74a1 1 0 0 1-1-1v-.08a1 1 0 0 0-.66-.93a1 1 0 0 0-1.04.23l-.06.05a1 1 0 0 1-1.42 0L4.2 17.58a1 1 0 0 1 0-1.42l.05-.06a1 1 0 0 0 .2-1.1a1 1 0 0 0-.9-.6H3.5a1 1 0 0 1-1-1v-1.74a1 1 0 0 1 1-1h.08a1 1 0 0 0 .93-.66a1 1 0 0 0-.23-1.04l-.05-.06a1 1 0 0 1 0-1.42L5.46 4.2a1 1 0 0 1 1.42 0l.06.05a1 1 0 0 0 1.1.2a1 1 0 0 0 .6-.9V3.5a1 1 0 0 1 1-1h1.74a1 1 0 0 1 1 1v.08a1 1 0 0 0 .66.93a1 1 0 0 0 1.04-.23l.06-.05a1 1 0 0 1 1.42 0l1.23 1.23a1 1 0 0 1 0 1.42l-.05.06a1 1 0 0 0-.2 1.1a1 1 0 0 0 .9.6h.08a1 1 0 0 1 1 1v1.74a1 1 0 0 1-1 1h-.08a1 1 0 0 0-.93.66Z"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
                 </div>
+
+                <p className="mt-3 text-xs text-emerald-50/60">
+                  Espaco preparado para conta, perfil e preferencias futuras.
+                </p>
 
                 <form action="/auth/logout" method="post" className="mt-3">
                   <button

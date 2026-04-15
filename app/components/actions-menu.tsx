@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { secondaryButtonClassName } from "./ui-patterns";
+
 type ActionMenuItem = {
   label: string;
   href?: string;
@@ -103,7 +105,7 @@ export function ActionsMenu({ items }: ActionsMenuProps) {
           event.stopPropagation();
           toggleMenu();
         }}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-[#17352b]"
+        className={`${secondaryButtonClassName} h-10 w-10 rounded-xl px-0 py-0 text-slate-500 hover:text-[#17352b]`}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-label="Abrir menu de ações"

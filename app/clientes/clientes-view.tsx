@@ -4,7 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../components/app-shell";
 import { ActionsMenu } from "../components/actions-menu";
+import { PageTable } from "../components/page-table";
+import { PageToolbar } from "../components/page-toolbar";
 import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
+import {
+  fieldInputClassName,
+  fieldSelectClassName,
+  primaryButtonClassName,
+  secondaryButtonClassName,
+  toolbarSearchInputClassName,
+} from "../components/ui-patterns";
 import { supabase } from "../../lib/supabase";
 import { CLIENT_STATUS_OPTIONS } from "./status-options";
 import type {
@@ -425,7 +434,7 @@ export function ClientesView({
           <button
             type="button"
             onClick={openModal}
-            className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+            className={primaryButtonClassName}
           >
             Novo cliente
           </button>
@@ -437,7 +446,7 @@ export function ClientesView({
           </div>
         ) : null}
 
-        <div className="mb-6">
+        <PageToolbar className="space-y-0">
           <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-slate-700">
             Busca
             <input
@@ -445,10 +454,10 @@ export function ClientesView({
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Buscar por nome, email, telefone ou cidade"
-              className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+              className={toolbarSearchInputClassName}
             />
           </label>
-        </div>
+        </PageToolbar>
 
         <section className="mb-6">
           <SummaryCardsGrid className="xl:grid-cols-3 2xl:grid-cols-3">
@@ -486,7 +495,7 @@ export function ClientesView({
           </SummaryCardsGrid>
         </section>
 
-        <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
+        <PageTable>
           {clients.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">
@@ -624,7 +633,7 @@ export function ClientesView({
               </table>
             </div>
           )}
-        </section>
+        </PageTable>
       </AppShell>
 
       {isModalOpen ? (
@@ -654,7 +663,7 @@ export function ClientesView({
                     value={formData.nome}
                     onChange={(event) => updateField("nome", event.target.value)}
                     placeholder="Digite o nome do cliente"
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                 </label>
 
@@ -667,7 +676,7 @@ export function ClientesView({
                       updateField("telefone", event.target.value)
                     }
                     placeholder="(00) 00000-0000"
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                 </label>
 
@@ -680,7 +689,7 @@ export function ClientesView({
                       updateField("email", event.target.value)
                     }
                     placeholder="cliente@empresa.com"
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                 </label>
 
@@ -691,7 +700,7 @@ export function ClientesView({
                     value={formData.cidade}
                     onChange={(event) => updateField("cidade", event.target.value)}
                     placeholder="Cidade - UF"
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                 </label>
 
@@ -700,7 +709,7 @@ export function ClientesView({
                     <select
                       value={formData.status}
                       onChange={(event) => updateField("status", event.target.value)}
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className={fieldSelectClassName}
                     >
                       {CLIENT_STATUS_OPTIONS.map((statusOption) => (
                         <option key={statusOption} value={statusOption}>
@@ -724,14 +733,14 @@ export function ClientesView({
                   type="button"
                   onClick={closeModal}
                   disabled={isSaving}
-                  className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                  className={secondaryButtonClassName}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+                  className={primaryButtonClassName}
                 >
                   {isSaving ? "Salvando..." : "Salvar"}
                 </button>

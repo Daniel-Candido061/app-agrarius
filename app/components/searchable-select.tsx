@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+import { fieldInputClassName } from "./ui-patterns";
+
 type SearchableSelectOption = {
   value: string;
   label: string;
@@ -108,7 +110,7 @@ export function SearchableSelect({
             }
           }}
           placeholder={searchPlaceholder}
-          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+          className={`w-full ${fieldInputClassName}`}
         />
 
         {isOpen ? (

@@ -7,8 +7,19 @@ import { AppShell } from "../components/app-shell";
 import { ActiveFilterChips } from "../components/active-filter-chips";
 import { ActionsMenu } from "../components/actions-menu";
 import { KanbanBoard, type KanbanColumn } from "../components/kanban-board";
+import { PageTable } from "../components/page-table";
+import { PageToolbar } from "../components/page-toolbar";
 import { SearchableSelect } from "../components/searchable-select";
 import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
+import {
+  fieldInputClassName,
+  fieldSelectClassName,
+  fieldTextareaClassName,
+  primaryButtonClassName,
+  secondaryButtonClassName,
+  toolbarSearchInputClassName,
+  toolbarSelectClassName,
+} from "../components/ui-patterns";
 import { ViewModeToggle } from "../components/view-mode-toggle";
 import {
   getStatusClassName,
@@ -767,13 +778,13 @@ export function ServicosView({
           <button
             type="button"
             onClick={openModal}
-            className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+            className={primaryButtonClassName}
           >
             Novo serviço
           </button>
         }
       >
-        <section className="mb-6 space-y-4 rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.28)] sm:p-5">
+        <PageToolbar>
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-sm font-medium text-slate-700">
               Busca
@@ -782,7 +793,7 @@ export function ServicosView({
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Buscar por cliente, servico, tipo, operacao ou status"
-                className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                className={toolbarSearchInputClassName}
               />
             </label>
 
@@ -792,7 +803,7 @@ export function ServicosView({
                 <select
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
-                  className="min-h-11 min-w-[220px] rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                  className={toolbarSelectClassName}
                 >
                   <option value="">Todos os status</option>
                   {SERVICE_STATUS_OPTIONS.map((statusOption) => (
@@ -845,7 +856,7 @@ export function ServicosView({
               setStatusFilter("");
             }}
           />
-        </section>
+        </PageToolbar>
 
         <section className="mb-6">
           <SummaryCardsGrid className="2xl:grid-cols-4">
@@ -861,7 +872,7 @@ export function ServicosView({
           </SummaryCardsGrid>
         </section>
 
-        <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
+        <PageTable>
           {serviceList.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">
@@ -1205,9 +1216,9 @@ export function ServicosView({
               </table>
             </div>
           )}
-        </section>
+        </PageTable>
 
-        <section className="mt-6 overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
+        <PageTable className="mt-6">
           <div className="border-b border-slate-200 px-6 py-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -1297,7 +1308,7 @@ export function ServicosView({
               </table>
             </div>
           )}
-        </section>
+        </PageTable>
       </AppShell>
 
       {isModalOpen ? (
@@ -1342,7 +1353,7 @@ export function ServicosView({
                       updateField("nome_servico", event.target.value)
                     }
                     placeholder="Digite o nome do serviço"
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                 </label>
 
@@ -1353,7 +1364,7 @@ export function ServicosView({
                     onChange={(event) =>
                       updateField("tipo_servico", event.target.value)
                     }
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldSelectClassName}
                   >
                     {SERVICE_TYPE_OPTIONS.map((typeOption) => (
                       <option key={typeOption} value={typeOption}>
@@ -1371,7 +1382,7 @@ export function ServicosView({
                     onChange={(event) =>
                       updateField("data_entrada", event.target.value)
                     }
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                 </label>
 
@@ -1382,7 +1393,7 @@ export function ServicosView({
                     value={formData.cidade}
                     onChange={(event) => updateField("cidade", event.target.value)}
                     placeholder="Cidade - UF"
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                 </label>
 
@@ -1393,7 +1404,7 @@ export function ServicosView({
                     onChange={(event) =>
                       updateField("situacao_operacional", event.target.value)
                     }
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldSelectClassName}
                   >
                     {SERVICE_OPERATIONAL_STATUS_OPTIONS.map((statusOption) => (
                       <option key={statusOption} value={statusOption}>
@@ -1411,7 +1422,7 @@ export function ServicosView({
                     value={formData.valor}
                     onChange={(event) => updateField("valor", event.target.value)}
                     placeholder="0,00"
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                 </label>
 
@@ -1423,7 +1434,7 @@ export function ServicosView({
                     onChange={(event) =>
                       updateField("prazo_final", event.target.value)
                     }
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldInputClassName}
                   />
                 </label>
 
@@ -1436,7 +1447,7 @@ export function ServicosView({
                     }
                     rows={4}
                     placeholder="Digite observações técnicas e operacionais"
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                    className={fieldTextareaClassName}
                   />
                 </label>
 
@@ -1445,7 +1456,7 @@ export function ServicosView({
                     <select
                       value={formData.status}
                       onChange={(event) => updateField("status", event.target.value)}
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className={fieldSelectClassName}
                     >
                       {SERVICE_STATUS_OPTIONS.map((statusOption) => (
                         <option key={statusOption} value={statusOption}>
@@ -1469,14 +1480,14 @@ export function ServicosView({
                   type="button"
                   onClick={closeModal}
                   disabled={isSaving}
-                  className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                  className={secondaryButtonClassName}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+                  className={primaryButtonClassName}
                 >
                   {isSaving ? "Salvando..." : "Salvar"}
                 </button>
@@ -1503,7 +1514,7 @@ export function ServicosView({
               <button
                 type="button"
                 onClick={closeFinancialModal}
-                className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                className={`${secondaryButtonClassName} min-h-10 px-4 py-2`}
               >
                 Fechar
               </button>

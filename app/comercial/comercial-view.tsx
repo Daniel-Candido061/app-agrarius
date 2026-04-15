@@ -7,8 +7,19 @@ import { AppShell } from "../components/app-shell";
 import { ActiveFilterChips } from "../components/active-filter-chips";
 import { ActionsMenu } from "../components/actions-menu";
 import { KanbanBoard, type KanbanColumn } from "../components/kanban-board";
+import { PageTable } from "../components/page-table";
+import { PageToolbar } from "../components/page-toolbar";
 import { SearchableSelect } from "../components/searchable-select";
 import { SummaryCard, SummaryCardsGrid } from "../components/summary-card";
+import {
+  fieldInputClassName,
+  fieldSelectClassName,
+  fieldTextareaClassName,
+  primaryButtonClassName,
+  secondaryButtonClassName,
+  toolbarSearchInputClassName,
+  toolbarSelectClassName,
+} from "../components/ui-patterns";
 import { ViewModeToggle } from "../components/view-mode-toggle";
 import {
   formatSimpleDate,
@@ -167,7 +178,11 @@ function isOpenProposal(proposal: PropostaComercial) {
 }
 
 function isConvertedProposal(proposal: PropostaComercial) {
-  return Boolean(proposal.cliente_id || proposal.servico_id || proposal.convertido_em);
+  return isWonProposal(proposal) && Boolean(proposal.servico_id || proposal.convertido_em);
+}
+
+function hasConversionHistory(proposal: PropostaComercial) {
+  return !isConvertedProposal(proposal) && Boolean(proposal.servico_id || proposal.convertido_em);
 }
 
 function isFollowUpOverdue(proposal: PropostaComercial) {
@@ -822,6 +837,10 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
           ? {
               ...currentProposal,
               status: trimmedStatus,
+              convertido_em:
+                trimmedStatus === "Ganho"
+                  ? currentProposal.convertido_em
+                  : null,
               motivo_perda:
                 trimmedStatus === "Perdido"
                   ? currentProposal.motivo_perda
@@ -835,6 +854,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
       .from("propostas")
       .update({
         status: trimmedStatus,
+        convertido_em: trimmedStatus === "Ganho" ? proposal.convertido_em : null,
         motivo_perda: trimmedStatus === "Perdido" ? proposal.motivo_perda : null,
         updated_at: new Date().toISOString(),
       })
@@ -880,7 +900,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
           <button
             type="button"
             onClick={openModal}
-            className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+            className={primaryButtonClassName}
           >
             Nova proposta
           </button>
@@ -892,7 +912,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
           </div>
         ) : null}
 
-        <section className="mb-6 space-y-4 rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.28)] sm:p-5">
+        <PageToolbar>
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-sm font-medium text-slate-700">
               Busca
@@ -901,7 +921,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Buscar por oportunidade, contato, empresa, cidade ou tipo de servico"
-                className="min-h-11 w-full min-w-0 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-base text-slate-700 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.2)] outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                className={toolbarSearchInputClassName}
               />
             </label>
 
@@ -911,7 +931,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                 <select
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
-                  className="min-h-11 min-w-[220px] rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10 sm:text-sm"
+                  className={toolbarSelectClassName}
                 >
                   <option value="">Todos os status</option>
                   {COMMERCIAL_STATUS_OPTIONS.map((statusOption) => (
@@ -964,7 +984,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
               setStatusFilter("");
             }}
           />
-        </section>
+        </PageToolbar>
 
         <section className="mb-6">
           <SummaryCardsGrid className="2xl:grid-cols-4">
@@ -980,7 +1000,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
           </SummaryCardsGrid>
         </section>
 
-        <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.28)]">
+        <PageTable>
           {proposalList.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">
@@ -1079,6 +1099,28 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                           </Link>
                         ) : null}
                       </div>
+                    ) : hasConversionHistory(proposal) ? (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                          Conversao anterior
+                        </span>
+                        {proposal.cliente_id ? (
+                          <Link
+                            href={`/clientes/${proposal.cliente_id}`}
+                            className="text-xs font-semibold text-[#17352b] transition hover:text-[#204638]"
+                          >
+                            Abrir cliente
+                          </Link>
+                        ) : null}
+                        {proposal.servico_id ? (
+                          <Link
+                            href={`/servicos/${proposal.servico_id}`}
+                            className="text-xs font-semibold text-[#17352b] transition hover:text-[#204638]"
+                          >
+                            Abrir servico
+                          </Link>
+                        ) : null}
+                      </div>
                     ) : null}
 
                     <div className="mt-4 flex items-center justify-between gap-3">
@@ -1092,7 +1134,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                           onClick={() => openConversionModal(proposal)}
                           className="text-sm font-semibold text-emerald-700 transition hover:text-emerald-800"
                         >
-                          Converter
+                          {hasConversionHistory(proposal) ? "Converter novamente" : "Converter"}
                         </button>
                       )}
                       <button
@@ -1174,13 +1216,20 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                         {formatSimpleDate(proposal.proxima_acao_data)}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClassName(
-                            proposal.status
-                          )}`}
-                        >
-                          {proposal.status ?? "-"}
-                        </span>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClassName(
+                              proposal.status
+                            )}`}
+                          >
+                            {proposal.status ?? "-"}
+                          </span>
+                          {hasConversionHistory(proposal) ? (
+                            <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                              Conversao anterior
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right text-sm">
                         <ActionsMenu
@@ -1188,7 +1237,9 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                             ...(!isConvertedProposal(proposal)
                               ? [
                                   {
-                                    label: "Converter em servico",
+                                    label: hasConversionHistory(proposal)
+                                      ? "Converter novamente"
+                                      : "Converter em servico",
                                     onClick: () => openConversionModal(proposal),
                                   },
                                 ]
@@ -1231,7 +1282,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
               </table>
             </div>
           )}
-        </section>
+        </PageTable>
       </AppShell>
 
       {isModalOpen ? (
@@ -1259,7 +1310,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                           updateField("nome_oportunidade", event.target.value)
                         }
                         placeholder="Ex: Georreferenciamento Fazenda Boa Vista"
-                        className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                        className={fieldInputClassName}
                       />
                     </label>
 
@@ -1355,7 +1406,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                       onChange={(event) =>
                         updateField("proxima_acao_data", event.target.value)
                       }
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className={fieldSelectClassName}
                     />
                   </label>
 
@@ -1383,7 +1434,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                         updateField("motivo_perda", event.target.value)
                       }
                       placeholder="Preencha quando a proposta for perdida"
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                      className={fieldTextareaClassName}
                     />
                   </label>
 
@@ -1414,14 +1465,14 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                     type="button"
                     onClick={closeModal}
                     disabled={isSaving}
-                    className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                    className={secondaryButtonClassName}
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+                    className={primaryButtonClassName}
                   >
                     {isSaving ? "Salvando..." : "Salvar"}
                   </button>
@@ -1545,7 +1596,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                                 updateConversionField("clientName", event.target.value)
                               }
                               placeholder="Nome da empresa, fazenda ou interessado"
-                              className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                              className={fieldInputClassName}
                             />
                             <span className="text-xs font-normal text-slate-500">
                               Este campo usa primeiro o valor de &quot;Cliente ou empresa interessada&quot; da proposta.
@@ -1598,7 +1649,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                               onChange={(event) =>
                                 updateConversionField("clientStatus", event.target.value)
                               }
-                              className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                              className={fieldSelectClassName}
                             >
                               {CLIENT_STATUS_OPTIONS.map((statusOption) => (
                                 <option key={statusOption} value={statusOption}>
@@ -1632,7 +1683,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                             updateConversionField("serviceName", event.target.value)
                           }
                           placeholder="Nome do servico"
-                          className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                          className={fieldInputClassName}
                         />
                         <span className="text-xs font-normal text-slate-500">
                           Este campo usa o valor de &quot;Servico ou oportunidade&quot; da proposta.
@@ -1646,7 +1697,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                           onChange={(event) =>
                             updateConversionField("serviceType", event.target.value)
                           }
-                          className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                          className={fieldSelectClassName}
                         >
                           {SERVICE_TYPE_OPTIONS.map((typeOption) => (
                             <option key={typeOption} value={typeOption}>
@@ -1694,7 +1745,7 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                             updateConversionField("serviceCity", event.target.value)
                           }
                           placeholder="Cidade - UF"
-                          className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#17352b] focus:ring-2 focus:ring-[#17352b]/10"
+                          className={fieldTextareaClassName}
                         />
                       </label>
 
@@ -1753,14 +1804,14 @@ export function ComercialView({ proposals, clients }: ComercialViewProps) {
                     type="button"
                     onClick={closeConversionModal}
                     disabled={isConverting}
-                    className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                    className={secondaryButtonClassName}
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={isConverting}
-                    className="inline-flex items-center justify-center rounded-xl bg-[#17352b] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#204638]"
+                    className={primaryButtonClassName}
                   >
                     {isConverting ? "Convertendo..." : "Converter proposta"}
                   </button>
