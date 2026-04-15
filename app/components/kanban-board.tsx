@@ -166,7 +166,7 @@ export function KanbanBoard<TItem>({
                       </div>
 
                       {onMoveItem ? (
-                        <div className="sm:hidden">
+                        <div className="lg:hidden">
                           <button
                             type="button"
                             onClick={() =>
