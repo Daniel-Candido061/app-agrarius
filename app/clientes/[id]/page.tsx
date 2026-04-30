@@ -7,7 +7,7 @@ import { formatSimpleDate, isBeforeTodayDateOnly } from "../../../lib/date-utils
 import { requireAuth } from "../../../lib/auth";
 import { requireCurrentOrganization } from "../../../lib/organization-context";
 import { scopeQueryToOrganization } from "../../../lib/organization-scope";
-import { supabase } from "../../../lib/supabase";
+import { getSupabaseServerClient } from "../../../lib/supabase-server";
 import { getCurrentUserShellProfile } from "../../../lib/user-profiles";
 import type {
   Cliente,
@@ -121,6 +121,7 @@ function getServiceStatusClassName(status: string | null) {
 }
 
 async function getCliente(id: number, organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("clientes")
@@ -142,6 +143,7 @@ async function getServicosDoCliente(
   id: number,
   organizationId?: string | null
 ) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("servicos")
@@ -164,6 +166,7 @@ async function getLancamentosDosServicos(
   serviceIds: number[],
   organizationId?: string | null
 ) {
+  const supabase = await getSupabaseServerClient();
   if (serviceIds.length === 0) {
     return [];
   }
@@ -191,6 +194,7 @@ async function getPropostasDoCliente(
   id: number,
   organizationId?: string | null
 ) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("propostas")
@@ -213,6 +217,7 @@ async function getPendenciasDosServicos(
   serviceIds: number[],
   organizationId?: string | null
 ) {
+  const supabase = await getSupabaseServerClient();
   if (serviceIds.length === 0) {
     return [];
   }

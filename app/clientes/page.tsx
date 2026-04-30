@@ -3,7 +3,7 @@ import { ClientesView } from "./clientes-view";
 import { requireAuth } from "../../lib/auth";
 import { requireCurrentOrganization } from "../../lib/organization-context";
 import { scopeQueryToOrganization } from "../../lib/organization-scope";
-import { supabase } from "../../lib/supabase";
+import { getSupabaseServerClient } from "../../lib/supabase-server";
 import { getCurrentUserShellProfile } from "../../lib/user-profiles";
 import type {
   Cliente,
@@ -12,6 +12,7 @@ import type {
 } from "./types";
 
 async function getClientes(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("clientes")
@@ -29,6 +30,7 @@ async function getClientes(organizationId?: string | null) {
 }
 
 async function getServicosDosClientes(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase.from("servicos").select("id, cliente_id, valor, status"),
     organizationId
@@ -43,6 +45,7 @@ async function getServicosDosClientes(organizationId?: string | null) {
 }
 
 async function getFinanceiroDosServicos(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase.from("financeiro").select("tipo, valor, servico_id, status"),
     organizationId

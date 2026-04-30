@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import {
-  authCookieNames,
-  authCookieOptions,
   createAuthClientForRoute,
 } from "../../../lib/auth";
+import { authCookieNames, authCookieOptions } from "../../../lib/auth-cookies";
 
 export async function POST(request: Request) {
   const formData = await request.formData();

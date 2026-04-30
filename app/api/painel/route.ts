@@ -5,6 +5,7 @@ import {
   type DashboardData,
 } from "../../../lib/dashboard-data";
 import { getCurrentOrganizationContext } from "../../../lib/organization-context";
+import { getSupabaseServerClient } from "../../../lib/supabase-server";
 import {
   getQuickPeriodValue,
   type PeriodValue,
@@ -28,6 +29,7 @@ type DashboardResponse = {
 
 export async function GET(request: Request) {
   const authenticatedUser = await requireAuth();
+  const supabaseServer = await getSupabaseServerClient();
   const organizationContext = await getCurrentOrganizationContext(
     authenticatedUser.id
   );
@@ -52,7 +54,8 @@ export async function GET(request: Request) {
     selectedPeriod,
     customStartDate,
     customEndDate,
-    organizationContext.organizationId
+    organizationContext.organizationId,
+    supabaseServer
   );
 
   return NextResponse.json<DashboardResponse>({

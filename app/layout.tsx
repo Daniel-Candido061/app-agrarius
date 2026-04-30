@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SupabaseSessionBridge } from "./components/supabase-session-bridge";
 
 const siteTitle = "Agrarius Gestão";
 const siteDescription =
@@ -55,6 +56,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="h-full antialiased">
       <body className="flex min-h-full flex-col text-[15px] leading-relaxed">
+        <SupabaseSessionBridge />
         {children}
       </body>
     </html>

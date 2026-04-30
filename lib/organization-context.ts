@@ -1,6 +1,8 @@
+import "server-only";
+
 import { redirect } from "next/navigation";
 
-import { supabase } from "./supabase";
+import { getSupabaseServerClient } from "./supabase-server";
 
 type MembershipRow = {
   organization_id: string;
@@ -35,6 +37,7 @@ export async function getCurrentOrganizationContext(
   userId: string
 ): Promise<OrganizationContext> {
   try {
+    const supabase = await getSupabaseServerClient();
     const [{ data: memberships, error: membershipsError }, { data: profile }] =
       await Promise.all([
         supabase
@@ -94,6 +97,7 @@ export async function getCurrentOrganizationContext(
       : null;
 
     if (!organizationName) {
+      const supabase = await getSupabaseServerClient();
       const { data: organizationRow } = await supabase
         .from("organizations")
         .select("id, name")

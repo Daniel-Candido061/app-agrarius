@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 
-import { authCookieNames, requireAuth } from "../../../../lib/auth";
+import { requireAuth } from "../../../../lib/auth";
+import { authCookieNames } from "../../../../lib/auth-cookies";
 
 function createAuthorizedSupabaseClient(accessToken: string) {
   return createClient(

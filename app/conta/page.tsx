@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { AppShell } from "../components/app-shell";
 import { requireAuth } from "../../lib/auth";
 import { getCurrentOrganizationContext } from "../../lib/organization-context";
-import { supabase } from "../../lib/supabase";
+import { getSupabaseServerClient } from "../../lib/supabase-server";
 import { getCurrentUserShellProfile } from "../../lib/user-profiles";
 import { AccountView } from "./account-view";
 
@@ -14,6 +14,7 @@ type PerfilUsuario = {
 };
 
 async function getCurrentProfile(userId: string) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("perfis_usuario")
     .select("nome_exibicao, email, papel")
@@ -31,12 +32,13 @@ async function getCurrentProfile(userId: string) {
 export default async function ContaPage() {
   await connection();
   const authenticatedUser = await requireAuth();
+  const supabaseServer = await getSupabaseServerClient();
 
   const [currentUserProfile, profile, organizationContext] = await Promise.all([
     getCurrentUserShellProfile({
       userId: authenticatedUser.id,
       email: authenticatedUser.email,
-    }),
+    }, supabaseServer),
     getCurrentProfile(authenticatedUser.id),
     getCurrentOrganizationContext(authenticatedUser.id),
   ]);

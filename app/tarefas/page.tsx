@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { requireAuth } from "../../lib/auth";
 import { requireCurrentOrganization } from "../../lib/organization-context";
 import { scopeQueryToOrganization } from "../../lib/organization-scope";
-import { supabase } from "../../lib/supabase";
+import { getSupabaseServerClient } from "../../lib/supabase-server";
 import {
   getCurrentUserShellProfile,
   getUserDisplayMap,
@@ -12,6 +12,7 @@ import { TarefasView } from "./tarefas-view";
 import type { ServicoOption, Tarefa } from "./types";
 
 async function getTarefas(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("tarefas")
@@ -32,6 +33,7 @@ async function getTarefas(organizationId?: string | null) {
 }
 
 async function getServicos(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("servicos")

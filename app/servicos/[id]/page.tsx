@@ -11,7 +11,7 @@ import {
 import { requireAuth } from "../../../lib/auth";
 import { requireCurrentOrganization } from "../../../lib/organization-context";
 import { scopeQueryToOrganization } from "../../../lib/organization-scope";
-import { supabase } from "../../../lib/supabase";
+import { getSupabaseServerClient } from "../../../lib/supabase-server";
 import {
   getCurrentUserShellProfile,
   getUserDisplayMap,
@@ -241,6 +241,7 @@ function getFirstCompletionDate(
 }
 
 async function getServico(id: number, organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("servicos")
@@ -261,6 +262,7 @@ async function getServico(id: number, organizationId?: string | null) {
 }
 
 async function getEtapasDoServico(id: number, organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("servico_etapas")
@@ -283,6 +285,7 @@ async function getPendenciasDoServico(
   id: number,
   organizationId?: string | null
 ) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("servico_pendencias")
@@ -301,6 +304,7 @@ async function getPendenciasDoServico(
 }
 
 async function getEventosDoServico(id: number, organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("servico_eventos")
@@ -322,6 +326,7 @@ async function getDocumentosDoServico(
   id: number,
   organizationId?: string | null
 ) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("servico_documentos")
@@ -345,6 +350,7 @@ async function getLancamentosDoServico(
   id: number,
   organizationId?: string | null
 ) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("financeiro")
@@ -364,6 +370,7 @@ async function getLancamentosDoServico(
 }
 
 async function getTarefasDoServico(id: number, organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("tarefas")

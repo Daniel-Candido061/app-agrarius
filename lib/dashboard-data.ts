@@ -3,6 +3,7 @@
   type PeriodValue,
 } from "./period-utils";
 import { getUserDisplayMap } from "./user-profiles";
+
 import {
   getDaysUntilSimpleDate,
   getSimpleDateTime,
@@ -266,7 +267,8 @@ export async function getDashboardData(
   selectedPeriod: PeriodValue,
   customStartDate: string,
   customEndDate: string,
-  organizationId?: string | null
+  organizationId?: string | null,
+  supabaseClient = supabase
 ): Promise<DashboardData> {
   const [
     clientsResult,
@@ -278,11 +280,11 @@ export async function getDashboardData(
     commercialConversionResult,
   ] = await Promise.all([
     scopeQueryToOrganization(
-      supabase.from("clientes").select("id, created_at"),
+      supabaseClient.from("clientes").select("id, created_at"),
       organizationId
     ),
     scopeQueryToOrganization(
-      supabase
+      supabaseClient
       .from("servicos")
       .select(
         "id, cliente_id, nome_servico, valor, created_at, data_entrada, prazo_final, status, responsavel_id, situacao_operacional, cliente:clientes!servicos_cliente_same_organization_fkey(nome)"
@@ -290,25 +292,25 @@ export async function getDashboardData(
       organizationId
     ),
     scopeQueryToOrganization(
-      supabase.from("financeiro").select("tipo, valor, status, data, servico_id"),
+      supabaseClient.from("financeiro").select("tipo, valor, status, data, servico_id"),
       organizationId
     ),
     scopeQueryToOrganization(
-      supabase.from("tarefas").select("id, data_limite, status, responsavel_id"),
+      supabaseClient.from("tarefas").select("id, data_limite, status, responsavel_id"),
       organizationId
     ),
     scopeQueryToOrganization(
-      supabase
+      supabaseClient
       .from("servico_pendencias")
       .select("id, servico_id, status, prioridade, responsavel_id"),
       organizationId
     ),
-    supabase
+    supabaseClient
       .from("vw_metricas_servicos_por_tipo")
       .select(
         "tipo_servico, quantidade_servicos_concluidos, servicos_com_tempo_calculavel, tempo_medio_dias, ticket_medio, servicos_com_margem_calculavel, margem_media, receita_media_recebida, despesa_media_paga"
       ),
-    supabase
+    supabaseClient
       .from("vw_conversao_comercial")
       .select(
         "dimensao, agrupador, total_propostas, propostas_ganhas, taxa_conversao"
@@ -482,7 +484,7 @@ export async function getDashboardData(
     ...services.map((service) => service.responsavel_id),
     ...tasks.map((task) => task.responsavel_id),
     ...pendings.map((pending) => pending.responsavel_id),
-  ], { organizationId });
+  ], { organizationId }, supabaseClient);
 
   const carteiraPorResponsavelMap = new Map<string, DashboardResponsibleMetric>();
 

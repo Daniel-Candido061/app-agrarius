@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { requireAuth } from "../../lib/auth";
 import { requireCurrentOrganization } from "../../lib/organization-context";
 import { scopeQueryToOrganization } from "../../lib/organization-scope";
-import { supabase } from "../../lib/supabase";
+import { getSupabaseServerClient } from "../../lib/supabase-server";
 import {
   getCurrentUserShellProfile,
   getUserDisplayMap,
@@ -12,6 +12,7 @@ import { ServicosView } from "./servicos-view";
 import type { ClienteOption, Servico, ServicoFinanceiro } from "./types";
 
 async function getServicos(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("servicos")
@@ -33,6 +34,7 @@ async function getServicos(organizationId?: string | null) {
 }
 
 async function getClientes(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase.from("clientes").select("id, nome").order("nome", { ascending: true }),
     organizationId
@@ -47,6 +49,7 @@ async function getClientes(organizationId?: string | null) {
 }
 
 async function getFinanceiroPorServico(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("financeiro")

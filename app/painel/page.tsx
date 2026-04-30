@@ -3,6 +3,7 @@ import { AppShell } from "../components/app-shell";
 import { requireAuth } from "../../lib/auth";
 import { getDashboardData } from "../../lib/dashboard-data";
 import { requireCurrentOrganization } from "../../lib/organization-context";
+import { getSupabaseServerClient } from "../../lib/supabase-server";
 import { getCurrentUserShellProfile } from "../../lib/user-profiles";
 import {
   getQuickPeriodValue,
@@ -31,6 +32,7 @@ function getTimeFilterMode(value: string | string[] | undefined): TimeFilterMode
 export default async function Home({ searchParams }: DashboardPageProps) {
   await connection();
   const authenticatedUser = await requireAuth();
+  const supabaseServer = await getSupabaseServerClient();
   const organizationContext = await requireCurrentOrganization(
     authenticatedUser.id
   );
@@ -52,12 +54,13 @@ export default async function Home({ searchParams }: DashboardPageProps) {
     selectedPeriod,
     customStartDate,
     customEndDate,
-    organizationContext.organizationId
+    organizationContext.organizationId,
+    supabaseServer
   );
   const currentUserProfile = await getCurrentUserShellProfile({
     userId: authenticatedUser.id,
     email: authenticatedUser.email,
-  });
+  }, supabaseServer);
 
   return (
     <AppShell

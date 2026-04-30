@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { requireAuth } from "../../lib/auth";
 import { requireCurrentOrganization } from "../../lib/organization-context";
 import { scopeQueryToOrganization } from "../../lib/organization-scope";
-import { supabase } from "../../lib/supabase";
+import { getSupabaseServerClient } from "../../lib/supabase-server";
 import {
   getCurrentUserShellProfile,
   getUserDisplayMap,
@@ -13,6 +13,7 @@ import type { PropostaComercial } from "./types";
 import type { ClienteOption } from "../servicos/types";
 
 async function getPropostasComerciais(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("propostas")
@@ -33,6 +34,7 @@ async function getPropostasComerciais(organizationId?: string | null) {
 }
 
 async function getClientes(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase.from("clientes").select("id, nome").order("nome", { ascending: true }),
     organizationId

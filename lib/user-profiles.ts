@@ -57,7 +57,8 @@ export async function getUserDisplayMap(
   userIds: Array<string | null | undefined>,
   params?: {
     organizationId?: string | null;
-  }
+  },
+  supabaseClient = supabase
 ): Promise<UserDisplayMap> {
   const { organizationId = null } = params ?? {};
   const normalizedIds = Array.from(
@@ -75,7 +76,7 @@ export async function getUserDisplayMap(
   let allowedIds = normalizedIds;
 
   if (organizationId) {
-    const { data: memberships, error: membershipsError } = await supabase
+    const { data: memberships, error: membershipsError } = await supabaseClient
       .from("organization_members")
       .select("user_id")
       .eq("organization_id", organizationId)
@@ -97,7 +98,7 @@ export async function getUserDisplayMap(
     return {};
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("perfis_usuario")
     .select("id, nome_exibicao, email, papel")
     .in("id", allowedIds);
@@ -119,7 +120,7 @@ export async function getUserOptions(params?: {
   currentUserId?: string | null;
   currentUserEmail?: string | null;
   organizationId?: string | null;
-}): Promise<UserOption[]> {
+}, supabaseClient = supabase): Promise<UserOption[]> {
   const {
     currentUserId = null,
     currentUserEmail = null,
@@ -129,7 +130,7 @@ export async function getUserOptions(params?: {
   let allowedIds: string[] | null = null;
 
   if (organizationId) {
-    const { data: memberships, error: membershipsError } = await supabase
+    const { data: memberships, error: membershipsError } = await supabaseClient
       .from("organization_members")
       .select("user_id")
       .eq("organization_id", organizationId)
@@ -146,7 +147,7 @@ export async function getUserOptions(params?: {
     }
   }
 
-  let query = supabase
+  let query = supabaseClient
     .from("perfis_usuario")
     .select("id, nome_exibicao, email, ativo")
     .neq("ativo", false)
@@ -214,10 +215,10 @@ export function getUserLabel(
 export async function getCurrentUserShellProfile(params: {
   userId: string;
   email?: string | null;
-}): Promise<CurrentUserShellProfile> {
+}, supabaseClient = supabase): Promise<CurrentUserShellProfile> {
   const { userId, email } = params;
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("perfis_usuario")
     .select("nome_exibicao, papel")
     .eq("id", userId)

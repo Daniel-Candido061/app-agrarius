@@ -3,19 +3,21 @@ import { connection } from "next/server";
 import { AppShell } from "../components/app-shell";
 import { requireAuth } from "../../lib/auth";
 import { redirectIfOrganizationAlreadyConfigured } from "../../lib/organization-context";
+import { getSupabaseServerClient } from "../../lib/supabase-server";
 import { getCurrentUserShellProfile } from "../../lib/user-profiles";
 import { OrganizationSetupView } from "./organization-setup-view";
 
 export default async function OrganizacaoPage() {
   await connection();
   const authenticatedUser = await requireAuth();
+  const supabaseServer = await getSupabaseServerClient();
 
   await redirectIfOrganizationAlreadyConfigured(authenticatedUser.id);
 
   const currentUserProfile = await getCurrentUserShellProfile({
     userId: authenticatedUser.id,
     email: authenticatedUser.email,
-  });
+  }, supabaseServer);
 
   return (
     <AppShell

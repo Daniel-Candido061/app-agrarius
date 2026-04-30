@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { requireAuth } from "../../lib/auth";
 import { requireCurrentOrganization } from "../../lib/organization-context";
 import { scopeQueryToOrganization } from "../../lib/organization-scope";
-import { supabase } from "../../lib/supabase";
+import { getSupabaseServerClient } from "../../lib/supabase-server";
 import {
   getCurrentUserShellProfile,
   getUserDisplayMap,
@@ -12,6 +12,7 @@ import { FinanceiroView } from "./financeiro-view";
 import type { LancamentoFinanceiro, ServicoOption } from "./types";
 
 async function getLancamentosFinanceiros(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("financeiro")
@@ -30,6 +31,7 @@ async function getLancamentosFinanceiros(organizationId?: string | null) {
 }
 
 async function getServicos(organizationId?: string | null) {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await scopeQueryToOrganization(
     supabase
       .from("servicos")

@@ -1,18 +1,9 @@
+import "server-only";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-
-export const authCookieNames = {
-  accessToken: "agrarius-access-token",
-  refreshToken: "agrarius-refresh-token",
-};
-
-export const authCookieOptions = {
-  httpOnly: true,
-  sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
-  path: "/",
-};
+import { authCookieNames, authCookieOptions } from "./auth-cookies";
 
 function createSupabaseAuthClient() {
   return createClient(
