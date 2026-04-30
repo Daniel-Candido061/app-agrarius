@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   createAuthClientForRoute,
 } from "../../../lib/auth";
-import { authCookieNames, authCookieOptions } from "../../../lib/auth-cookies";
+import { setAuthCookies } from "../../../lib/auth-cookies";
 
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -32,22 +32,11 @@ export async function POST(request: Request) {
 
   const response = NextResponse.redirect(redirectUrl, 303);
 
-  response.cookies.set(
-    authCookieNames.accessToken,
-    data.session.access_token,
-    {
-      ...authCookieOptions,
-      maxAge: data.session.expires_in,
-    }
-  );
-  response.cookies.set(
-    authCookieNames.refreshToken,
-    data.session.refresh_token,
-    {
-      ...authCookieOptions,
-      maxAge: 60 * 60 * 24 * 30,
-    }
-  );
+  setAuthCookies(response, {
+    accessToken: data.session.access_token,
+    refreshToken: data.session.refresh_token,
+    accessTokenMaxAge: data.session.expires_in,
+  });
 
   return response;
 }

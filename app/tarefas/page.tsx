@@ -53,6 +53,7 @@ async function getServicos(organizationId?: string | null) {
 export default async function TarefasPage() {
   await connection();
   const authenticatedUser = await requireAuth();
+  const supabaseServer = await getSupabaseServerClient();
   const organizationContext = await requireCurrentOrganization(
     authenticatedUser.id
   );
@@ -68,17 +69,18 @@ export default async function TarefasPage() {
         task.criado_por,
         task.atualizado_por,
       ]),
-      { organizationId: organizationContext.organizationId }
+      { organizationId: organizationContext.organizationId },
+      supabaseServer
     ),
     getCurrentUserShellProfile({
       userId: authenticatedUser.id,
       email: authenticatedUser.email,
-    }),
+    }, supabaseServer),
     getUserOptions({
       currentUserId: authenticatedUser.id,
       currentUserEmail: authenticatedUser.email,
       organizationId: organizationContext.organizationId,
-    }),
+    }, supabaseServer),
   ]);
 
   return (

@@ -64,7 +64,7 @@ export async function getCurrentOrganizationContext(
       );
     }
 
-    if (membershipRows.length === 0 && !defaultOrganizationId) {
+    if (membershipRows.length === 0) {
       return {
         organizationId: null,
         organizationName: null,
@@ -78,8 +78,7 @@ export async function getCurrentOrganizationContext(
         (membership) => membership.organization_id === defaultOrganizationId
       ) ?? membershipRows[0] ?? null;
 
-    const resolvedOrganizationId =
-      activeMembership?.organization_id ?? defaultOrganizationId;
+    const resolvedOrganizationId = activeMembership?.organization_id ?? null;
 
     if (!resolvedOrganizationId) {
       return {

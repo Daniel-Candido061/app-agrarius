@@ -73,6 +73,7 @@ async function getFinanceiroPorServico(organizationId?: string | null) {
 export default async function ServicosPage() {
   await connection();
   const authenticatedUser = await requireAuth();
+  const supabaseServer = await getSupabaseServerClient();
   const organizationContext = await requireCurrentOrganization(
     authenticatedUser.id
   );
@@ -89,17 +90,18 @@ export default async function ServicosPage() {
         service.criado_por,
         service.atualizado_por,
       ]),
-      { organizationId: organizationContext.organizationId }
+      { organizationId: organizationContext.organizationId },
+      supabaseServer
     ),
     getCurrentUserShellProfile({
       userId: authenticatedUser.id,
       email: authenticatedUser.email,
-    }),
+    }, supabaseServer),
     getUserOptions({
       currentUserId: authenticatedUser.id,
       currentUserEmail: authenticatedUser.email,
       organizationId: organizationContext.organizationId,
-    }),
+    }, supabaseServer),
   ]);
 
   return (

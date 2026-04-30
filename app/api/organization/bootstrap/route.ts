@@ -1,39 +1,10 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createClient } from "@supabase/supabase-js";
 
 import { requireAuth } from "../../../../lib/auth";
-import { authCookieNames } from "../../../../lib/auth-cookies";
-
-function createAuthorizedSupabaseClient(accessToken: string) {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-      global: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    }
-  );
-}
+import { getSupabaseServerClient } from "../../../../lib/supabase-server";
 
 export async function POST(request: Request) {
   const authenticatedUser = await requireAuth();
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get(authCookieNames.accessToken)?.value;
-
-  if (!accessToken) {
-    return NextResponse.json(
-      { error: "authentication_required" },
-      { status: 401 }
-    );
-  }
 
   const body = (await request.json().catch(() => null)) as
     | { organizationName?: string }
@@ -47,7 +18,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = createAuthorizedSupabaseClient(accessToken);
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase.rpc("bootstrap_organization", {
     organization_name: organizationName,
   });

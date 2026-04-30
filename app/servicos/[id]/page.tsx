@@ -396,6 +396,7 @@ export default async function ServicoDetalhesPage({
 }) {
   await connection();
   const authenticatedUser = await requireAuth();
+  const supabaseServer = await getSupabaseServerClient();
   const organizationContext = await requireCurrentOrganization(
     authenticatedUser.id
   );
@@ -403,12 +404,12 @@ export default async function ServicoDetalhesPage({
     getCurrentUserShellProfile({
       userId: authenticatedUser.id,
       email: authenticatedUser.email,
-    }),
+    }, supabaseServer),
     getUserOptions({
       currentUserId: authenticatedUser.id,
       currentUserEmail: authenticatedUser.email,
       organizationId: organizationContext.organizationId,
-    }),
+    }, supabaseServer),
   ]);
 
   const { id } = await params;
@@ -443,7 +444,7 @@ export default async function ServicoDetalhesPage({
     ]),
     ...events.map((event) => event.criado_por),
     ...documents.flatMap((document) => [document.criado_por, document.atualizado_por]),
-  ], { organizationId: organizationContext.organizationId });
+  ], { organizationId: organizationContext.organizationId }, supabaseServer);
   const serviceResponsibleLabel = getUserLabel(
     userDisplayNames,
     service.responsavel_id

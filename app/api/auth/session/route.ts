@@ -1,21 +1,29 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
-import { requireAuth } from "../../../../lib/auth";
-import { authCookieNames } from "../../../../lib/auth-cookies";
+import { getResolvedServerAuthSession } from "../../../../lib/auth-session";
+import { setAuthCookies } from "../../../../lib/auth-cookies";
 
 export async function GET() {
-  await requireAuth();
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get(authCookieNames.accessToken)?.value;
-  const refreshToken = cookieStore.get(authCookieNames.refreshToken)?.value;
+  const resolvedSession = await getResolvedServerAuthSession();
+  const { accessToken, refreshToken, refreshedSession, accessTokenMaxAge, user } =
+    resolvedSession;
 
-  if (!accessToken || !refreshToken) {
+  if (!user || !accessToken || !refreshToken) {
     return NextResponse.json({ error: "authentication_required" }, { status: 401 });
   }
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     accessToken,
     refreshToken,
   });
+
+  if (refreshedSession) {
+    setAuthCookies(response, {
+      accessToken,
+      refreshToken,
+      accessTokenMaxAge: accessTokenMaxAge ?? undefined,
+    });
+  }
+
+  return response;
 }

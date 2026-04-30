@@ -5,11 +5,13 @@ import { useEffect, useState, type ReactNode } from "react";
 
 const navigationItems = [
   { label: "Painel", href: "/painel", icon: DashboardIcon },
+  { label: "Analises", href: "/analises", icon: ChartGridIcon },
   { label: "Comercial", href: "/comercial", icon: BriefcaseIcon },
   { label: "Clientes", href: "/clientes", icon: UserIcon },
   { label: "Serviços", href: "/servicos", icon: ClipboardIcon },
   { label: "Tarefas", href: "/tarefas", icon: CheckIcon },
   { label: "Financeiro", href: "/financeiro", icon: ChartIcon },
+  { label: "Empresa", href: "/organizacao", icon: BuildingIcon },
 ];
 
 function DashboardIcon() {
@@ -63,6 +65,24 @@ function BriefcaseIcon() {
   );
 }
 
+function ChartGridIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path d="M5 19V9" />
+      <path d="M12 19V5" />
+      <path d="M19 19v-7" />
+      <path d="M4 19h16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function ClipboardIcon() {
   return (
     <svg
@@ -110,6 +130,26 @@ function CheckIcon() {
     >
       <path d="m5 13 4 4L19 7" />
       <path d="M5 5h14v14H5V5Z" />
+    </svg>
+  );
+}
+
+function BuildingIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path d="M4 20V6a2 2 0 0 1 2-2h6v16" />
+      <path d="M14 20V10a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10" />
+      <path d="M8 8h.01" />
+      <path d="M8 12h.01" />
+      <path d="M8 16h.01" />
+      <path d="M12 20h8" />
     </svg>
   );
 }
@@ -243,74 +283,76 @@ export function AppShell({
           }`}
           aria-label="Menu principal"
         >
-          <div className="flex h-full flex-col px-4 py-4 sm:px-5 sm:py-5 lg:px-4 lg:py-6">
-            <div className="flex items-center justify-between border-b border-white/8 pb-4 lg:pb-5">
-              <div className="flex min-w-0 items-center gap-3 rounded-[22px] border border-white/8 bg-white/3 px-3 py-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#159452] shadow-[0_10px_25px_-14px_rgba(0,0,0,0.6)] ring-1 ring-white/18">
-                  <AgrariusLogo className="h-10 w-10" />
-                </span>
-                <div className="min-w-0">
-                  <span className="block truncate text-[1.22rem] font-semibold tracking-[-0.03em] sm:text-[1.3rem]">
-                    Agrarius
+          <div className="flex h-full flex-col px-4 py-4 sm:px-5 sm:py-5 lg:justify-between lg:px-4 lg:py-3">
+            <div>
+              <div className="flex items-center justify-between border-b border-white/8 pb-3 lg:pb-3">
+                <div className="flex min-w-0 items-center gap-2.5 rounded-[22px] border border-white/8 bg-white/3 px-2.5 py-2">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#159452] shadow-[0_10px_25px_-14px_rgba(0,0,0,0.6)] ring-1 ring-white/18">
+                    <AgrariusLogo className="h-8 w-8" />
                   </span>
-                  <span className="mt-1 block text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-100/70">
-                    Sistema operacional
-                  </span>
+                  <div className="min-w-0">
+                    <span className="block truncate text-[1.08rem] font-semibold tracking-[-0.03em] sm:text-[1.16rem]">
+                      Agrarius
+                    </span>
+                    <span className="mt-0.5 block text-[9px] font-medium uppercase tracking-[0.16em] text-emerald-100/70">
+                      Sistema operacional
+                    </span>
                 </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeMobileMenu}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10 lg:hidden"
+                  aria-label="Fechar menu"
+                >
+                  <CloseIcon />
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={closeMobileMenu}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10 lg:hidden"
-                aria-label="Fechar menu"
-              >
-                <CloseIcon />
-              </button>
-            </div>
+              <nav className="mt-3 flex flex-col gap-1 pr-0 overflow-visible">
+                {navigationItems.map((item) => {
+                  const isActive = item.href === currentPath;
+                  const Icon = item.icon;
 
-            <nav className="mt-5 flex flex-1 flex-col gap-1.5 pr-1 overflow-y-auto lg:overflow-visible lg:pr-0">
-              {navigationItems.map((item) => {
-                const isActive = item.href === currentPath;
-                const Icon = item.icon;
-
-                return (
-                  <Link
-                    key={`${item.label}-${item.href}`}
-                    href={item.href}
-                    onClick={closeMobileMenu}
-                    className={`group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-[0.95rem] font-medium transition ${
-                      isActive
-                        ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
-                        : "text-emerald-50/78 hover:bg-white/6 hover:text-white"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                  return (
+                    <Link
+                      key={`${item.label}-${item.href}`}
+                      href={item.href}
+                      onClick={closeMobileMenu}
+                      className={`group flex items-center gap-3 rounded-2xl px-3 py-2 text-[0.9rem] font-medium transition ${
                         isActive
-                          ? "bg-emerald-500/22 text-white"
-                          : "bg-white/4 text-emerald-50/78 group-hover:bg-white/8 group-hover:text-white"
+                          ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+                          : "text-emerald-50/78 hover:bg-white/6 hover:text-white"
                       }`}
                     >
-                      <Icon />
-                    </span>
-                    <span>{item.label}</span>
-                    {isActive ? (
-                      <span className="ml-auto h-2.5 w-2.5 rounded-full bg-emerald-300" />
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </nav>
+                      <span
+                        className={`flex h-8 w-8 items-center justify-center rounded-xl ${
+                          isActive
+                            ? "bg-emerald-500/22 text-white"
+                            : "bg-white/4 text-emerald-50/78 group-hover:bg-white/8 group-hover:text-white"
+                        }`}
+                      >
+                        <Icon />
+                      </span>
+                      <span>{item.label}</span>
+                      {isActive ? (
+                        <span className="ml-auto h-2.5 w-2.5 rounded-full bg-emerald-300" />
+                      ) : null}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
 
-            <div className="mt-5 pt-4 lg:mt-auto">
-              <div className="rounded-[22px] border border-white/8 bg-white/4 p-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
+            <div className="mt-3 pt-3">
+              <div className="rounded-[22px] border border-white/8 bg-white/4 p-2.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
                     {currentUserInitials}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">
+                    <p className="truncate text-[0.92rem] font-semibold text-white">
                       {currentUserName}
                     </p>
                     <p className="truncate text-xs text-emerald-50/68">
@@ -322,12 +364,12 @@ export function AppShell({
                     onClick={closeMobileMenu}
                     aria-label="Abrir configurações da conta"
                     title="Configurações da conta"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/5 text-emerald-50/80 transition hover:bg-white/10 hover:text-white"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/8 bg-white/5 text-emerald-50/80 transition hover:bg-white/10 hover:text-white"
                   >
                     <svg
                       aria-hidden="true"
                       viewBox="0 0 24 24"
-                      className="h-4.5 w-4.5"
+                      className="h-4 w-4"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="1.8"
@@ -346,10 +388,10 @@ export function AppShell({
                   </Link>
                 </div>
 
-                <form action="/auth/logout" method="post" className="mt-3">
+                <form action="/auth/logout" method="post" className="mt-2">
                   <button
                     type="submit"
-                    className="flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-100 transition hover:bg-white/10 hover:text-white"
+                    className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[0.82rem] font-medium text-slate-100 transition hover:bg-white/10 hover:text-white"
                   >
                     Sair
                   </button>

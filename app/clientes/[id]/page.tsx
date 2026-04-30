@@ -250,6 +250,7 @@ export default async function ClienteDetalhesPage({
 }) {
   await connection();
   const authenticatedUser = await requireAuth();
+  const supabaseServer = await getSupabaseServerClient();
   const organizationContext = await requireCurrentOrganization(
     authenticatedUser.id
   );
@@ -273,7 +274,7 @@ export default async function ClienteDetalhesPage({
   const currentUserProfile = await getCurrentUserShellProfile({
     userId: authenticatedUser.id,
     email: authenticatedUser.email,
-  });
+  }, supabaseServer);
 
   const serviceIds = services.map((service) => service.id);
   const [financialEntries, pendings] = await Promise.all([

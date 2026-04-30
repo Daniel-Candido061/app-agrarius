@@ -51,6 +51,7 @@ async function getServicos(organizationId?: string | null) {
 export default async function FinanceiroPage() {
   await connection();
   const authenticatedUser = await requireAuth();
+  const supabaseServer = await getSupabaseServerClient();
   const organizationContext = await requireCurrentOrganization(
     authenticatedUser.id
   );
@@ -63,20 +64,21 @@ export default async function FinanceiroPage() {
     getCurrentUserShellProfile({
       userId: authenticatedUser.id,
       email: authenticatedUser.email,
-    }),
+    }, supabaseServer),
     getUserDisplayMap(
       entries.flatMap((entry) => [
         entry.responsavel_id,
         entry.criado_por,
         entry.atualizado_por,
       ]),
-      { organizationId: organizationContext.organizationId }
+      { organizationId: organizationContext.organizationId },
+      supabaseServer
     ),
     getUserOptions({
       currentUserId: authenticatedUser.id,
       currentUserEmail: authenticatedUser.email,
       organizationId: organizationContext.organizationId,
-    }),
+    }, supabaseServer),
   ]);
 
   return (

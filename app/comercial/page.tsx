@@ -51,6 +51,7 @@ async function getClientes(organizationId?: string | null) {
 export default async function ComercialPage() {
   await connection();
   const authenticatedUser = await requireAuth();
+  const supabaseServer = await getSupabaseServerClient();
   const organizationContext = await requireCurrentOrganization(
     authenticatedUser.id
   );
@@ -63,20 +64,21 @@ export default async function ComercialPage() {
     getCurrentUserShellProfile({
       userId: authenticatedUser.id,
       email: authenticatedUser.email,
-    }),
+    }, supabaseServer),
     getUserDisplayMap(
       proposals.flatMap((proposal) => [
         proposal.responsavel_id,
         proposal.criado_por,
         proposal.atualizado_por,
       ]),
-      { organizationId: organizationContext.organizationId }
+      { organizationId: organizationContext.organizationId },
+      supabaseServer
     ),
     getUserOptions({
       currentUserId: authenticatedUser.id,
       currentUserEmail: authenticatedUser.email,
       organizationId: organizationContext.organizationId,
-    }),
+    }, supabaseServer),
   ]);
 
   return (

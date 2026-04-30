@@ -9,13 +9,28 @@ export function SupabaseSessionBridge() {
     let isMounted = true;
 
     async function syncSession() {
-      const response = await fetch("/api/auth/session", {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-      });
+      let response: Response;
 
-      if (!response.ok || !isMounted) {
+      try {
+        response = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+      } catch {
+        return;
+      }
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (response.status === 401) {
+        await supabase.auth.signOut();
+        return;
+      }
+
+      if (!response.ok) {
         return;
       }
 
@@ -25,6 +40,7 @@ export function SupabaseSessionBridge() {
       };
 
       if (!payload.accessToken || !payload.refreshToken) {
+        await supabase.auth.signOut();
         return;
       }
 

@@ -62,6 +62,7 @@ async function getFinanceiroDosServicos(organizationId?: string | null) {
 export default async function ClientesPage() {
   await connection();
   const authenticatedUser = await requireAuth();
+  const supabaseServer = await getSupabaseServerClient();
   const organizationContext = await requireCurrentOrganization(
     authenticatedUser.id
   );
@@ -74,7 +75,7 @@ export default async function ClientesPage() {
   const currentUserProfile = await getCurrentUserShellProfile({
     userId: authenticatedUser.id,
     email: authenticatedUser.email,
-  });
+  }, supabaseServer);
 
   return (
     <ClientesView
