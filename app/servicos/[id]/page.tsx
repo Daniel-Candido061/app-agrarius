@@ -9,6 +9,8 @@ import {
   isBeforeTodayDateOnly,
 } from "../../../lib/date-utils";
 import { requireAuth } from "../../../lib/auth";
+import { requireCurrentOrganization } from "../../../lib/organization-context";
+import { scopeQueryToOrganization } from "../../../lib/organization-scope";
 import { supabase } from "../../../lib/supabase";
 import {
   getCurrentUserShellProfile,
@@ -238,14 +240,17 @@ function getFirstCompletionDate(
   return null;
 }
 
-async function getServico(id: number) {
-  const { data, error } = await supabase
-    .from("servicos")
-    .select(
-      "id, cliente_id, created_at, criado_por, atualizado_por, responsavel_id, data_entrada, nome_servico, tipo_servico, situacao_operacional, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes(id, nome)"
-    )
-    .eq("id", id)
-    .maybeSingle();
+async function getServico(id: number, organizationId?: string | null) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("servicos")
+      .select(
+        "id, organization_id, cliente_id, created_at, criado_por, atualizado_por, responsavel_id, data_entrada, nome_servico, tipo_servico, situacao_operacional, cidade, valor, prazo, prazo_final, observacoes, status, cliente:clientes!servicos_cliente_same_organization_fkey(id, nome)"
+      )
+      .eq("id", id)
+      .maybeSingle(),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar serviço:", error.message);
@@ -255,13 +260,16 @@ async function getServico(id: number) {
   return (data ?? null) as Servico | null;
 }
 
-async function getEtapasDoServico(id: number) {
-  const { data, error } = await supabase
-    .from("servico_etapas")
-    .select("id, servico_id, titulo, status, ordem, opcional, created_at")
-    .eq("servico_id", id)
-    .order("ordem", { ascending: true })
-    .order("created_at", { ascending: true });
+async function getEtapasDoServico(id: number, organizationId?: string | null) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("servico_etapas")
+      .select("id, organization_id, servico_id, titulo, status, ordem, opcional, created_at")
+      .eq("servico_id", id)
+      .order("ordem", { ascending: true })
+      .order("created_at", { ascending: true }),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar etapas do serviço:", error.message);
@@ -271,12 +279,18 @@ async function getEtapasDoServico(id: number) {
   return (data ?? []) as ServicoEtapa[];
 }
 
-async function getPendenciasDoServico(id: number) {
-  const { data, error } = await supabase
-    .from("servico_pendencias")
-    .select("id, servico_id, titulo, origem, prioridade, prazo_resposta, status, observacao, created_at, updated_at, criado_por, atualizado_por, responsavel_id")
-    .eq("servico_id", id)
-    .order("created_at", { ascending: false });
+async function getPendenciasDoServico(
+  id: number,
+  organizationId?: string | null
+) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("servico_pendencias")
+      .select("id, organization_id, servico_id, titulo, origem, prioridade, prazo_resposta, status, observacao, created_at, updated_at, criado_por, atualizado_por, responsavel_id")
+      .eq("servico_id", id)
+      .order("created_at", { ascending: false }),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar pendências do serviço:", error.message);
@@ -286,12 +300,15 @@ async function getPendenciasDoServico(id: number) {
   return (data ?? []) as ServicoPendencia[];
 }
 
-async function getEventosDoServico(id: number) {
-  const { data, error } = await supabase
-    .from("servico_eventos")
-    .select("id, servico_id, tipo, titulo, descricao, created_at, criado_por")
-    .eq("servico_id", id)
-    .order("created_at", { ascending: false });
+async function getEventosDoServico(id: number, organizationId?: string | null) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("servico_eventos")
+      .select("id, organization_id, servico_id, tipo, titulo, descricao, created_at, criado_por")
+      .eq("servico_id", id)
+      .order("created_at", { ascending: false }),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar eventos do serviço:", error.message);
@@ -301,14 +318,20 @@ async function getEventosDoServico(id: number) {
   return (data ?? []) as ServicoEvento[];
 }
 
-async function getDocumentosDoServico(id: number) {
-  const { data, error } = await supabase
-    .from("servico_documentos")
-    .select(
-      "id, servico_id, nome_original, nome_arquivo, caminho_storage, tipo_mime, tamanho_bytes, observacao, criado_em, criado_por, atualizado_por"
-    )
-    .eq("servico_id", id)
-    .order("criado_em", { ascending: false });
+async function getDocumentosDoServico(
+  id: number,
+  organizationId?: string | null
+) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("servico_documentos")
+      .select(
+        "id, organization_id, servico_id, nome_original, nome_arquivo, caminho_storage, tipo_mime, tamanho_bytes, observacao, criado_em, criado_por, atualizado_por"
+      )
+      .eq("servico_id", id)
+      .order("criado_em", { ascending: false }),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar documentos do serviço:", error.message);
@@ -318,13 +341,19 @@ async function getDocumentosDoServico(id: number) {
   return (data ?? []) as ServicoDocumento[];
 }
 
-async function getLancamentosDoServico(id: number) {
-  const { data, error } = await supabase
-    .from("financeiro")
-    .select("id, tipo, categoria, descricao, valor, data, servico_id, status, criado_por, atualizado_por, responsavel_id")
-    .eq("servico_id", id)
-    .order("data", { ascending: false })
-    .order("created_at", { ascending: false });
+async function getLancamentosDoServico(
+  id: number,
+  organizationId?: string | null
+) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("financeiro")
+      .select("id, organization_id, tipo, categoria, descricao, valor, data, servico_id, status, criado_por, atualizado_por, responsavel_id")
+      .eq("servico_id", id)
+      .order("data", { ascending: false })
+      .order("created_at", { ascending: false }),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar financeiro do serviço:", error.message);
@@ -334,13 +363,16 @@ async function getLancamentosDoServico(id: number) {
   return (data ?? []) as ServicoFinanceiro[];
 }
 
-async function getTarefasDoServico(id: number) {
-  const { data, error } = await supabase
-    .from("tarefas")
-    .select("id, titulo, servico_id, responsavel, responsavel_id, data_limite, prioridade, status, observacao, criado_por, atualizado_por")
-    .eq("servico_id", id)
-    .order("data_limite", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false });
+async function getTarefasDoServico(id: number, organizationId?: string | null) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("tarefas")
+      .select("id, organization_id, titulo, servico_id, responsavel, responsavel_id, data_limite, prioridade, status, observacao, criado_por, atualizado_por")
+      .eq("servico_id", id)
+      .order("data_limite", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar tarefas do serviço:", error.message);
@@ -357,6 +389,9 @@ export default async function ServicoDetalhesPage({
 }) {
   await connection();
   const authenticatedUser = await requireAuth();
+  const organizationContext = await requireCurrentOrganization(
+    authenticatedUser.id
+  );
   const [currentUserProfile, userOptions] = await Promise.all([
     getCurrentUserShellProfile({
       userId: authenticatedUser.id,
@@ -365,6 +400,7 @@ export default async function ServicoDetalhesPage({
     getUserOptions({
       currentUserId: authenticatedUser.id,
       currentUserEmail: authenticatedUser.email,
+      organizationId: organizationContext.organizationId,
     }),
   ]);
 
@@ -376,13 +412,13 @@ export default async function ServicoDetalhesPage({
   }
 
   const [service, financialEntries, tasks, stages, pendings, events, documents] = await Promise.all([
-    getServico(serviceId),
-    getLancamentosDoServico(serviceId),
-    getTarefasDoServico(serviceId),
-    getEtapasDoServico(serviceId),
-    getPendenciasDoServico(serviceId),
-    getEventosDoServico(serviceId),
-    getDocumentosDoServico(serviceId),
+    getServico(serviceId, organizationContext.organizationId),
+    getLancamentosDoServico(serviceId, organizationContext.organizationId),
+    getTarefasDoServico(serviceId, organizationContext.organizationId),
+    getEtapasDoServico(serviceId, organizationContext.organizationId),
+    getPendenciasDoServico(serviceId, organizationContext.organizationId),
+    getEventosDoServico(serviceId, organizationContext.organizationId),
+    getDocumentosDoServico(serviceId, organizationContext.organizationId),
   ]);
 
   if (!service) {
@@ -400,7 +436,7 @@ export default async function ServicoDetalhesPage({
     ]),
     ...events.map((event) => event.criado_por),
     ...documents.flatMap((document) => [document.criado_por, document.atualizado_por]),
-  ]);
+  ], { organizationId: organizationContext.organizationId });
   const serviceResponsibleLabel = getUserLabel(
     userDisplayNames,
     service.responsavel_id
@@ -993,6 +1029,7 @@ export default async function ServicoDetalhesPage({
           serviceType={service.tipo_servico}
           pendings={pendings}
           currentUserId={authenticatedUser.id}
+          currentOrganizationId={organizationContext.organizationId}
           userDisplayNames={userDisplayNames}
           userOptions={userOptions}
         />
@@ -1001,6 +1038,7 @@ export default async function ServicoDetalhesPage({
           serviceId={serviceId}
           tasks={tasks}
           currentUserId={authenticatedUser.id}
+          currentOrganizationId={organizationContext.organizationId}
           userDisplayNames={userDisplayNames}
           userOptions={userOptions}
         />
@@ -1009,12 +1047,14 @@ export default async function ServicoDetalhesPage({
           serviceId={serviceId}
           stages={stages}
           currentUserId={authenticatedUser.id}
+          currentOrganizationId={organizationContext.organizationId}
         />
 
         <ServiceTimelineSection
           serviceId={serviceId}
           events={events}
           currentUserId={authenticatedUser.id}
+          currentOrganizationId={organizationContext.organizationId}
           userDisplayNames={userDisplayNames}
         />
 
@@ -1022,6 +1062,7 @@ export default async function ServicoDetalhesPage({
           serviceId={serviceId}
           documents={documents}
           currentUserId={authenticatedUser.id}
+          currentOrganizationId={organizationContext.organizationId}
           userDisplayNames={userDisplayNames}
         />
 

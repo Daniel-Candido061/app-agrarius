@@ -14,6 +14,7 @@ import {
   secondaryButtonClassName,
   toolbarSearchInputClassName,
 } from "../components/ui-patterns";
+import { withOrganizationId } from "../../lib/organization-scope";
 import { supabase } from "../../lib/supabase";
 import { CLIENT_STATUS_OPTIONS } from "./status-options";
 import type {
@@ -26,6 +27,8 @@ type ClientesViewProps = {
   clients: Cliente[];
   services: ClientePortfolioServico[];
   financialEntries: ClientePortfolioFinanceiro[];
+  currentUserId?: string | null;
+  currentOrganizationId?: string | null;
   currentUserName?: string;
   currentUserDetail?: string;
   currentUserInitials?: string;
@@ -126,6 +129,8 @@ export function ClientesView({
   clients,
   services,
   financialEntries,
+  currentUserId = null,
+  currentOrganizationId = null,
   currentUserName,
   currentUserDetail,
   currentUserInitials,
@@ -352,14 +357,23 @@ export function ClientesView({
     const isEditing = modalMode === "edit";
     const clientId = editingClientId;
 
-    const clientPayload = {
+    const clientPayload = withOrganizationId({
       nome,
       telefone: telefone || null,
       email: email || null,
       cidade: cidade || null,
       status,
+      ...(isEditing
+        ? {
+            atualizado_por: currentUserId || null,
+          }
+        : {
+            criado_por: currentUserId || null,
+            atualizado_por: currentUserId || null,
+            responsavel_id: currentUserId || null,
+          }),
       ...(isEditing ? { updated_at: new Date().toISOString() } : {}),
-    };
+    }, currentOrganizationId);
 
     const response =
       isEditing && clientId !== null
@@ -367,6 +381,7 @@ export function ClientesView({
             .from("clientes")
             .update(clientPayload)
             .eq("id", clientId)
+            .eq("organization_id", currentOrganizationId ?? "")
             .select("id")
             .single()
         : await supabase
@@ -414,7 +429,8 @@ export function ClientesView({
     const { count: linkedServicesCount, error: linkedServicesError } = await supabase
       .from("servicos")
       .select("id", { count: "exact", head: true })
-      .eq("cliente_id", client.id);
+      .eq("cliente_id", client.id)
+      .eq("organization_id", currentOrganizationId ?? "");
 
     if (linkedServicesError) {
       setDeletingClientId(null);
@@ -432,7 +448,11 @@ export function ClientesView({
       return;
     }
 
-    const { error } = await supabase.from("clientes").delete().eq("id", client.id);
+    const { error } = await supabase
+      .from("clientes")
+      .delete()
+      .eq("id", client.id)
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setDeletingClientId(null);
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatSimpleDate, isBeforeTodayDateOnly } from "../../../lib/date-utils";
+import { withOrganizationId } from "../../../lib/organization-scope";
 import { supabase } from "../../../lib/supabase";
 import {
   getUserLabel,
@@ -17,6 +18,7 @@ type ServiceTasksSectionProps = {
   serviceId: number;
   tasks: Tarefa[];
   currentUserId?: string | null;
+  currentOrganizationId?: string | null;
   userDisplayNames?: UserDisplayMap;
   userOptions?: UserOption[];
 };
@@ -112,6 +114,7 @@ export function ServiceTasksSection({
   serviceId,
   tasks,
   currentUserId = null,
+  currentOrganizationId = null,
   userDisplayNames = {},
   userOptions = [],
 }: ServiceTasksSectionProps) {
@@ -181,7 +184,7 @@ export function ServiceTasksSection({
     setErrorMessage("");
 
     const [{ error: taskError }, { error: eventError }] = await Promise.all([
-      supabase.from("tarefas").insert({
+      supabase.from("tarefas").insert(withOrganizationId({
         titulo,
         servico_id: serviceId,
         responsavel,
@@ -192,14 +195,14 @@ export function ServiceTasksSection({
         observacao: observacao || null,
         criado_por: currentUserId || null,
         atualizado_por: currentUserId || null,
-      }),
-      supabase.from("servico_eventos").insert({
+      }, currentOrganizationId)),
+      supabase.from("servico_eventos").insert(withOrganizationId({
         servico_id: serviceId,
         tipo: "tarefa",
         titulo: "Nova tarefa vinculada",
         descricao: titulo,
         criado_por: currentUserId || null,
-      }),
+      }, currentOrganizationId)),
     ]);
 
     setIsSaving(false);

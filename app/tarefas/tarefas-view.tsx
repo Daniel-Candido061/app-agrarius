@@ -33,6 +33,7 @@ import {
   type UserDisplayMap,
   type UserOption,
 } from "../../lib/user-profiles";
+import { withOrganizationId } from "../../lib/organization-scope";
 import { TASK_PRIORITY_OPTIONS } from "./priority-options";
 import { TASK_STATUS_OPTIONS } from "./status-options";
 import type { ServicoOption, Tarefa } from "./types";
@@ -41,6 +42,7 @@ type TarefasViewProps = {
   tasks: Tarefa[];
   services: ServicoOption[];
   currentUserId?: string | null;
+  currentOrganizationId?: string | null;
   userDisplayNames?: UserDisplayMap;
   userOptions?: UserOption[];
   currentUserName?: string;
@@ -175,6 +177,7 @@ export function TarefasView({
   tasks,
   services,
   currentUserId = null,
+  currentOrganizationId = null,
   userDisplayNames = {},
   userOptions = [],
   currentUserName,
@@ -491,7 +494,7 @@ export function TarefasView({
     setErrorMessage("");
     setSuccessMessage("");
 
-    const taskPayload = {
+    const taskPayload = withOrganizationId({
       titulo,
       servico_id: parsedServicoId,
       responsavel,
@@ -510,10 +513,14 @@ export function TarefasView({
             atualizado_por: currentUserId || null,
             responsavel_id: responsavelId,
           }),
-    };
+    }, currentOrganizationId);
 
     const response = isEditing
-      ? await supabase.from("tarefas").update(taskPayload).eq("id", taskId)
+      ? await supabase
+          .from("tarefas")
+          .update(taskPayload)
+          .eq("id", taskId)
+          .eq("organization_id", currentOrganizationId ?? "")
       : await supabase.from("tarefas").insert(taskPayload);
 
     setIsSaving(false);
@@ -547,7 +554,11 @@ export function TarefasView({
     setErrorMessage("");
     setSuccessMessage("");
 
-    const { error } = await supabase.from("tarefas").delete().eq("id", task.id);
+    const { error } = await supabase
+      .from("tarefas")
+      .delete()
+      .eq("id", task.id)
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setDeletingTaskId(null);
 
@@ -585,7 +596,8 @@ export function TarefasView({
         updated_at: new Date().toISOString(),
         atualizado_por: currentUserId || null,
       })
-      .eq("id", task.id);
+      .eq("id", task.id)
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setUpdatingTaskId(null);
 

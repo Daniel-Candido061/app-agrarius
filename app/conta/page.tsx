@@ -2,6 +2,7 @@ import { connection } from "next/server";
 
 import { AppShell } from "../components/app-shell";
 import { requireAuth } from "../../lib/auth";
+import { getCurrentOrganizationContext } from "../../lib/organization-context";
 import { supabase } from "../../lib/supabase";
 import { getCurrentUserShellProfile } from "../../lib/user-profiles";
 import { AccountView } from "./account-view";
@@ -31,12 +32,13 @@ export default async function ContaPage() {
   await connection();
   const authenticatedUser = await requireAuth();
 
-  const [currentUserProfile, profile] = await Promise.all([
+  const [currentUserProfile, profile, organizationContext] = await Promise.all([
     getCurrentUserShellProfile({
       userId: authenticatedUser.id,
       email: authenticatedUser.email,
     }),
     getCurrentProfile(authenticatedUser.id),
+    getCurrentOrganizationContext(authenticatedUser.id),
   ]);
 
   return (
@@ -56,6 +58,7 @@ export default async function ContaPage() {
           email: profile?.email ?? authenticatedUser.email ?? "",
           papel: profile?.papel ?? "",
         }}
+        organizationContext={organizationContext}
       />
     </AppShell>
   );

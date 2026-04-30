@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { AppShell } from "../components/app-shell";
 import { requireAuth } from "../../lib/auth";
 import { getDashboardData } from "../../lib/dashboard-data";
+import { requireCurrentOrganization } from "../../lib/organization-context";
 import { getCurrentUserShellProfile } from "../../lib/user-profiles";
 import {
   getQuickPeriodValue,
@@ -30,6 +31,9 @@ function getTimeFilterMode(value: string | string[] | undefined): TimeFilterMode
 export default async function Home({ searchParams }: DashboardPageProps) {
   await connection();
   const authenticatedUser = await requireAuth();
+  const organizationContext = await requireCurrentOrganization(
+    authenticatedUser.id
+  );
 
   const { modoTempo, periodo, dataInicial, dataFinal } = await searchParams;
   const timeFilterMode = getTimeFilterMode(modoTempo);
@@ -47,7 +51,8 @@ export default async function Home({ searchParams }: DashboardPageProps) {
   const dashboardData = await getDashboardData(
     selectedPeriod,
     customStartDate,
-    customEndDate
+    customEndDate,
+    organizationContext.organizationId
   );
   const currentUserProfile = await getCurrentUserShellProfile({
     userId: authenticatedUser.id,

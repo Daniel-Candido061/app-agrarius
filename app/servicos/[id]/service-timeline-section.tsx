@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatSimpleDate } from "../../../lib/date-utils";
+import { withOrganizationId } from "../../../lib/organization-scope";
 import { supabase } from "../../../lib/supabase";
 import { getUserLabel, type UserDisplayMap } from "../../../lib/user-profiles";
 import type { ServicoEvento } from "../types";
@@ -11,6 +12,7 @@ type ServiceTimelineSectionProps = {
   serviceId: number;
   events: ServicoEvento[];
   currentUserId?: string | null;
+  currentOrganizationId?: string | null;
   userDisplayNames?: UserDisplayMap;
 };
 
@@ -33,6 +35,7 @@ export function ServiceTimelineSection({
   serviceId,
   events,
   currentUserId = null,
+  currentOrganizationId = null,
   userDisplayNames = {},
 }: ServiceTimelineSectionProps) {
   const router = useRouter();
@@ -55,13 +58,13 @@ export function ServiceTimelineSection({
     setIsSaving(true);
     setErrorMessage("");
 
-    const { error } = await supabase.from("servico_eventos").insert({
+    const { error } = await supabase.from("servico_eventos").insert(withOrganizationId({
       servico_id: serviceId,
       tipo: "manual",
       titulo: trimmedTitle,
       descricao: trimmedDescription || null,
       criado_por: currentUserId || null,
-    });
+    }, currentOrganizationId));
 
     setIsSaving(false);
 

@@ -54,8 +54,12 @@ function getInitials(value: string) {
 }
 
 export async function getUserDisplayMap(
-  userIds: Array<string | null | undefined>
+  userIds: Array<string | null | undefined>,
+  params?: {
+    organizationId?: string | null;
+  }
 ): Promise<UserDisplayMap> {
+  const { organizationId = null } = params ?? {};
   const normalizedIds = Array.from(
     new Set(
       userIds
@@ -68,10 +72,35 @@ export async function getUserDisplayMap(
     return {};
   }
 
+  let allowedIds = normalizedIds;
+
+  if (organizationId) {
+    const { data: memberships, error: membershipsError } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", organizationId)
+      .eq("status", "active")
+      .in("user_id", normalizedIds);
+
+    if (!membershipsError) {
+      allowedIds = Array.from(
+        new Set(
+          (memberships ?? [])
+            .map((membership) => membership.user_id)
+            .filter((value): value is string => Boolean(value))
+        )
+      );
+    }
+  }
+
+  if (allowedIds.length === 0) {
+    return {};
+  }
+
   const { data, error } = await supabase
     .from("perfis_usuario")
     .select("id, nome_exibicao, email, papel")
-    .in("id", normalizedIds);
+    .in("id", allowedIds);
 
   if (error) {
     console.error("Erro ao buscar perfis de usuario:", error.message);
@@ -89,14 +118,56 @@ export async function getUserDisplayMap(
 export async function getUserOptions(params?: {
   currentUserId?: string | null;
   currentUserEmail?: string | null;
+  organizationId?: string | null;
 }): Promise<UserOption[]> {
-  const { currentUserId = null, currentUserEmail = null } = params ?? {};
+  const {
+    currentUserId = null,
+    currentUserEmail = null,
+    organizationId = null,
+  } = params ?? {};
 
-  const { data, error } = await supabase
+  let allowedIds: string[] | null = null;
+
+  if (organizationId) {
+    const { data: memberships, error: membershipsError } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", organizationId)
+      .eq("status", "active");
+
+    if (!membershipsError) {
+      allowedIds = Array.from(
+        new Set(
+          (memberships ?? [])
+            .map((membership) => membership.user_id)
+            .filter((value): value is string => Boolean(value))
+        )
+      );
+    }
+  }
+
+  let query = supabase
     .from("perfis_usuario")
     .select("id, nome_exibicao, email, ativo")
     .neq("ativo", false)
     .order("nome_exibicao", { ascending: true, nullsFirst: false });
+
+  if (allowedIds && allowedIds.length > 0) {
+    query = query.in("id", allowedIds);
+  }
+
+  if (allowedIds?.length === 0) {
+    return currentUserId
+      ? [
+          {
+            id: currentUserId,
+            label: currentUserEmail?.trim() || "UsuÃ¡rio atual",
+          },
+        ]
+      : [];
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Erro ao buscar opções de usuário:", error.message);

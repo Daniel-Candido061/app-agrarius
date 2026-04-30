@@ -10,6 +10,7 @@ import {
   isTodayOrFutureDateOnly,
 } from "./date-utils";
 import { supabase } from "./supabase";
+import { scopeQueryToOrganization } from "./organization-scope";
 
 export type FinancialEntry = {
   tipo: string | null;
@@ -264,7 +265,8 @@ export function getDaysUntilDeadline(value: string | null) {
 export async function getDashboardData(
   selectedPeriod: PeriodValue,
   customStartDate: string,
-  customEndDate: string
+  customEndDate: string,
+  organizationId?: string | null
 ): Promise<DashboardData> {
   const [
     clientsResult,
@@ -275,17 +277,32 @@ export async function getDashboardData(
     serviceMetricsResult,
     commercialConversionResult,
   ] = await Promise.all([
-    supabase.from("clientes").select("id, created_at"),
-    supabase
+    scopeQueryToOrganization(
+      supabase.from("clientes").select("id, created_at"),
+      organizationId
+    ),
+    scopeQueryToOrganization(
+      supabase
       .from("servicos")
       .select(
-        "id, cliente_id, nome_servico, valor, created_at, data_entrada, prazo_final, status, responsavel_id, situacao_operacional, cliente:clientes(nome)"
+        "id, cliente_id, nome_servico, valor, created_at, data_entrada, prazo_final, status, responsavel_id, situacao_operacional, cliente:clientes!servicos_cliente_same_organization_fkey(nome)"
       ),
-    supabase.from("financeiro").select("tipo, valor, status, data, servico_id"),
-    supabase.from("tarefas").select("id, data_limite, status, responsavel_id"),
-    supabase
+      organizationId
+    ),
+    scopeQueryToOrganization(
+      supabase.from("financeiro").select("tipo, valor, status, data, servico_id"),
+      organizationId
+    ),
+    scopeQueryToOrganization(
+      supabase.from("tarefas").select("id, data_limite, status, responsavel_id"),
+      organizationId
+    ),
+    scopeQueryToOrganization(
+      supabase
       .from("servico_pendencias")
       .select("id, servico_id, status, prioridade, responsavel_id"),
+      organizationId
+    ),
     supabase
       .from("vw_metricas_servicos_por_tipo")
       .select(
@@ -465,7 +482,7 @@ export async function getDashboardData(
     ...services.map((service) => service.responsavel_id),
     ...tasks.map((task) => task.responsavel_id),
     ...pendings.map((pending) => pending.responsavel_id),
-  ]);
+  ], { organizationId });
 
   const carteiraPorResponsavelMap = new Map<string, DashboardResponsibleMetric>();
 

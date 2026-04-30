@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ActionsMenu } from "../../components/actions-menu";
+import { withOrganizationId } from "../../../lib/organization-scope";
 import {
   formatSimpleDate,
   getDateInputValue,
@@ -25,6 +26,7 @@ type ServicePendingsSectionProps = {
   serviceType: string | null;
   pendings: ServicoPendencia[];
   currentUserId?: string | null;
+  currentOrganizationId?: string | null;
   userDisplayNames?: UserDisplayMap;
   userOptions?: UserOption[];
 };
@@ -116,6 +118,7 @@ export function ServicePendingsSection({
   serviceType,
   pendings,
   currentUserId = null,
+  currentOrganizationId = null,
   userDisplayNames = {},
   userOptions = [],
 }: ServicePendingsSectionProps) {
@@ -200,7 +203,7 @@ export function ServicePendingsSection({
 
     const isEditing = modalMode === "edit";
 
-    const payload = {
+    const payload = withOrganizationId({
       servico_id: serviceId,
       titulo,
       origem: origem || null,
@@ -219,13 +222,17 @@ export function ServicePendingsSection({
             atualizado_por: currentUserId || null,
             responsavel_id: responsavelId,
           }),
-    };
+    }, currentOrganizationId);
 
     const [{ error: pendingError }, { error: eventError }] = await Promise.all([
       isEditing && editingPendingId !== null
-        ? supabase.from("servico_pendencias").update(payload).eq("id", editingPendingId)
+        ? supabase
+            .from("servico_pendencias")
+            .update(payload)
+            .eq("id", editingPendingId)
+            .eq("organization_id", currentOrganizationId ?? "")
         : supabase.from("servico_pendencias").insert(payload),
-      supabase.from("servico_eventos").insert({
+      supabase.from("servico_eventos").insert(withOrganizationId({
         servico_id: serviceId,
         tipo: "pendencia",
         titulo: isEditing
@@ -233,7 +240,7 @@ export function ServicePendingsSection({
           : "Nova pendência registrada",
         descricao: `${titulo} - ${status}${prazoResposta ? ` - prazo ${prazoResposta}` : ""}`,
         criado_por: currentUserId || null,
-      }),
+      }, currentOrganizationId)),
     ]);
 
     setIsSaving(false);
@@ -269,14 +276,15 @@ export function ServicePendingsSection({
           updated_at: new Date().toISOString(),
           atualizado_por: currentUserId || null,
         })
-        .eq("id", pending.id),
-      supabase.from("servico_eventos").insert({
+        .eq("id", pending.id)
+        .eq("organization_id", currentOrganizationId ?? ""),
+      supabase.from("servico_eventos").insert(withOrganizationId({
         servico_id: serviceId,
         tipo: "pendencia",
         titulo: "Pendência atualizada",
         descricao: `${pending.titulo ?? "Pendência"} alterada para ${nextStatus}.`,
         criado_por: currentUserId || null,
-      }),
+      }, currentOrganizationId)),
     ]);
 
     if (pendingError || eventError) {
@@ -298,14 +306,18 @@ export function ServicePendingsSection({
     setErrorMessage("");
 
     const [{ error: deleteError }, { error: eventError }] = await Promise.all([
-      supabase.from("servico_pendencias").delete().eq("id", pending.id),
-      supabase.from("servico_eventos").insert({
+      supabase
+        .from("servico_pendencias")
+        .delete()
+        .eq("id", pending.id)
+        .eq("organization_id", currentOrganizationId ?? ""),
+      supabase.from("servico_eventos").insert(withOrganizationId({
         servico_id: serviceId,
         tipo: "pendencia",
         titulo: "Pendência removida",
         descricao: pending.titulo ?? "Pendência sem título",
         criado_por: currentUserId || null,
-      }),
+      }, currentOrganizationId)),
     ]);
 
     setDeletingPendingId(null);
@@ -344,6 +356,9 @@ export function ServicePendingsSection({
     const [{ error: pendingError }, { error: eventError }] = await Promise.all([
       supabase.from("servico_pendencias").insert(
         pendingsToInsert.map((pendingTemplate) => ({
+          ...(currentOrganizationId
+            ? { organization_id: currentOrganizationId }
+            : {}),
           servico_id: serviceId,
           titulo: pendingTemplate.titulo,
           origem: pendingTemplate.origem,
@@ -354,13 +369,13 @@ export function ServicePendingsSection({
           responsavel_id: currentUserId || null,
         }))
       ),
-      supabase.from("servico_eventos").insert({
+      supabase.from("servico_eventos").insert(withOrganizationId({
         servico_id: serviceId,
         tipo: "pendencia",
         titulo: "Pendências sugeridas aplicadas",
         descricao: `${pendingsToInsert.length} pendência(s) padrão foram adicionadas ao serviço.`,
         criado_por: currentUserId || null,
-      }),
+      }, currentOrganizationId)),
     ]);
 
     setIsApplyingTemplate(false);

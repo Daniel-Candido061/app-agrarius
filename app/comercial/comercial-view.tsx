@@ -45,6 +45,7 @@ import {
   type UserDisplayMap,
   type UserOption,
 } from "../../lib/user-profiles";
+import { withOrganizationId } from "../../lib/organization-scope";
 import { COMMERCIAL_STATUS_OPTIONS } from "./status-options";
 import type { PropostaComercial } from "./types";
 
@@ -52,6 +53,7 @@ type ComercialViewProps = {
   proposals: PropostaComercial[];
   clients: ClienteOption[];
   currentUserId?: string | null;
+  currentOrganizationId?: string | null;
   currentUserName?: string;
   currentUserDetail?: string;
   currentUserInitials?: string;
@@ -296,6 +298,7 @@ export function ComercialView({
   proposals,
   clients,
   currentUserId = null,
+  currentOrganizationId = null,
   currentUserName,
   currentUserDetail,
   currentUserInitials,
@@ -702,7 +705,7 @@ export function ComercialView({
 
     const isEditing = modalMode === "edit";
 
-    const payload = {
+    const payload = withOrganizationId({
       nome_oportunidade: nomeOportunidade,
       nome_contato: nomeContato || null,
       empresa: empresa || null,
@@ -726,7 +729,7 @@ export function ComercialView({
             atualizado_por: currentUserId || null,
             responsavel_id: currentUserId || null,
           }),
-    };
+    }, currentOrganizationId);
 
     const response =
       isEditing && editingProposalId !== null
@@ -734,6 +737,7 @@ export function ComercialView({
             .from("propostas")
             .update(payload)
             .eq("id", editingProposalId)
+            .eq("organization_id", currentOrganizationId ?? "")
             .select("id")
             .single()
         : await supabase.from("propostas").insert(payload).select("id").single();
@@ -772,7 +776,8 @@ export function ComercialView({
     const { error } = await supabase
       .from("propostas")
       .delete()
-      .eq("id", proposal.id);
+      .eq("id", proposal.id)
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setDeletingProposalId(null);
 
@@ -878,13 +883,16 @@ export function ComercialView({
         return;
       }
     } else {
-      const clientPayload = {
+      const clientPayload = withOrganizationId({
         nome: trimmedClientName,
         telefone: clientPhone.trim() || null,
         email: clientEmail.trim() || null,
         cidade: clientCity.trim() || null,
         status: trimmedClientStatus || CLIENT_STATUS_OPTIONS[0],
-      };
+        criado_por: currentUserId || null,
+        atualizado_por: currentUserId || null,
+        responsavel_id: currentUserId || null,
+      }, currentOrganizationId);
 
       const clientResponse = await supabase
         .from("clientes")
@@ -903,7 +911,7 @@ export function ComercialView({
       clienteId = clientResponse.data.id;
     }
 
-    const servicePayload = {
+    const servicePayload = withOrganizationId({
       cliente_id: clienteId,
       nome_servico: trimmedServiceName,
       tipo_servico: trimmedServiceType,
@@ -917,7 +925,7 @@ export function ComercialView({
       criado_por: currentUserId || null,
       atualizado_por: currentUserId || null,
       responsavel_id: serviceResponsavelId.trim() || currentUserId || null,
-    };
+    }, currentOrganizationId);
 
     const serviceResponse = await supabase
       .from("servicos")
@@ -939,6 +947,9 @@ export function ComercialView({
 
     await supabase.from("servico_etapas").insert(
       stageTitles.map((title, index) => ({
+        ...(currentOrganizationId
+          ? { organization_id: currentOrganizationId }
+          : {}),
         servico_id: serviceId,
         titulo: title,
         ordem: index + 1,
@@ -949,6 +960,9 @@ export function ComercialView({
     if (pendingTemplates.length > 0) {
       await supabase.from("servico_pendencias").insert(
         pendingTemplates.map((pendingTemplate) => ({
+          ...(currentOrganizationId
+            ? { organization_id: currentOrganizationId }
+            : {}),
           servico_id: serviceId,
           titulo: pendingTemplate.titulo,
           origem: pendingTemplate.origem,
@@ -964,6 +978,9 @@ export function ComercialView({
 
     await supabase.from("servico_eventos").insert([
       {
+        ...(currentOrganizationId
+          ? { organization_id: currentOrganizationId }
+          : {}),
         servico_id: serviceId,
         tipo: "sistema",
         titulo: "Serviço criado",
@@ -971,6 +988,9 @@ export function ComercialView({
         criado_por: currentUserId || null,
       },
       {
+        ...(currentOrganizationId
+          ? { organization_id: currentOrganizationId }
+          : {}),
         servico_id: serviceId,
         tipo: "sistema",
         titulo: "Etapas iniciais geradas",
@@ -978,6 +998,9 @@ export function ComercialView({
         criado_por: currentUserId || null,
       },
       {
+        ...(currentOrganizationId
+          ? { organization_id: currentOrganizationId }
+          : {}),
         servico_id: serviceId,
         tipo: "sistema",
         titulo: "Pendencias iniciais sugeridas",
@@ -997,7 +1020,8 @@ export function ComercialView({
         atualizado_por: currentUserId || null,
         responsavel_id: currentUserId || null,
       })
-      .eq("id", convertingProposal.id);
+      .eq("id", convertingProposal.id)
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setIsConverting(false);
 
@@ -1053,7 +1077,8 @@ export function ComercialView({
         updated_at: new Date().toISOString(),
         atualizado_por: currentUserId || null,
       })
-      .eq("id", proposal.id);
+      .eq("id", proposal.id)
+      .eq("organization_id", currentOrganizationId ?? "");
 
     if (error) {
       setProposalList((currentProposals) =>

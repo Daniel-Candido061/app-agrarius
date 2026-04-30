@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -20,12 +21,19 @@ type AccountViewProps = {
     email: string;
     papel: string;
   };
+  organizationContext: {
+    organizationId: string | null;
+    organizationName: string | null;
+    organizationRole: string | null;
+    hasOrganization: boolean;
+  };
 };
 
 export function AccountView({
   userId,
   authEmail,
   initialProfile,
+  organizationContext,
 }: AccountViewProps) {
   const router = useRouter();
   const [nomeExibicao, setNomeExibicao] = useState(initialProfile.nome_exibicao);
@@ -91,6 +99,7 @@ export function AccountView({
     email.trim() ? { key: "email", label: "Email de perfil definido" } : null,
     papel.trim() ? { key: "papel", label: "Papel definido" } : null,
   ].filter((value): value is { key: string; label: string } => Boolean(value));
+  const hasOrganization = organizationContext.hasOrganization;
 
   return (
     <div className="space-y-6">
@@ -198,6 +207,44 @@ export function AccountView({
         </div>
 
         <aside className="space-y-6">
+          <div className={`${pageSurfaceClassName} p-5 sm:p-6`}>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Organizacao
+            </p>
+            <h3 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-[#163728]">
+              Empresa ativa da sua conta
+            </h3>
+            {hasOrganization ? (
+              <>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Sua conta ja esta vinculada a uma empresa e pronta para
+                  trabalhar com isolamento por organizacao.
+                </p>
+                <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  <p className="font-medium">
+                    {organizationContext.organizationName || "Empresa ativa"}
+                  </p>
+                  <p className="mt-1 text-emerald-700">
+                    Papel atual: {organizationContext.organizationRole || "membro"}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Sua conta ainda nao possui uma empresa configurada. Esse passo
+                  precisa ser concluido para liberar o CRM multiempresa.
+                </p>
+                <Link
+                  href="/organizacao"
+                  className={`${primaryButtonClassName} mt-4`}
+                >
+                  Configurar empresa
+                </Link>
+              </>
+            )}
+          </div>
+
           <div className={`${pageSurfaceClassName} p-5 sm:p-6`}>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
               Preparacao

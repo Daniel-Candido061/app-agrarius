@@ -37,6 +37,7 @@ import {
   type UserDisplayMap,
   type UserOption,
 } from "../../lib/user-profiles";
+import { withOrganizationId } from "../../lib/organization-scope";
 import {
   getSituacaoOperacionalClassName,
   getSituacaoOperacionalLabel,
@@ -56,6 +57,7 @@ type ServicosViewProps = {
   clients: ClienteOption[];
   financialEntries: ServicoFinanceiro[];
   currentUserId?: string | null;
+  currentOrganizationId?: string | null;
   userDisplayNames?: UserDisplayMap;
   userOptions?: UserOption[];
   currentUserName?: string;
@@ -239,6 +241,7 @@ export function ServicosView({
   clients,
   financialEntries,
   currentUserId = null,
+  currentOrganizationId = null,
   userDisplayNames = {},
   userOptions = [],
   currentUserName,
@@ -674,7 +677,7 @@ export function ServicosView({
     const isEditing = modalMode === "edit";
     const serviceId = editingServiceId;
 
-    const servicePayload = {
+    const servicePayload = withOrganizationId({
       cliente_id: parsedClienteId,
       nome_servico: nomeServico,
       responsavel_id: responsavelId,
@@ -696,7 +699,7 @@ export function ServicosView({
             atualizado_por: currentUserId || null,
             responsavel_id: responsavelId,
           }),
-    };
+    }, currentOrganizationId);
 
     const response =
       isEditing && serviceId !== null
@@ -704,6 +707,7 @@ export function ServicosView({
             .from("servicos")
             .update(servicePayload)
             .eq("id", serviceId)
+            .eq("organization_id", currentOrganizationId ?? "")
             .select("id")
             .single()
         : await supabase
@@ -735,6 +739,9 @@ export function ServicosView({
 
       await supabase.from("servico_etapas").insert(
         stageTitles.map((title, index) => ({
+          ...(currentOrganizationId
+            ? { organization_id: currentOrganizationId }
+            : {}),
           servico_id: serviceId,
           titulo: title,
           ordem: index + 1,
@@ -745,6 +752,9 @@ export function ServicosView({
       if (pendingTemplates.length > 0) {
         await supabase.from("servico_pendencias").insert(
           pendingTemplates.map((pendingTemplate) => ({
+            ...(currentOrganizationId
+              ? { organization_id: currentOrganizationId }
+              : {}),
             servico_id: serviceId,
             titulo: pendingTemplate.titulo,
             origem: pendingTemplate.origem,
@@ -759,6 +769,9 @@ export function ServicosView({
 
       await supabase.from("servico_eventos").insert([
         {
+          ...(currentOrganizationId
+            ? { organization_id: currentOrganizationId }
+            : {}),
           servico_id: serviceId,
           tipo: "sistema",
           titulo: "Serviço criado",
@@ -766,6 +779,9 @@ export function ServicosView({
           criado_por: currentUserId || null,
         },
         {
+          ...(currentOrganizationId
+            ? { organization_id: currentOrganizationId }
+            : {}),
           servico_id: serviceId,
           tipo: "sistema",
           titulo: "Etapas iniciais geradas",
@@ -773,6 +789,9 @@ export function ServicosView({
           criado_por: currentUserId || null,
         },
         {
+          ...(currentOrganizationId
+            ? { organization_id: currentOrganizationId }
+            : {}),
           servico_id: serviceId,
           tipo: "sistema",
           titulo: "Pendências iniciais sugeridas",
@@ -800,7 +819,8 @@ export function ServicosView({
       await supabase
         .from("financeiro")
         .select("id", { count: "exact", head: true })
-        .eq("servico_id", service.id);
+        .eq("servico_id", service.id)
+        .eq("organization_id", currentOrganizationId ?? "");
 
     if (linkedFinancialEntriesError) {
       setDeletingServiceId(null);
@@ -818,7 +838,11 @@ export function ServicosView({
       return;
     }
 
-    const { error } = await supabase.from("servicos").delete().eq("id", service.id);
+    const { error } = await supabase
+      .from("servicos")
+      .delete()
+      .eq("id", service.id)
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setDeletingServiceId(null);
 
@@ -854,7 +878,8 @@ export function ServicosView({
         updated_at: new Date().toISOString(),
         atualizado_por: currentUserId || null,
       })
-      .eq("id", service.id);
+      .eq("id", service.id)
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setUpdatingServiceId(null);
 

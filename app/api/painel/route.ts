@@ -4,6 +4,7 @@ import {
   getDashboardData,
   type DashboardData,
 } from "../../../lib/dashboard-data";
+import { getCurrentOrganizationContext } from "../../../lib/organization-context";
 import {
   getQuickPeriodValue,
   type PeriodValue,
@@ -26,7 +27,17 @@ type DashboardResponse = {
 };
 
 export async function GET(request: Request) {
-  await requireAuth();
+  const authenticatedUser = await requireAuth();
+  const organizationContext = await getCurrentOrganizationContext(
+    authenticatedUser.id
+  );
+
+  if (!organizationContext.hasOrganization || !organizationContext.organizationId) {
+    return NextResponse.json(
+      { error: "organization_setup_required" },
+      { status: 409 }
+    );
+  }
 
   const { searchParams } = new URL(request.url);
   const timeFilterMode = getTimeFilterMode(searchParams.get("modoTempo"));
@@ -40,7 +51,8 @@ export async function GET(request: Request) {
   const data = await getDashboardData(
     selectedPeriod,
     customStartDate,
-    customEndDate
+    customEndDate,
+    organizationContext.organizationId
   );
 
   return NextResponse.json<DashboardResponse>({

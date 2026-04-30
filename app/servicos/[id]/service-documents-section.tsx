@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ActionsMenu } from "../../components/actions-menu";
 import { formatSimpleDateTime } from "../../../lib/date-utils";
+import { withOrganizationId } from "../../../lib/organization-scope";
 import { supabase } from "../../../lib/supabase";
 import { getUserLabel, type UserDisplayMap } from "../../../lib/user-profiles";
 import type { ServicoDocumento } from "../types";
@@ -12,6 +13,7 @@ type ServiceDocumentsSectionProps = {
   serviceId: number;
   documents: ServicoDocumento[];
   currentUserId?: string | null;
+  currentOrganizationId?: string | null;
   userDisplayNames?: UserDisplayMap;
 };
 
@@ -96,6 +98,7 @@ export function ServiceDocumentsSection({
   serviceId,
   documents,
   currentUserId = null,
+  currentOrganizationId = null,
   userDisplayNames = {},
 }: ServiceDocumentsSectionProps) {
   const router = useRouter();
@@ -148,7 +151,9 @@ export function ServiceDocumentsSection({
 
     const timestamp = Date.now();
     const sanitizedFileName = sanitizeFileName(selectedFile.name);
-    const storagePath = `servicos/${serviceId}/${timestamp}-${sanitizedFileName}`;
+    const storagePath = currentOrganizationId
+      ? `${currentOrganizationId}/servicos/${serviceId}/${timestamp}-${sanitizedFileName}`
+      : `servicos/${serviceId}/${timestamp}-${sanitizedFileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from(STORAGE_BUCKET)
@@ -163,7 +168,7 @@ export function ServiceDocumentsSection({
       return;
     }
 
-    const metadataPayload = {
+    const metadataPayload = withOrganizationId({
       servico_id: serviceId,
       nome_original: selectedFile.name,
       nome_arquivo: `${timestamp}-${sanitizedFileName}`,
@@ -173,17 +178,17 @@ export function ServiceDocumentsSection({
       observacao: observation.trim() || null,
       criado_por: currentUserId || null,
       atualizado_por: currentUserId || null,
-    };
+    }, currentOrganizationId);
 
     const [{ error: documentError }, { error: eventError }] = await Promise.all([
       supabase.from("servico_documentos").insert(metadataPayload),
-      supabase.from("servico_eventos").insert({
+      supabase.from("servico_eventos").insert(withOrganizationId({
         servico_id: serviceId,
         tipo: "documento",
         titulo: "Documento anexado",
         descricao: selectedFile.name,
         criado_por: currentUserId || null,
-      }),
+      }, currentOrganizationId)),
     ]);
 
     if (documentError || eventError) {
@@ -226,14 +231,18 @@ export function ServiceDocumentsSection({
     }
 
     const [{ error: deleteError }, { error: eventError }] = await Promise.all([
-      supabase.from("servico_documentos").delete().eq("id", document.id),
-      supabase.from("servico_eventos").insert({
+      supabase
+        .from("servico_documentos")
+        .delete()
+        .eq("id", document.id)
+        .eq("organization_id", currentOrganizationId ?? ""),
+      supabase.from("servico_eventos").insert(withOrganizationId({
         servico_id: serviceId,
         tipo: "documento",
         titulo: "Documento removido",
         descricao: document.nome_original ?? document.nome_arquivo ?? "Anexo",
         criado_por: currentUserId || null,
-      }),
+      }, currentOrganizationId)),
     ]);
 
     setDeletingDocumentId(null);

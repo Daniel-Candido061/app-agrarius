@@ -5,6 +5,8 @@ import { AppShell } from "../../components/app-shell";
 import { SummaryCard, SummaryCardsGrid } from "../../components/summary-card";
 import { formatSimpleDate, isBeforeTodayDateOnly } from "../../../lib/date-utils";
 import { requireAuth } from "../../../lib/auth";
+import { requireCurrentOrganization } from "../../../lib/organization-context";
+import { scopeQueryToOrganization } from "../../../lib/organization-scope";
 import { supabase } from "../../../lib/supabase";
 import { getCurrentUserShellProfile } from "../../../lib/user-profiles";
 import type {
@@ -118,12 +120,15 @@ function getServiceStatusClassName(status: string | null) {
   return "bg-slate-100 text-slate-700";
 }
 
-async function getCliente(id: number) {
-  const { data, error } = await supabase
-    .from("clientes")
-    .select("id, nome, telefone, email, cidade, status")
-    .eq("id", id)
-    .maybeSingle();
+async function getCliente(id: number, organizationId?: string | null) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("clientes")
+      .select("id, nome, telefone, email, cidade, status")
+      .eq("id", id)
+      .maybeSingle(),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar cliente:", error.message);
@@ -133,13 +138,19 @@ async function getCliente(id: number) {
   return (data ?? null) as Cliente | null;
 }
 
-async function getServicosDoCliente(id: number) {
-  const { data, error } = await supabase
-    .from("servicos")
-    .select("id, nome_servico, cidade, valor, prazo_final, status")
-    .eq("cliente_id", id)
-    .order("prazo_final", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false });
+async function getServicosDoCliente(
+  id: number,
+  organizationId?: string | null
+) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("servicos")
+      .select("id, nome_servico, cidade, valor, prazo_final, status")
+      .eq("cliente_id", id)
+      .order("prazo_final", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar serviços do cliente:", error.message);
@@ -149,15 +160,21 @@ async function getServicosDoCliente(id: number) {
   return (data ?? []) as ClienteServico[];
 }
 
-async function getLancamentosDosServicos(serviceIds: number[]) {
+async function getLancamentosDosServicos(
+  serviceIds: number[],
+  organizationId?: string | null
+) {
   if (serviceIds.length === 0) {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from("financeiro")
-    .select("id, tipo, valor, servico_id, status")
-    .in("servico_id", serviceIds);
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("financeiro")
+      .select("id, tipo, valor, servico_id, status")
+      .in("servico_id", serviceIds),
+    organizationId
+  );
 
   if (error) {
     console.error(
@@ -170,13 +187,19 @@ async function getLancamentosDosServicos(serviceIds: number[]) {
   return (data ?? []) as ClienteFinanceiro[];
 }
 
-async function getPropostasDoCliente(id: number) {
-  const { data, error } = await supabase
-    .from("propostas")
-    .select("id, nome_oportunidade, status, valor_estimado, convertido_em, servico_id")
-    .eq("cliente_id", id)
-    .order("convertido_em", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
+async function getPropostasDoCliente(
+  id: number,
+  organizationId?: string | null
+) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("propostas")
+      .select("id, nome_oportunidade, status, valor_estimado, convertido_em, servico_id")
+      .eq("cliente_id", id)
+      .order("convertido_em", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar propostas do cliente:", error.message);
@@ -186,17 +209,23 @@ async function getPropostasDoCliente(id: number) {
   return (data ?? []) as ClienteProposta[];
 }
 
-async function getPendenciasDosServicos(serviceIds: number[]) {
+async function getPendenciasDosServicos(
+  serviceIds: number[],
+  organizationId?: string | null
+) {
   if (serviceIds.length === 0) {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from("servico_pendencias")
-    .select("id, servico_id, titulo, origem, prioridade, prazo_resposta, status")
-    .in("servico_id", serviceIds)
-    .order("prazo_resposta", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false });
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("servico_pendencias")
+      .select("id, servico_id, titulo, origem, prioridade, prazo_resposta, status")
+      .in("servico_id", serviceIds)
+      .order("prazo_resposta", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+    organizationId
+  );
 
   if (error) {
     console.error(
@@ -216,6 +245,9 @@ export default async function ClienteDetalhesPage({
 }) {
   await connection();
   const authenticatedUser = await requireAuth();
+  const organizationContext = await requireCurrentOrganization(
+    authenticatedUser.id
+  );
 
   const { id } = await params;
   const clientId = Number(id);
@@ -225,9 +257,9 @@ export default async function ClienteDetalhesPage({
   }
 
   const [client, services, proposals] = await Promise.all([
-    getCliente(clientId),
-    getServicosDoCliente(clientId),
-    getPropostasDoCliente(clientId),
+    getCliente(clientId, organizationContext.organizationId),
+    getServicosDoCliente(clientId, organizationContext.organizationId),
+    getPropostasDoCliente(clientId, organizationContext.organizationId),
   ]);
 
   if (!client) {
@@ -240,8 +272,8 @@ export default async function ClienteDetalhesPage({
 
   const serviceIds = services.map((service) => service.id);
   const [financialEntries, pendings] = await Promise.all([
-    getLancamentosDosServicos(serviceIds),
-    getPendenciasDosServicos(serviceIds),
+    getLancamentosDosServicos(serviceIds, organizationContext.organizationId),
+    getPendenciasDosServicos(serviceIds, organizationContext.organizationId),
   ]);
 
   const entriesByServiceId = new Map<string, ClienteFinanceiro[]>();

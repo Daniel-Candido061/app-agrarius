@@ -1,6 +1,8 @@
 import { connection } from "next/server";
 import { ClientesView } from "./clientes-view";
 import { requireAuth } from "../../lib/auth";
+import { requireCurrentOrganization } from "../../lib/organization-context";
+import { scopeQueryToOrganization } from "../../lib/organization-scope";
 import { supabase } from "../../lib/supabase";
 import { getCurrentUserShellProfile } from "../../lib/user-profiles";
 import type {
@@ -9,11 +11,14 @@ import type {
   ClientePortfolioServico,
 } from "./types";
 
-async function getClientes() {
-  const { data, error } = await supabase
-    .from("clientes")
-    .select("id, nome, telefone, email, cidade, status")
-    .order("created_at", { ascending: false });
+async function getClientes(organizationId?: string | null) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase
+      .from("clientes")
+      .select("id, nome, telefone, email, cidade, status")
+      .order("created_at", { ascending: false }),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar clientes no Supabase:", error.message);
@@ -23,10 +28,11 @@ async function getClientes() {
   return (data ?? []) as Cliente[];
 }
 
-async function getServicosDosClientes() {
-  const { data, error } = await supabase
-    .from("servicos")
-    .select("id, cliente_id, valor, status");
+async function getServicosDosClientes(organizationId?: string | null) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase.from("servicos").select("id, cliente_id, valor, status"),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar serviços dos clientes:", error.message);
@@ -36,10 +42,11 @@ async function getServicosDosClientes() {
   return (data ?? []) as ClientePortfolioServico[];
 }
 
-async function getFinanceiroDosServicos() {
-  const { data, error } = await supabase
-    .from("financeiro")
-    .select("tipo, valor, servico_id, status");
+async function getFinanceiroDosServicos(organizationId?: string | null) {
+  const { data, error } = await scopeQueryToOrganization(
+    supabase.from("financeiro").select("tipo, valor, servico_id, status"),
+    organizationId
+  );
 
   if (error) {
     console.error("Erro ao buscar financeiro dos serviços:", error.message);
@@ -52,11 +59,14 @@ async function getFinanceiroDosServicos() {
 export default async function ClientesPage() {
   await connection();
   const authenticatedUser = await requireAuth();
+  const organizationContext = await requireCurrentOrganization(
+    authenticatedUser.id
+  );
 
   const [clients, services, financialEntries] = await Promise.all([
-    getClientes(),
-    getServicosDosClientes(),
-    getFinanceiroDosServicos(),
+    getClientes(organizationContext.organizationId),
+    getServicosDosClientes(organizationContext.organizationId),
+    getFinanceiroDosServicos(organizationContext.organizationId),
   ]);
   const currentUserProfile = await getCurrentUserShellProfile({
     userId: authenticatedUser.id,
@@ -68,6 +78,8 @@ export default async function ClientesPage() {
       clients={clients}
       services={services}
       financialEntries={financialEntries}
+      currentUserId={authenticatedUser.id}
+      currentOrganizationId={organizationContext.organizationId}
       currentUserName={currentUserProfile.displayName}
       currentUserDetail={currentUserProfile.secondaryLabel}
       currentUserInitials={currentUserProfile.initials}

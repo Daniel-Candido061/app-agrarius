@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ActionsMenu } from "../../components/actions-menu";
+import { withOrganizationId } from "../../../lib/organization-scope";
 import { supabase } from "../../../lib/supabase";
 import type { ServicoEtapa } from "../types";
 
@@ -10,6 +11,7 @@ type ServiceStagesSectionProps = {
   serviceId: number;
   stages: ServicoEtapa[];
   currentUserId?: string | null;
+  currentOrganizationId?: string | null;
 };
 
 type ModalMode = "create" | "edit";
@@ -54,6 +56,7 @@ export function ServiceStagesSection({
   serviceId,
   stages,
   currentUserId = null,
+  currentOrganizationId = null,
 }: ServiceStagesSectionProps) {
   const router = useRouter();
   const orderedStages = [...stages].sort((leftStage, rightStage) => {
@@ -131,7 +134,7 @@ export function ServiceStagesSection({
 
     const isEditing = modalMode === "edit";
     const nextOrder = orderedStages.length + 1;
-    const payload = {
+    const payload = withOrganizationId({
       servico_id: serviceId,
       titulo,
       opcional: formData.opcional,
@@ -141,13 +144,17 @@ export function ServiceStagesSection({
             ordem: nextOrder,
             status: "Pendente",
           }),
-    };
+    }, currentOrganizationId);
 
     const [{ error: stageError }, { error: eventError }] = await Promise.all([
       isEditing && editingStageId !== null
-        ? supabase.from("servico_etapas").update(payload).eq("id", editingStageId)
+        ? supabase
+            .from("servico_etapas")
+            .update(payload)
+            .eq("id", editingStageId)
+            .eq("organization_id", currentOrganizationId ?? "")
         : supabase.from("servico_etapas").insert(payload),
-      supabase.from("servico_eventos").insert({
+      supabase.from("servico_eventos").insert(withOrganizationId({
         servico_id: serviceId,
         tipo: "etapa",
         titulo: isEditing ? "Etapa atualizada" : "Nova etapa adicionada",
@@ -155,7 +162,7 @@ export function ServiceStagesSection({
           ? `${titulo}${formData.opcional ? " (opcional)" : ""}`
           : `${titulo}${formData.opcional ? " (opcional)" : ""}`,
         criado_por: currentUserId || null,
-      }),
+      }, currentOrganizationId)),
     ]);
 
     setIsSaving(false);
@@ -188,14 +195,15 @@ export function ServiceStagesSection({
           status: nextStatus,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", stage.id),
-      supabase.from("servico_eventos").insert({
+        .eq("id", stage.id)
+        .eq("organization_id", currentOrganizationId ?? ""),
+      supabase.from("servico_eventos").insert(withOrganizationId({
         servico_id: serviceId,
         tipo: "etapa",
         titulo: "Etapa atualizada",
         descricao: `${stage.titulo ?? "Etapa"} alterada para ${nextStatus}.`,
         criado_por: currentUserId || null,
-      }),
+      }, currentOrganizationId)),
     ]);
 
     setUpdatingStageId(null);
@@ -223,8 +231,9 @@ export function ServiceStagesSection({
           opcional: nextOptional,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", stage.id),
-      supabase.from("servico_eventos").insert({
+        .eq("id", stage.id)
+        .eq("organization_id", currentOrganizationId ?? ""),
+      supabase.from("servico_eventos").insert(withOrganizationId({
         servico_id: serviceId,
         tipo: "etapa",
         titulo: "Opcionalidade da etapa atualizada",
@@ -232,7 +241,7 @@ export function ServiceStagesSection({
           nextOptional ? "opcional" : "obrigatoria"
         }.`,
         criado_por: currentUserId || null,
-      }),
+      }, currentOrganizationId)),
     ]);
 
     setUpdatingStageId(null);
@@ -278,11 +287,12 @@ export function ServiceStagesSection({
           updated_at: new Date().toISOString(),
         })
         .eq("id", currentStage.id)
+        .eq("organization_id", currentOrganizationId ?? "")
     );
 
     const results = await Promise.all(updates);
     const stageError = results.find((result) => result.error)?.error;
-    const { error: eventError } = await supabase.from("servico_eventos").insert({
+    const { error: eventError } = await supabase.from("servico_eventos").insert(withOrganizationId({
       servico_id: serviceId,
       tipo: "etapa",
       titulo: "Etapas reordenadas",
@@ -290,7 +300,7 @@ export function ServiceStagesSection({
         direction === "up" ? "cima" : "baixo"
       }.`,
       criado_por: currentUserId || null,
-    });
+    }, currentOrganizationId));
 
     setReorderingStageId(null);
 

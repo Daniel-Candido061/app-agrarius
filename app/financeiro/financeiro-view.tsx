@@ -32,6 +32,7 @@ import {
   type UserDisplayMap,
   type UserOption,
 } from "../../lib/user-profiles";
+import { withOrganizationId } from "../../lib/organization-scope";
 import { getCategoryOptionsByType } from "./category-options";
 import type { LancamentoFinanceiro, ServicoOption } from "./types";
 
@@ -39,6 +40,7 @@ type FinanceiroViewProps = {
   entries: LancamentoFinanceiro[];
   services: ServicoOption[];
   currentUserId?: string | null;
+  currentOrganizationId?: string | null;
   currentUserName?: string;
   currentUserDetail?: string;
   currentUserInitials?: string;
@@ -316,6 +318,7 @@ export function FinanceiroView({
   entries,
   services,
   currentUserId = null,
+  currentOrganizationId = null,
   currentUserName,
   currentUserDetail,
   currentUserInitials,
@@ -742,7 +745,7 @@ export function FinanceiroView({
     const isEditing = modalMode === "edit";
     const entryId = editingEntryId;
 
-    const entryPayload = {
+    const entryPayload = withOrganizationId({
       tipo,
       categoria,
       descricao,
@@ -761,7 +764,7 @@ export function FinanceiroView({
             atualizado_por: currentUserId || null,
             responsavel_id: responsavelId,
           }),
-    };
+    }, currentOrganizationId);
 
     const response =
       isEditing && entryId !== null
@@ -769,6 +772,7 @@ export function FinanceiroView({
             .from("financeiro")
             .update(entryPayload)
             .eq("id", entryId)
+            .eq("organization_id", currentOrganizationId ?? "")
             .select("id")
             .single()
         : await supabase
@@ -794,7 +798,7 @@ export function FinanceiroView({
     }
 
     if (parsedServiceId !== null) {
-      await supabase.from("servico_eventos").insert({
+      await supabase.from("servico_eventos").insert(withOrganizationId({
         servico_id: parsedServiceId,
         tipo: "financeiro",
         titulo: isEditing
@@ -802,7 +806,7 @@ export function FinanceiroView({
           : "Novo lancamento financeiro",
         descricao: `${tipo}: ${descricao} (${status}).`,
         criado_por: currentUserId || null,
-      });
+      }, currentOrganizationId));
     }
 
     closeModal();
@@ -820,15 +824,19 @@ export function FinanceiroView({
     setErrorMessage("");
 
     const [{ error: deleteError }, { error: eventError }] = await Promise.all([
-      supabase.from("financeiro").delete().eq("id", entry.id),
+      supabase
+        .from("financeiro")
+        .delete()
+        .eq("id", entry.id)
+        .eq("organization_id", currentOrganizationId ?? ""),
       entry.servico_id !== null && entry.servico_id !== undefined
-        ? supabase.from("servico_eventos").insert({
+        ? supabase.from("servico_eventos").insert(withOrganizationId({
             servico_id: Number(entry.servico_id),
             tipo: "financeiro",
             titulo: "Lancamento financeiro removido",
             descricao: entry.descricao ?? "Lancamento sem descricao",
             criado_por: currentUserId || null,
-          })
+          }, currentOrganizationId))
         : Promise.resolve({ error: null }),
     ]);
 
