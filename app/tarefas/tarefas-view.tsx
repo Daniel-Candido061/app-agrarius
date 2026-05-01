@@ -700,7 +700,6 @@ export function TarefasView({
                 </select>
               </label>
 
-              <ViewModeToggle value={viewMode} onChange={setViewMode} />
             </div>
           </div>
 
@@ -766,6 +765,17 @@ export function TarefasView({
         </section>
 
         <PageTable>
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
+            <div>
+              <h2 className="text-base font-semibold text-[#17352b]">
+                Visualização das tarefas
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Troque entre lista e kanban no próprio bloco de trabalho.
+              </p>
+            </div>
+            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+          </div>
           {taskList.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">

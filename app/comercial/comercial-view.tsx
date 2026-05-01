@@ -1181,7 +1181,6 @@ export function ComercialView({
                 </select>
               </label>
 
-              <ViewModeToggle value={viewMode} onChange={setViewMode} />
             </div>
           </div>
 
@@ -1250,6 +1249,17 @@ export function ComercialView({
         </section>
 
         <PageTable>
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
+            <div>
+              <h2 className="text-base font-semibold text-[#17352b]">
+                Visualização do funil
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Altere a forma de leitura do funil atual.
+              </p>
+            </div>
+            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+          </div>
           {proposalList.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">

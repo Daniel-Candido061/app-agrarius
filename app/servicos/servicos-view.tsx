@@ -977,7 +977,6 @@ export function ServicosView({
                 </select>
               </label>
 
-              <ViewModeToggle value={viewMode} onChange={setViewMode} />
             </div>
           </div>
 
@@ -1046,6 +1045,17 @@ export function ServicosView({
         </section>
 
         <PageTable>
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
+            <div>
+              <h2 className="text-base font-semibold text-[#17352b]">
+                Visualização dos serviços
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Escolha como ver o resultado atual.
+              </p>
+            </div>
+            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+          </div>
           {serviceList.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <h2 className="text-lg font-semibold text-[#17352b]">
