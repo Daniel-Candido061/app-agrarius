@@ -1,4 +1,6 @@
-﻿import {
+﻿import { z } from "zod";
+
+import {
   isDateInPeriod,
   type PeriodValue,
 } from "./period-utils";
@@ -12,6 +14,90 @@ import {
 } from "./date-utils";
 import { supabase } from "./supabase";
 import { scopeQueryToOrganization } from "./organization-scope";
+
+// ─── Schemas Zod ────────────────────────────────────────────────────────────
+
+const clientSchema = z.object({
+  id: z.number(),
+  created_at: z.string().nullable(),
+});
+
+const serviceSchema = z.object({
+  id: z.number(),
+  cliente_id: z.union([z.number(), z.string()]).nullable(),
+  nome_servico: z.string().nullable(),
+  valor: z.union([z.number(), z.string()]).nullable(),
+  created_at: z.string().nullable(),
+  data_entrada: z.string().nullable(),
+  prazo_final: z.string().nullable(),
+  status: z.string().nullable(),
+  responsavel_id: z.string().nullable(),
+  situacao_operacional: z.string().nullable(),
+  cliente: z
+    .union([
+      z.object({ nome: z.string().nullable() }),
+      z.array(z.object({ nome: z.string().nullable() })),
+    ])
+    .nullable(),
+});
+
+const financialSchema = z.object({
+  tipo: z.string().nullable(),
+  valor: z.union([z.number(), z.string()]).nullable(),
+  status: z.string().nullable(),
+  data: z.string().nullable(),
+  servico_id: z.union([z.number(), z.string()]).nullable(),
+});
+
+const taskSchema = z.object({
+  id: z.number(),
+  data_limite: z.string().nullable(),
+  status: z.string().nullable(),
+  responsavel_id: z.string().nullable(),
+});
+
+const pendingSchema = z.object({
+  id: z.number(),
+  servico_id: z.union([z.number(), z.string()]).nullable(),
+  status: z.string().nullable(),
+  prioridade: z.string().nullable(),
+  responsavel_id: z.string().nullable(),
+});
+
+const serviceTypeMetricSchema = z.object({
+  tipo_servico: z.string().nullable(),
+  quantidade_servicos_concluidos: z.number().nullable(),
+  servicos_com_tempo_calculavel: z.number().nullable(),
+  tempo_medio_dias: z.number().nullable(),
+  ticket_medio: z.number().nullable(),
+  servicos_com_margem_calculavel: z.number().nullable(),
+  margem_media: z.number().nullable(),
+  receita_media_recebida: z.number().nullable(),
+  despesa_media_paga: z.number().nullable(),
+});
+
+const commercialConversionSchema = z.object({
+  dimensao: z.string().nullable(),
+  agrupador: z.string().nullable(),
+  total_propostas: z.number().nullable(),
+  propostas_ganhas: z.number().nullable(),
+  taxa_conversao: z.number().nullable(),
+});
+
+function parseRows<T>(
+  schema: z.ZodType<T>,
+  data: unknown,
+  label: string
+): T[] {
+  const result = z.array(schema).safeParse(data ?? []);
+  if (!result.success) {
+    console.error(`Schema inesperado em ${label}:`, result.error.flatten());
+    return [];
+  }
+  return result.data;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 
 export type FinancialEntry = {
   tipo: string | null;
@@ -52,14 +138,7 @@ export type ServiceDashboardEntry = {
   status: string | null;
   responsavel_id: string | null;
   situacao_operacional: string | null;
-  cliente:
-    | {
-        nome: string | null;
-      }
-    | {
-        nome: string | null;
-      }[]
-    | null;
+  cliente: { nome: string | null } | { nome: string | null }[] | null;
 };
 
 export type DashboardData = {
@@ -263,6 +342,33 @@ export function getDaysUntilDeadline(value: string | null) {
   return getDaysUntilSimpleDate(value);
 }
 
+const situacoesOperacionais = [
+  {
+    chave: "aguardando_cliente",
+    detalhe: "Dependencias externas ainda com o cliente.",
+  },
+  {
+    chave: "aguardando_orgao",
+    detalhe: "Servicos aguardando retorno de orgao.",
+  },
+  {
+    chave: "aguardando_cartorio",
+    detalhe: "Fila operacional ligada a cartorio.",
+  },
+  {
+    chave: "aguardando_equipe",
+    detalhe: "Demanda aguardando acao interna da equipe.",
+  },
+  {
+    chave: "pronto_para_protocolar",
+    detalhe: "Itens aptos para protocolo.",
+  },
+  {
+    chave: "pronto_para_entregar",
+    detalhe: "Itens aptos para entrega ao cliente.",
+  },
+] as const;
+
 export async function getDashboardData(
   selectedPeriod: PeriodValue,
   customStartDate: string,
@@ -357,16 +463,13 @@ export async function getDashboardData(
     );
   }
 
-  const clients = (clientsResult.data ?? []) as ClientDashboardEntry[];
-  const services = (servicesResult.data ?? []) as ServiceDashboardEntry[];
-  const financialEntries = (financeiroResult.data ?? []) as FinancialEntry[];
-  const tasks = (tasksResult.data ?? []) as TaskDashboardEntry[];
-  const pendings = (pendingsResult.data ?? []) as PendingDashboardEntry[];
-  const serviceTypeMetrics =
-    (serviceMetricsResult.data ?? []) as DashboardServiceTypeMetric[];
-  const commercialConversionMetrics =
-    (commercialConversionResult.data ??
-      []) as DashboardCommercialConversionMetric[];
+  const clients = parseRows(clientSchema, clientsResult.data, "clientes");
+  const services = parseRows(serviceSchema, servicesResult.data, "servicos");
+  const financialEntries = parseRows(financialSchema, financeiroResult.data, "financeiro");
+  const tasks = parseRows(taskSchema, tasksResult.data, "tarefas");
+  const pendings = parseRows(pendingSchema, pendingsResult.data, "pendencias");
+  const serviceTypeMetrics = parseRows(serviceTypeMetricSchema, serviceMetricsResult.data, "metricas_servicos");
+  const commercialConversionMetrics = parseRows(commercialConversionSchema, commercialConversionResult.data, "conversao_comercial");
   const periodFinancialEntries = financialEntries.filter((entry) =>
     isDateInPeriod(entry.data, selectedPeriod, customStartDate, customEndDate)
   );
@@ -568,33 +671,6 @@ export async function getDashboardData(
       );
     })
     .slice(0, 5);
-
-  const situacoesOperacionais = [
-    {
-      chave: "aguardando_cliente",
-      detalhe: "Dependencias externas ainda com o cliente.",
-    },
-    {
-      chave: "aguardando_orgao",
-      detalhe: "Servicos aguardando retorno de orgao.",
-    },
-    {
-      chave: "aguardando_cartorio",
-      detalhe: "Fila operacional ligada a cartorio.",
-    },
-    {
-      chave: "aguardando_equipe",
-      detalhe: "Demanda aguardando acao interna da equipe.",
-    },
-    {
-      chave: "pronto_para_protocolar",
-      detalhe: "Itens aptos para protocolo.",
-    },
-    {
-      chave: "pronto_para_entregar",
-      detalhe: "Itens aptos para entrega ao cliente.",
-    },
-  ] as const;
 
   const gargalosOperacionais = situacoesOperacionais.map((situacao) => ({
     chave: situacao.chave,

@@ -29,6 +29,13 @@ export async function PATCH(request: Request) {
     );
   }
 
+  if (normalizedName.length > 255) {
+    return NextResponse.json(
+      { error: "organization_name_too_long" },
+      { status: 400 }
+    );
+  }
+
   const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from("organizations")
