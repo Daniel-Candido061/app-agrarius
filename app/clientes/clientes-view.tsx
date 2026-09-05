@@ -350,11 +350,6 @@ export function ClientesView({
       return;
     }
 
-    if (!currentOrganizationId) {
-      setErrorMessage("Não foi possível identificar a organização ativa.");
-      return;
-    }
-
     setIsSaving(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -386,7 +381,7 @@ export function ClientesView({
             .from("clientes")
             .update(clientPayload)
             .eq("id", clientId)
-            .eq("organization_id", currentOrganizationId)
+            .eq("organization_id", currentOrganizationId ?? "")
             .select("id")
             .single()
         : await supabase
@@ -427,11 +422,6 @@ export function ClientesView({
       return;
     }
 
-    if (!currentOrganizationId) {
-      setErrorMessage("Não foi possível identificar a organização ativa.");
-      return;
-    }
-
     setDeletingClientId(client.id);
     setErrorMessage("");
     setSuccessMessage("");
@@ -440,7 +430,7 @@ export function ClientesView({
       .from("servicos")
       .select("id", { count: "exact", head: true })
       .eq("cliente_id", client.id)
-      .eq("organization_id", currentOrganizationId);
+      .eq("organization_id", currentOrganizationId ?? "");
 
     if (linkedServicesError) {
       setDeletingClientId(null);
@@ -458,47 +448,16 @@ export function ClientesView({
       return;
     }
 
-    const { count: linkedProposalsCount, error: linkedProposalsError } =
-      await supabase
-        .from("propostas")
-        .select("id", { count: "exact", head: true })
-        .eq("cliente_id", client.id)
-        .eq("organization_id", currentOrganizationId);
-
-    if (linkedProposalsError) {
-      setDeletingClientId(null);
-      setErrorMessage(
-        "Não foi possível verificar as propostas vinculadas a este cliente."
-      );
-      return;
-    }
-
-    if ((linkedProposalsCount ?? 0) > 0) {
-      setDeletingClientId(null);
-      setErrorMessage(
-        "Não é possível excluir este cliente porque ele possui propostas vinculadas."
-      );
-      return;
-    }
-
-    const { error, data } = await supabase
+    const { error } = await supabase
       .from("clientes")
       .delete()
       .eq("id", client.id)
-      .eq("organization_id", currentOrganizationId)
-      .select("id");
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setDeletingClientId(null);
 
     if (error) {
       setErrorMessage("Não foi possível excluir o cliente agora. Tente novamente.");
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      setErrorMessage(
-        "O cliente não pôde ser excluído. Atualize a página e tente novamente."
-      );
       return;
     }
 

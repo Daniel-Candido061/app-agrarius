@@ -490,11 +490,6 @@ export function TarefasView({
       return;
     }
 
-    if (!currentOrganizationId) {
-      setErrorMessage("Não foi possível identificar a organização ativa.");
-      return;
-    }
-
     setIsSaving(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -525,9 +520,8 @@ export function TarefasView({
           .from("tarefas")
           .update(taskPayload)
           .eq("id", taskId)
-          .eq("organization_id", currentOrganizationId)
-          .select("id")
-      : await supabase.from("tarefas").insert(taskPayload).select("id");
+          .eq("organization_id", currentOrganizationId ?? "")
+      : await supabase.from("tarefas").insert(taskPayload);
 
     setIsSaving(false);
 
@@ -536,15 +530,6 @@ export function TarefasView({
         isEditing
           ? "Não foi possível atualizar a tarefa agora. Tente novamente."
           : "Não foi possível salvar a tarefa agora. Tente novamente."
-      );
-      return;
-    }
-
-    if (!response.data || response.data.length === 0) {
-      setErrorMessage(
-        isEditing
-          ? "A tarefa não pôde ser atualizada. Atualize a página e tente novamente."
-          : "A tarefa não pôde ser salva. Atualize a página e tente novamente."
       );
       return;
     }
@@ -565,33 +550,20 @@ export function TarefasView({
       return;
     }
 
-    if (!currentOrganizationId) {
-      setErrorMessage("Não foi possível identificar a organização ativa.");
-      return;
-    }
-
     setDeletingTaskId(task.id);
     setErrorMessage("");
     setSuccessMessage("");
 
-    const { error, data } = await supabase
+    const { error } = await supabase
       .from("tarefas")
       .delete()
       .eq("id", task.id)
-      .eq("organization_id", currentOrganizationId)
-      .select("id");
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setDeletingTaskId(null);
 
     if (error) {
       setErrorMessage("Não foi possível excluir a tarefa agora. Tente novamente.");
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      setErrorMessage(
-        "A tarefa não pôde ser excluída. Atualize a página e tente novamente."
-      );
       return;
     }
 
@@ -617,22 +589,19 @@ export function TarefasView({
       )
     );
 
-    const { error, data } = currentOrganizationId
-      ? await supabase
-          .from("tarefas")
-          .update({
-            status: trimmedStatus,
-            updated_at: new Date().toISOString(),
-            atualizado_por: currentUserId || null,
-          })
-          .eq("id", task.id)
-          .eq("organization_id", currentOrganizationId)
-          .select("id")
-      : { error: null, data: [] };
+    const { error } = await supabase
+      .from("tarefas")
+      .update({
+        status: trimmedStatus,
+        updated_at: new Date().toISOString(),
+        atualizado_por: currentUserId || null,
+      })
+      .eq("id", task.id)
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setUpdatingTaskId(null);
 
-    if (error || !currentOrganizationId || !data || data.length === 0) {
+    if (error) {
       setTaskList((currentTasks) =>
         currentTasks.map((currentTask) =>
           currentTask.id === task.id

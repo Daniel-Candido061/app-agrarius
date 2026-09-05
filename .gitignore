@@ -36,12 +36,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# claude code local settings (machine-specific paths/permissions)
-.claude/
-
-# residual duplicated project copy (has its own .git)
-/app-agrarius/
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -671,14 +671,9 @@ export function ServicosView({
       }
     }
 
-    if (!currentOrganizationId) {
-      setErrorMessage("Não foi possível identificar a organização ativa.");
-      return;
-    }
-
     setIsSaving(true);
     setErrorMessage("");
-
+    
     const isEditing = modalMode === "edit";
     const serviceId = editingServiceId;
 
@@ -712,7 +707,7 @@ export function ServicosView({
             .from("servicos")
             .update(servicePayload)
             .eq("id", serviceId)
-            .eq("organization_id", currentOrganizationId)
+            .eq("organization_id", currentOrganizationId ?? "")
             .select("id")
             .single()
         : await supabase
@@ -737,14 +732,12 @@ export function ServicosView({
       return;
     }
 
-    let setupWarning = "";
-
     if (!isEditing && response.data?.id) {
       const serviceId = response.data.id;
       const stageTitles = getStageTemplateByServiceType(tipoServico);
       const pendingTemplates = getPendingTemplateByServiceType(tipoServico);
 
-      const { error: stagesError } = await supabase.from("servico_etapas").insert(
+      await supabase.from("servico_etapas").insert(
         stageTitles.map((title, index) => ({
           ...(currentOrganizationId
             ? { organization_id: currentOrganizationId }
@@ -756,13 +749,8 @@ export function ServicosView({
         }))
       );
 
-      if (stagesError) {
-        console.error("Erro ao criar etapas iniciais do serviço:", stagesError.message);
-        setupWarning = "As etapas iniciais não puderam ser criadas.";
-      }
-
       if (pendingTemplates.length > 0) {
-        const { error: pendingsError } = await supabase.from("servico_pendencias").insert(
+        await supabase.from("servico_pendencias").insert(
           pendingTemplates.map((pendingTemplate) => ({
             ...(currentOrganizationId
               ? { organization_id: currentOrganizationId }
@@ -777,16 +765,6 @@ export function ServicosView({
             responsavel_id: currentUserId || null,
           }))
         );
-
-        if (pendingsError) {
-          console.error(
-            "Erro ao criar pendências iniciais do serviço:",
-            pendingsError.message
-          );
-          setupWarning = setupWarning
-            ? "As etapas e pendências iniciais não puderam ser criadas."
-            : "As pendências iniciais não puderam ser criadas.";
-        }
       }
 
       await supabase.from("servico_eventos").insert([
@@ -824,13 +802,6 @@ export function ServicosView({
     }
 
     closeModal();
-
-    if (setupWarning) {
-      window.alert(
-        `Serviço salvo com sucesso, mas ${setupWarning.charAt(0).toLowerCase()}${setupWarning.slice(1)}`
-      );
-    }
-
     router.refresh();
   }
 
@@ -838,11 +809,6 @@ export function ServicosView({
     const shouldDelete = window.confirm("Tem certeza que deseja excluir?");
 
     if (!shouldDelete) {
-      return;
-    }
-
-    if (!currentOrganizationId) {
-      setErrorMessage("Não foi possível identificar a organização ativa.");
       return;
     }
 
@@ -854,7 +820,7 @@ export function ServicosView({
         .from("financeiro")
         .select("id", { count: "exact", head: true })
         .eq("servico_id", service.id)
-        .eq("organization_id", currentOrganizationId);
+        .eq("organization_id", currentOrganizationId ?? "");
 
     if (linkedFinancialEntriesError) {
       setDeletingServiceId(null);
@@ -872,24 +838,16 @@ export function ServicosView({
       return;
     }
 
-    const { error, data } = await supabase
+    const { error } = await supabase
       .from("servicos")
       .delete()
       .eq("id", service.id)
-      .eq("organization_id", currentOrganizationId)
-      .select("id");
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setDeletingServiceId(null);
 
     if (error) {
       setErrorMessage("Não foi possível excluir o serviço agora. Tente novamente.");
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      setErrorMessage(
-        "O serviço não pôde ser excluído. Atualize a página e tente novamente."
-      );
       return;
     }
 
@@ -913,22 +871,19 @@ export function ServicosView({
       )
     );
 
-    const { error, data } = currentOrganizationId
-      ? await supabase
-          .from("servicos")
-          .update({
-            status: trimmedStatus,
-            updated_at: new Date().toISOString(),
-            atualizado_por: currentUserId || null,
-          })
-          .eq("id", service.id)
-          .eq("organization_id", currentOrganizationId)
-          .select("id")
-      : { error: null, data: [] };
+    const { error } = await supabase
+      .from("servicos")
+      .update({
+        status: trimmedStatus,
+        updated_at: new Date().toISOString(),
+        atualizado_por: currentUserId || null,
+      })
+      .eq("id", service.id)
+      .eq("organization_id", currentOrganizationId ?? "");
 
     setUpdatingServiceId(null);
 
-    if (error || !currentOrganizationId || !data || data.length === 0) {
+    if (error) {
       setServiceList((currentServices) =>
         currentServices.map((currentService) =>
           currentService.id === service.id

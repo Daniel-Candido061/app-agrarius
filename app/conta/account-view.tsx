@@ -42,11 +42,6 @@ export function AccountView({
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
-  const [passwordSuccessMessage, setPasswordSuccessMessage] = useState("");
 
   const profileCompleteCount = [nomeExibicao, email, papel].filter((value) =>
     value.trim()
@@ -88,55 +83,6 @@ export function AccountView({
     }
 
     setSuccessMessage("Perfil atualizado com sucesso.");
-    router.refresh();
-  }
-
-  async function handlePasswordSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const normalizedPassword = password.trim();
-    const normalizedConfirmPassword = confirmPassword.trim();
-
-    if (!normalizedPassword) {
-      setPasswordErrorMessage("Informe a nova senha.");
-      setPasswordSuccessMessage("");
-      return;
-    }
-
-    if (normalizedPassword.length < 8) {
-      setPasswordErrorMessage("A nova senha deve ter ao menos 8 caracteres.");
-      setPasswordSuccessMessage("");
-      return;
-    }
-
-    if (normalizedPassword !== normalizedConfirmPassword) {
-      setPasswordErrorMessage("As senhas informadas nao conferem.");
-      setPasswordSuccessMessage("");
-      return;
-    }
-
-    setIsChangingPassword(true);
-    setPasswordErrorMessage("");
-    setPasswordSuccessMessage("");
-
-    const { error } = await supabase.auth.updateUser({
-      password: normalizedPassword,
-    });
-
-    setIsChangingPassword(false);
-
-    if (error) {
-      setPasswordErrorMessage(
-        "Nao foi possivel alterar a senha agora. Tente novamente."
-      );
-      return;
-    }
-
-    setPassword("");
-    setConfirmPassword("");
-    setPasswordSuccessMessage(
-      "Senha alterada com sucesso. Voce pode continuar usando a conta com a nova senha."
-    );
     router.refresh();
   }
 
@@ -255,72 +201,6 @@ export function AccountView({
                 className={secondaryButtonClassName}
               >
                 Restaurar campos
-              </button>
-            </div>
-          </form>
-
-          <form
-            className="mt-8 space-y-5 rounded-3xl border border-slate-200 bg-slate-50 p-5"
-            onSubmit={handlePasswordSubmit}
-          >
-            <div className="flex flex-col gap-2 border-b border-slate-200 pb-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Segurança
-              </p>
-              <h3 className="text-lg font-semibold tracking-[-0.03em] text-[#163728]">
-                Alterar senha da conta
-              </h3>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">
-                  Nova senha
-                </span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Digite uma nova senha"
-                  autoComplete="new-password"
-                  className={fieldInputClassName}
-                />
-              </label>
-
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-700">
-                  Confirmar nova senha
-                </span>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  placeholder="Repita a nova senha"
-                  autoComplete="new-password"
-                  className={fieldInputClassName}
-                />
-              </label>
-            </div>
-
-            {(passwordErrorMessage || passwordSuccessMessage) && (
-              <div
-                className={`rounded-2xl border px-4 py-3 text-sm ${
-                  passwordErrorMessage
-                    ? "border-rose-200 bg-rose-50 text-rose-700"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                }`}
-              >
-                {passwordErrorMessage || passwordSuccessMessage}
-              </div>
-            )}
-
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="submit"
-                disabled={isChangingPassword}
-                className={primaryButtonClassName}
-              >
-                {isChangingPassword ? "Alterando..." : "Alterar senha"}
               </button>
             </div>
           </form>

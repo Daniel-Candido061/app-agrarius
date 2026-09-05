@@ -129,11 +129,6 @@ export function ServiceStagesSection({
       return;
     }
 
-    if (!currentOrganizationId) {
-      setErrorMessage("Não foi possível identificar a organização ativa.");
-      return;
-    }
-
     setIsSaving(true);
     setErrorMessage("");
 
@@ -151,30 +146,28 @@ export function ServiceStagesSection({
           }),
     }, currentOrganizationId);
 
-    const [{ error: stageError, data: stageData }, { error: eventError }] =
-      await Promise.all([
-        isEditing && editingStageId !== null
-          ? supabase
-              .from("servico_etapas")
-              .update(payload)
-              .eq("id", editingStageId)
-              .eq("organization_id", currentOrganizationId)
-              .select("id")
-          : supabase.from("servico_etapas").insert(payload).select("id"),
-        supabase.from("servico_eventos").insert(withOrganizationId({
-          servico_id: serviceId,
-          tipo: "etapa",
-          titulo: isEditing ? "Etapa atualizada" : "Nova etapa adicionada",
-          descricao: isEditing
-            ? `${titulo}${formData.opcional ? " (opcional)" : ""}`
-            : `${titulo}${formData.opcional ? " (opcional)" : ""}`,
-          criado_por: currentUserId || null,
-        }, currentOrganizationId)),
-      ]);
+    const [{ error: stageError }, { error: eventError }] = await Promise.all([
+      isEditing && editingStageId !== null
+        ? supabase
+            .from("servico_etapas")
+            .update(payload)
+            .eq("id", editingStageId)
+            .eq("organization_id", currentOrganizationId ?? "")
+        : supabase.from("servico_etapas").insert(payload),
+      supabase.from("servico_eventos").insert(withOrganizationId({
+        servico_id: serviceId,
+        tipo: "etapa",
+        titulo: isEditing ? "Etapa atualizada" : "Nova etapa adicionada",
+        descricao: isEditing
+          ? `${titulo}${formData.opcional ? " (opcional)" : ""}`
+          : `${titulo}${formData.opcional ? " (opcional)" : ""}`,
+        criado_por: currentUserId || null,
+      }, currentOrganizationId)),
+    ]);
 
     setIsSaving(false);
 
-    if (stageError || eventError || !stageData || stageData.length === 0) {
+    if (stageError || eventError) {
       setErrorMessage(
         isEditing
           ? "Não foi possível atualizar a etapa agora."
@@ -187,93 +180,35 @@ export function ServiceStagesSection({
     router.refresh();
   }
 
-  async function handleDeleteStage(stage: ServicoEtapa) {
-    const shouldDelete = window.confirm(
-      "Tem certeza que deseja excluir esta etapa?"
-    );
-
-    if (!shouldDelete) {
-      return;
-    }
-
-    if (!currentOrganizationId) {
-      setErrorMessage("Não foi possível identificar a organização ativa.");
-      return;
-    }
-
-    setReorderingStageId(stage.id);
-    setErrorMessage("");
-
-    const { error: stageError, data: stageData } = await supabase
-      .from("servico_etapas")
-      .delete()
-      .eq("id", stage.id)
-      .eq("organization_id", currentOrganizationId)
-      .select("id");
-
-    if (stageError || !stageData || stageData.length === 0) {
-      setReorderingStageId(null);
-      setErrorMessage("Não foi possível excluir a etapa agora.");
-      return;
-    }
-
-    const { error: eventError } = await supabase.from("servico_eventos").insert(
-      withOrganizationId(
-        {
-          servico_id: serviceId,
-          tipo: "etapa",
-          titulo: "Etapa removida",
-          descricao: `${stage.titulo ?? "Etapa"} foi removida.`,
-          criado_por: currentUserId || null,
-        },
-        currentOrganizationId
-      )
-    );
-
-    if (eventError) {
-      console.error("Erro ao registrar evento de remoção de etapa:", eventError.message);
-    }
-
-    setReorderingStageId(null);
-    router.refresh();
-  }
-
   async function updateStageStatus(stage: ServicoEtapa, nextStatus: string) {
     if (!nextStatus || nextStatus === stage.status) {
-      return;
-    }
-
-    if (!currentOrganizationId) {
-      setErrorMessage("Não foi possível identificar a organização ativa.");
       return;
     }
 
     setUpdatingStageId(stage.id);
     setErrorMessage("");
 
-    const [{ error: stageError, data: stageData }, { error: eventError }] =
-      await Promise.all([
-        supabase
-          .from("servico_etapas")
-          .update({
-            status: nextStatus,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", stage.id)
-          .eq("organization_id", currentOrganizationId)
-          .select("id"),
-        supabase.from("servico_eventos").insert(withOrganizationId({
-          servico_id: serviceId,
-          tipo: "etapa",
-          titulo: "Etapa atualizada",
-          descricao: `${stage.titulo ?? "Etapa"} alterada para ${nextStatus}.`,
-          criado_por: currentUserId || null,
-        }, currentOrganizationId)),
-      ]);
+    const [{ error: stageError }, { error: eventError }] = await Promise.all([
+      supabase
+        .from("servico_etapas")
+        .update({
+          status: nextStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", stage.id)
+        .eq("organization_id", currentOrganizationId ?? ""),
+      supabase.from("servico_eventos").insert(withOrganizationId({
+        servico_id: serviceId,
+        tipo: "etapa",
+        titulo: "Etapa atualizada",
+        descricao: `${stage.titulo ?? "Etapa"} alterada para ${nextStatus}.`,
+        criado_por: currentUserId || null,
+      }, currentOrganizationId)),
+    ]);
 
     setUpdatingStageId(null);
 
-    if (stageError || eventError || !stageData || stageData.length === 0) {
+    if (stageError || eventError) {
       setErrorMessage("Não foi possível atualizar a etapa agora.");
       return;
     }
@@ -286,39 +221,32 @@ export function ServiceStagesSection({
       return;
     }
 
-    if (!currentOrganizationId) {
-      setErrorMessage("Não foi possível identificar a organização ativa.");
-      return;
-    }
-
     setUpdatingStageId(stage.id);
     setErrorMessage("");
 
-    const [{ error: stageError, data: stageData }, { error: eventError }] =
-      await Promise.all([
-        supabase
-          .from("servico_etapas")
-          .update({
-            opcional: nextOptional,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", stage.id)
-          .eq("organization_id", currentOrganizationId)
-          .select("id"),
-        supabase.from("servico_eventos").insert(withOrganizationId({
-          servico_id: serviceId,
-          tipo: "etapa",
-          titulo: "Opcionalidade da etapa atualizada",
-          descricao: `${stage.titulo ?? "Etapa"} marcada como ${
-            nextOptional ? "opcional" : "obrigatoria"
-          }.`,
-          criado_por: currentUserId || null,
-        }, currentOrganizationId)),
-      ]);
+    const [{ error: stageError }, { error: eventError }] = await Promise.all([
+      supabase
+        .from("servico_etapas")
+        .update({
+          opcional: nextOptional,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", stage.id)
+        .eq("organization_id", currentOrganizationId ?? ""),
+      supabase.from("servico_eventos").insert(withOrganizationId({
+        servico_id: serviceId,
+        tipo: "etapa",
+        titulo: "Opcionalidade da etapa atualizada",
+        descricao: `${stage.titulo ?? "Etapa"} marcada como ${
+          nextOptional ? "opcional" : "obrigatoria"
+        }.`,
+        criado_por: currentUserId || null,
+      }, currentOrganizationId)),
+    ]);
 
     setUpdatingStageId(null);
 
-    if (stageError || eventError || !stageData || stageData.length === 0) {
+    if (stageError || eventError) {
       setErrorMessage("Não foi possível atualizar a etapa agora.");
       return;
     }
@@ -342,11 +270,6 @@ export function ServiceStagesSection({
       return;
     }
 
-    if (!currentOrganizationId) {
-      setErrorMessage("Não foi possível identificar a organização ativa.");
-      return;
-    }
-
     setReorderingStageId(stage.id);
     setErrorMessage("");
 
@@ -364,15 +287,11 @@ export function ServiceStagesSection({
           updated_at: new Date().toISOString(),
         })
         .eq("id", currentStage.id)
-        .eq("organization_id", currentOrganizationId)
-        .select("id")
+        .eq("organization_id", currentOrganizationId ?? "")
     );
 
     const results = await Promise.all(updates);
     const stageError = results.find((result) => result.error)?.error;
-    const hasNoOpUpdate = results.some(
-      (result) => !result.data || result.data.length === 0
-    );
     const { error: eventError } = await supabase.from("servico_eventos").insert(withOrganizationId({
       servico_id: serviceId,
       tipo: "etapa",
@@ -385,7 +304,7 @@ export function ServiceStagesSection({
 
     setReorderingStageId(null);
 
-    if (stageError || eventError || hasNoOpUpdate) {
+    if (stageError || eventError) {
       setErrorMessage("Não foi possível reordenar as etapas agora.");
       return;
     }
@@ -476,15 +395,6 @@ export function ServiceStagesSection({
                           disabled:
                             index === orderedStages.length - 1 ||
                             reorderingStageId === stage.id,
-                        },
-                        {
-                          label:
-                            reorderingStageId === stage.id
-                              ? "Excluindo..."
-                              : "Excluir etapa",
-                          onClick: () => handleDeleteStage(stage),
-                          disabled: reorderingStageId === stage.id,
-                          tone: "danger",
                         },
                       ]}
                     />
