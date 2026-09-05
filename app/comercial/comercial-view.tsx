@@ -699,6 +699,11 @@ export function ComercialView({
       }
     }
 
+    if (!currentOrganizationId) {
+      setErrorMessage("Não foi possível identificar a organização ativa.");
+      return;
+    }
+
     setIsSaving(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -737,7 +742,7 @@ export function ComercialView({
             .from("propostas")
             .update(payload)
             .eq("id", editingProposalId)
-            .eq("organization_id", currentOrganizationId ?? "")
+            .eq("organization_id", currentOrganizationId)
             .select("id")
             .single()
         : await supabase.from("propostas").insert(payload).select("id").single();
@@ -769,20 +774,33 @@ export function ComercialView({
       return;
     }
 
+    if (!currentOrganizationId) {
+      setErrorMessage("Não foi possível identificar a organização ativa.");
+      return;
+    }
+
     setDeletingProposalId(proposal.id);
     setErrorMessage("");
     setSuccessMessage("");
 
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from("propostas")
       .delete()
       .eq("id", proposal.id)
-      .eq("organization_id", currentOrganizationId ?? "");
+      .eq("organization_id", currentOrganizationId)
+      .select("id");
 
     setDeletingProposalId(null);
 
     if (error) {
       setErrorMessage("Não foi possível excluir a proposta agora. Tente novamente.");
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      setErrorMessage(
+        "A proposta não pôde ser excluída. Atualize a página e tente novamente."
+      );
       return;
     }
 
@@ -794,6 +812,11 @@ export function ComercialView({
     event.preventDefault();
 
     if (!convertingProposal) {
+      return;
+    }
+
+    if (!currentOrganizationId) {
+      setConversionErrorMessage("Não foi possível identificar a organização ativa.");
       return;
     }
 
@@ -944,8 +967,9 @@ export function ComercialView({
     const serviceId = serviceResponse.data.id;
     const stageTitles = getStageTemplateByServiceType(trimmedServiceType);
     const pendingTemplates = getPendingTemplateByServiceType(trimmedServiceType);
+    let setupWarning = "";
 
-    await supabase.from("servico_etapas").insert(
+    const { error: stagesError } = await supabase.from("servico_etapas").insert(
       stageTitles.map((title, index) => ({
         ...(currentOrganizationId
           ? { organization_id: currentOrganizationId }
@@ -957,8 +981,13 @@ export function ComercialView({
       }))
     );
 
+    if (stagesError) {
+      console.error("Erro ao criar etapas iniciais do serviço:", stagesError.message);
+      setupWarning = "As etapas iniciais do serviço não puderam ser criadas.";
+    }
+
     if (pendingTemplates.length > 0) {
-      await supabase.from("servico_pendencias").insert(
+      const { error: pendingsError } = await supabase.from("servico_pendencias").insert(
         pendingTemplates.map((pendingTemplate) => ({
           ...(currentOrganizationId
             ? { organization_id: currentOrganizationId }
@@ -974,6 +1003,16 @@ export function ComercialView({
             serviceResponsavelId.trim() || currentUserId || null,
         }))
       );
+
+      if (pendingsError) {
+        console.error(
+          "Erro ao criar pendências iniciais do serviço:",
+          pendingsError.message
+        );
+        setupWarning = setupWarning
+          ? "As etapas e pendências iniciais do serviço não puderam ser criadas."
+          : "As pendências iniciais do serviço não puderam ser criadas.";
+      }
     }
 
     await supabase.from("servico_eventos").insert([
@@ -1021,11 +1060,16 @@ export function ComercialView({
         responsavel_id: currentUserId || null,
       })
       .eq("id", convertingProposal.id)
-      .eq("organization_id", currentOrganizationId ?? "");
+      .eq("organization_id", currentOrganizationId)
+      .select("id");
 
     setIsConverting(false);
 
-    if (proposalResponse.error) {
+    if (
+      proposalResponse.error ||
+      !proposalResponse.data ||
+      proposalResponse.data.length === 0
+    ) {
       setConversionErrorMessage(
         "O cliente e o serviço foram criados, mas não foi possível atualizar a proposta."
       );
@@ -1033,7 +1077,11 @@ export function ComercialView({
     }
 
     closeConversionModal();
-    setSuccessMessage("Proposta convertida em cliente e serviço com sucesso.");
+    setSuccessMessage(
+      setupWarning
+        ? `Proposta convertida em cliente e serviço com sucesso. ${setupWarning}`
+        : "Proposta convertida em cliente e serviço com sucesso."
+    );
     router.refresh();
   }
 
@@ -1046,6 +1094,15 @@ export function ComercialView({
     if (!trimmedStatus || trimmedStatus === proposal.status) {
       return;
     }
+
+    if (!currentOrganizationId) {
+      setErrorMessage("Não foi possível identificar a organização ativa.");
+      return;
+    }
+
+    const previousStatus = proposal.status;
+    const previousConvertidoEm = proposal.convertido_em;
+    const previousMotivoPerda = proposal.motivo_perda;
 
     setErrorMessage("");
     setSuccessMessage("");
@@ -1068,7 +1125,7 @@ export function ComercialView({
       )
     );
 
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from("propostas")
       .update({
         status: trimmedStatus,
@@ -1078,13 +1135,19 @@ export function ComercialView({
         atualizado_por: currentUserId || null,
       })
       .eq("id", proposal.id)
-      .eq("organization_id", currentOrganizationId ?? "");
+      .eq("organization_id", currentOrganizationId)
+      .select("id");
 
-    if (error) {
+    if (error || !data || data.length === 0) {
       setProposalList((currentProposals) =>
         currentProposals.map((currentProposal) =>
           currentProposal.id === proposal.id
-            ? { ...currentProposal, status: proposal.status }
+            ? {
+                ...currentProposal,
+                status: previousStatus,
+                convertido_em: previousConvertidoEm,
+                motivo_perda: previousMotivoPerda,
+              }
             : currentProposal
         )
       );
@@ -1104,6 +1167,11 @@ export function ComercialView({
     );
 
     if (!proposal) {
+      return;
+    }
+
+    if (nextColumnId === "Ganho" && !isConvertedProposal(proposal)) {
+      openConversionModal(proposal);
       return;
     }
 

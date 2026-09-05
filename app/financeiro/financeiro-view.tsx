@@ -739,9 +739,14 @@ export function FinanceiroView({
       return;
     }
 
+    if (!currentOrganizationId) {
+      setErrorMessage("Não foi possível identificar a organização ativa.");
+      return;
+    }
+
     setIsSaving(true);
     setErrorMessage("");
-    
+
     const isEditing = modalMode === "edit";
     const entryId = editingEntryId;
 
@@ -772,7 +777,7 @@ export function FinanceiroView({
             .from("financeiro")
             .update(entryPayload)
             .eq("id", entryId)
-            .eq("organization_id", currentOrganizationId ?? "")
+            .eq("organization_id", currentOrganizationId)
             .select("id")
             .single()
         : await supabase
@@ -820,35 +825,60 @@ export function FinanceiroView({
       return;
     }
 
+    if (!currentOrganizationId) {
+      setErrorMessage("Não foi possível identificar a organização ativa.");
+      return;
+    }
+
     setDeletingEntryId(entry.id);
     setErrorMessage("");
 
-    const [{ error: deleteError }, { error: eventError }] = await Promise.all([
-      supabase
-        .from("financeiro")
-        .delete()
-        .eq("id", entry.id)
-        .eq("organization_id", currentOrganizationId ?? ""),
-      entry.servico_id !== null && entry.servico_id !== undefined
-        ? supabase.from("servico_eventos").insert(withOrganizationId({
-            servico_id: Number(entry.servico_id),
-            tipo: "financeiro",
-            titulo: "Lancamento financeiro removido",
-            descricao: entry.descricao ?? "Lancamento sem descricao",
-            criado_por: currentUserId || null,
-          }, currentOrganizationId))
-        : Promise.resolve({ error: null }),
-    ]);
+    const { error: deleteError, data: deleteData } = await supabase
+      .from("financeiro")
+      .delete()
+      .eq("id", entry.id)
+      .eq("organization_id", currentOrganizationId)
+      .select("id");
 
-    setDeletingEntryId(null);
-
-    if (deleteError || eventError) {
+    if (deleteError) {
+      setDeletingEntryId(null);
       setErrorMessage(
         "Não foi possível excluir o lançamento agora. Tente novamente."
       );
       return;
     }
 
+    if (!deleteData || deleteData.length === 0) {
+      setDeletingEntryId(null);
+      setErrorMessage(
+        "O lançamento não pôde ser excluído. Atualize a página e tente novamente."
+      );
+      return;
+    }
+
+    if (entry.servico_id !== null && entry.servico_id !== undefined) {
+      const { error: eventError } = await supabase.from("servico_eventos").insert(
+        withOrganizationId(
+          {
+            servico_id: Number(entry.servico_id),
+            tipo: "financeiro",
+            titulo: "Lancamento financeiro removido",
+            descricao: entry.descricao ?? "Lancamento sem descricao",
+            criado_por: currentUserId || null,
+          },
+          currentOrganizationId
+        )
+      );
+
+      if (eventError) {
+        console.error(
+          "Erro ao registrar evento de exclusao financeira:",
+          eventError.message
+        );
+      }
+    }
+
+    setDeletingEntryId(null);
     router.refresh();
   }
 

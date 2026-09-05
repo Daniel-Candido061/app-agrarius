@@ -198,6 +198,11 @@ export function ServicePendingsSection({
       return;
     }
 
+    if (!currentOrganizationId) {
+      setErrorMessage("Não foi possível identificar a organização ativa.");
+      return;
+    }
+
     setIsSaving(true);
     setErrorMessage("");
 
@@ -224,28 +229,30 @@ export function ServicePendingsSection({
           }),
     }, currentOrganizationId);
 
-    const [{ error: pendingError }, { error: eventError }] = await Promise.all([
-      isEditing && editingPendingId !== null
-        ? supabase
-            .from("servico_pendencias")
-            .update(payload)
-            .eq("id", editingPendingId)
-            .eq("organization_id", currentOrganizationId ?? "")
-        : supabase.from("servico_pendencias").insert(payload),
-      supabase.from("servico_eventos").insert(withOrganizationId({
-        servico_id: serviceId,
-        tipo: "pendencia",
-        titulo: isEditing
-          ? "Pendência atualizada"
-          : "Nova pendência registrada",
-        descricao: `${titulo} - ${status}${prazoResposta ? ` - prazo ${prazoResposta}` : ""}`,
-        criado_por: currentUserId || null,
-      }, currentOrganizationId)),
-    ]);
+    const [{ error: pendingError, data: pendingData }, { error: eventError }] =
+      await Promise.all([
+        isEditing && editingPendingId !== null
+          ? supabase
+              .from("servico_pendencias")
+              .update(payload)
+              .eq("id", editingPendingId)
+              .eq("organization_id", currentOrganizationId)
+              .select("id")
+          : supabase.from("servico_pendencias").insert(payload).select("id"),
+        supabase.from("servico_eventos").insert(withOrganizationId({
+          servico_id: serviceId,
+          tipo: "pendencia",
+          titulo: isEditing
+            ? "Pendência atualizada"
+            : "Nova pendência registrada",
+          descricao: `${titulo} - ${status}${prazoResposta ? ` - prazo ${prazoResposta}` : ""}`,
+          criado_por: currentUserId || null,
+        }, currentOrganizationId)),
+      ]);
 
     setIsSaving(false);
 
-    if (pendingError || eventError) {
+    if (pendingError || eventError || !pendingData || pendingData.length === 0) {
       setErrorMessage(
         isEditing
           ? "Não foi possível atualizar a pendência agora."
@@ -266,28 +273,35 @@ export function ServicePendingsSection({
       return;
     }
 
+    if (!currentOrganizationId) {
+      setErrorMessage("Não foi possível identificar a organização ativa.");
+      return;
+    }
+
     setErrorMessage("");
 
-    const [{ error: pendingError }, { error: eventError }] = await Promise.all([
-      supabase
-        .from("servico_pendencias")
-        .update({
-          status: nextStatus,
-          updated_at: new Date().toISOString(),
-          atualizado_por: currentUserId || null,
-        })
-        .eq("id", pending.id)
-        .eq("organization_id", currentOrganizationId ?? ""),
-      supabase.from("servico_eventos").insert(withOrganizationId({
-        servico_id: serviceId,
-        tipo: "pendencia",
-        titulo: "Pendência atualizada",
-        descricao: `${pending.titulo ?? "Pendência"} alterada para ${nextStatus}.`,
-        criado_por: currentUserId || null,
-      }, currentOrganizationId)),
-    ]);
+    const [{ error: pendingError, data: pendingData }, { error: eventError }] =
+      await Promise.all([
+        supabase
+          .from("servico_pendencias")
+          .update({
+            status: nextStatus,
+            updated_at: new Date().toISOString(),
+            atualizado_por: currentUserId || null,
+          })
+          .eq("id", pending.id)
+          .eq("organization_id", currentOrganizationId)
+          .select("id"),
+        supabase.from("servico_eventos").insert(withOrganizationId({
+          servico_id: serviceId,
+          tipo: "pendencia",
+          titulo: "Pendência atualizada",
+          descricao: `${pending.titulo ?? "Pendência"} alterada para ${nextStatus}.`,
+          criado_por: currentUserId || null,
+        }, currentOrganizationId)),
+      ]);
 
-    if (pendingError || eventError) {
+    if (pendingError || eventError || !pendingData || pendingData.length === 0) {
       setErrorMessage("Não foi possível atualizar a pendência agora.");
       return;
     }
@@ -302,37 +316,59 @@ export function ServicePendingsSection({
       return;
     }
 
+    if (!currentOrganizationId) {
+      setErrorMessage("Não foi possível identificar a organização ativa.");
+      return;
+    }
+
     setDeletingPendingId(pending.id);
     setErrorMessage("");
 
-    const [{ error: deleteError }, { error: eventError }] = await Promise.all([
-      supabase
-        .from("servico_pendencias")
-        .delete()
-        .eq("id", pending.id)
-        .eq("organization_id", currentOrganizationId ?? ""),
-      supabase.from("servico_eventos").insert(withOrganizationId({
-        servico_id: serviceId,
-        tipo: "pendencia",
-        titulo: "Pendência removida",
-        descricao: pending.titulo ?? "Pendência sem título",
-        criado_por: currentUserId || null,
-      }, currentOrganizationId)),
-    ]);
+    const { error: deleteError, data: deleteData } = await supabase
+      .from("servico_pendencias")
+      .delete()
+      .eq("id", pending.id)
+      .eq("organization_id", currentOrganizationId)
+      .select("id");
 
-    setDeletingPendingId(null);
-
-    if (deleteError || eventError) {
+    if (deleteError || !deleteData || deleteData.length === 0) {
+      setDeletingPendingId(null);
       setErrorMessage("Não foi possível excluir a pendência agora.");
       return;
     }
 
+    const { error: eventError } = await supabase.from("servico_eventos").insert(
+      withOrganizationId(
+        {
+          servico_id: serviceId,
+          tipo: "pendencia",
+          titulo: "Pendência removida",
+          descricao: pending.titulo ?? "Pendência sem título",
+          criado_por: currentUserId || null,
+        },
+        currentOrganizationId
+      )
+    );
+
+    if (eventError) {
+      console.error(
+        "Erro ao registrar evento de remoção de pendência:",
+        eventError.message
+      );
+    }
+
+    setDeletingPendingId(null);
     router.refresh();
   }
 
   async function handleApplyTemplatePendings() {
     if (!serviceType || pendingTemplates.length === 0) {
       setErrorMessage("Não há sugestões padrão para este tipo de serviço.");
+      return;
+    }
+
+    if (!currentOrganizationId) {
+      setErrorMessage("Não foi possível identificar a organização ativa.");
       return;
     }
 

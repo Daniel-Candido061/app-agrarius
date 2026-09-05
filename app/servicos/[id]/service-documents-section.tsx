@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ActionsMenu } from "../../components/actions-menu";
 import { formatSimpleDateTime } from "../../../lib/date-utils";
@@ -71,15 +71,6 @@ function sanitizeFileName(fileName: string) {
   return `${baseName || "arquivo"}${extension}`;
 }
 
-function getPublicDocumentUrl(path: string | null) {
-  if (!path) {
-    return null;
-  }
-
-  const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
-}
-
 function getFileTypeLabel(document: ServicoDocumento) {
   const extension = getFileExtension(document.nome_original ?? "");
 
@@ -111,14 +102,28 @@ export function ServiceDocumentsSection({
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const documentItems = useMemo(
-    () =>
-      documents.map((document) => ({
-        ...document,
-        publicUrl: getPublicDocumentUrl(document.caminho_storage),
-      })),
-    [documents]
-  );
+  async function handleOpenDocument(document: ServicoDocumento) {
+    const storagePath = document.caminho_storage;
+
+    if (!storagePath) {
+      return;
+    }
+
+    const newTab = window.open("", "_blank");
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .createSignedUrl(storagePath, 60);
+
+    if (error || !data?.signedUrl) {
+      newTab?.close();
+      setErrorMessage("Não foi possível gerar o link do arquivo agora.");
+      return;
+    }
+
+    if (newTab) {
+      newTab.location.href = data.signedUrl;
+    }
+  }
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const nextFile = event.target.files?.[0] ?? null;
@@ -142,6 +147,11 @@ export function ServiceDocumentsSection({
 
     if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
       setErrorMessage("O arquivo excede o limite de 50 MB.");
+      return;
+    }
+
+    if (!currentOrganizationId) {
+      setErrorMessage("Não foi possível identificar a organização ativa.");
       return;
     }
 
@@ -212,9 +222,35 @@ export function ServiceDocumentsSection({
       return;
     }
 
+    if (!currentOrganizationId) {
+      setErrorMessage("Não foi possível identificar a organização ativa.");
+      return;
+    }
+
     setDeletingDocumentId(document.id);
     setErrorMessage("");
     setSuccessMessage("");
+
+    const { error: deleteError, data: deleteData } = await supabase
+      .from("servico_documentos")
+      .delete()
+      .eq("id", document.id)
+      .eq("organization_id", currentOrganizationId)
+      .select("id");
+
+    if (deleteError) {
+      setDeletingDocumentId(null);
+      setErrorMessage("Não foi possível remover o anexo agora.");
+      return;
+    }
+
+    if (!deleteData || deleteData.length === 0) {
+      setDeletingDocumentId(null);
+      setErrorMessage(
+        "O anexo não pôde ser removido. Atualize a página e tente novamente."
+      );
+      return;
+    }
 
     const storagePath = document.caminho_storage;
 
@@ -224,34 +260,31 @@ export function ServiceDocumentsSection({
         .remove([storagePath]);
 
       if (storageError) {
-        setDeletingDocumentId(null);
-        setErrorMessage("Não foi possível remover o arquivo do storage.");
-        return;
+        console.error("Erro ao remover arquivo do storage:", storageError.message);
       }
     }
 
-    const [{ error: deleteError }, { error: eventError }] = await Promise.all([
-      supabase
-        .from("servico_documentos")
-        .delete()
-        .eq("id", document.id)
-        .eq("organization_id", currentOrganizationId ?? ""),
-      supabase.from("servico_eventos").insert(withOrganizationId({
-        servico_id: serviceId,
-        tipo: "documento",
-        titulo: "Documento removido",
-        descricao: document.nome_original ?? document.nome_arquivo ?? "Anexo",
-        criado_por: currentUserId || null,
-      }, currentOrganizationId)),
-    ]);
+    const { error: eventError } = await supabase.from("servico_eventos").insert(
+      withOrganizationId(
+        {
+          servico_id: serviceId,
+          tipo: "documento",
+          titulo: "Documento removido",
+          descricao: document.nome_original ?? document.nome_arquivo ?? "Anexo",
+          criado_por: currentUserId || null,
+        },
+        currentOrganizationId
+      )
+    );
 
-    setDeletingDocumentId(null);
-
-    if (deleteError || eventError) {
-      setErrorMessage("Não foi possível remover o anexo agora.");
-      return;
+    if (eventError) {
+      console.error(
+        "Erro ao registrar evento de remoção de documento:",
+        eventError.message
+      );
     }
 
+    setDeletingDocumentId(null);
     setSuccessMessage("Documento removido com sucesso.");
     router.refresh();
   }
@@ -326,13 +359,13 @@ export function ServiceDocumentsSection({
         ) : null}
       </div>
 
-      {documentItems.length === 0 ? (
+      {documents.length === 0 ? (
         <div className="px-6 py-14 text-center text-sm text-slate-500">
           Nenhum documento anexado para este serviço.
         </div>
       ) : (
         <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
-          {documentItems.map((document) => (
+          {documents.map((document) => (
             <article
               key={document.id}
               className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
@@ -349,11 +382,11 @@ export function ServiceDocumentsSection({
 
                 <ActionsMenu
                   items={[
-                    ...(document.publicUrl
+                    ...(document.caminho_storage
                       ? [
                           {
                             label: "Abrir arquivo",
-                            onClick: () => window.open(document.publicUrl!, "_blank"),
+                            onClick: () => handleOpenDocument(document),
                           },
                         ]
                       : []),
@@ -403,26 +436,19 @@ export function ServiceDocumentsSection({
                 {document.observacao?.trim() || "Sem observação adicional."}
               </p>
 
-              {document.publicUrl ? (
-                <LinkButton href={document.publicUrl} />
+              {document.caminho_storage ? (
+                <button
+                  type="button"
+                  onClick={() => handleOpenDocument(document)}
+                  className="mt-4 inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                >
+                  Abrir documento
+                </button>
               ) : null}
             </article>
           ))}
         </div>
       )}
     </section>
-  );
-}
-
-function LinkButton({ href }: { href: string }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-    >
-      Abrir documento
-    </a>
   );
 }
